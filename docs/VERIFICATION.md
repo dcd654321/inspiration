@@ -114,3 +114,45 @@ Node 24 取自官方 `node-v24.21.0-win-x64.zip`。`E:\nodejs\` 原目录的 ACL
 - 双账户隔离、断网上传、权限拒绝等真机验收。
 
 以上各项均不得在未执行的情况下勾选 `tasks.md` 中对应条目。
+
+## 2026-09-22 · 实现领域层 core/ 三个模块（任务 1.1—1.3）
+
+范围：仅实现 `miniprogram/core/` 下的领域逻辑与对应单元测试。**未实现任何页面逻辑、未接入服务层、未改动云与 AI 开关（仍为 `false`）、未做任何云端操作。**
+
+新增与修改：
+
+| 文件 | 说明 |
+| --- | --- |
+| `miniprogram/core/errors.js`（新增） | `ERROR_CODES`、面向用户的中文 `ERROR_MESSAGES`、`ValidationError` |
+| `miniprogram/core/inspiration.js`（新增） | 灵感、补充、图片记录的创建与校验；纯函数、深冻结、不导出改写 `text` 的路径 |
+| `miniprogram/core/ai-contract.js`（新增） | AI 输出的结构 / 类型 / 长度校验，以及内容安全过滤 |
+| `miniprogram/core/limits.js`（扩展） | 新增 `idMaxLength`、`aiMinTextLength`、草案条目数与长度上限；已有取值未改动 |
+| `tests/inspiration.test.cjs`（新增） | 22 项 |
+| `tests/ai-contract.test.cjs`（新增） | 17 项 |
+
+### 验证结果
+
+| 项目 | 命令 | 结果 |
+| --- | --- | --- |
+| 单元测试 | `npm test` | 通过：45 项（原有 6 + 新增 39），pass 45 / fail 0 |
+| 结构检查 | `npm run check` | 通过：`PASS 45 syntax/config/page checks.` |
+| 规范校验 | `npm run openspec -- validate --all --strict` | 通过：1 passed, 0 failed |
+
+结构检查计数由 40 增至 45，对应新增的 5 个 `.js` / `.cjs` 文件，符合预期。
+
+### 实施中发现并修正的问题
+
+**图片重试覆盖时改写了 `createdAt`。** `appendPhoto` 对同一 `photoId` 的重复追加按覆盖处理，初版实现用重试时刻覆盖了原 `createdAt`。这不影响「不产生重复记录」，但会让一条早已上传的图片在重试后变成刚创建。由用例「同一图片重复追加按覆盖处理，不产生重复记录」抓出，已改为覆盖时保留原 `createdAt`。**这正是先写测试的价值——该问题在只有手工验证时几乎不可能被发现。**
+
+### 与任务描述的偏差（需你确认）
+
+任务 1.3 要求四类非法输入「均须抛错」。实际实现的主入口 `validateDraft` **返回结果对象而非抛错**，理由是调用方需要把契约校验失败当作一次可重试的生成失败来处理，用异常控制流程会迫使页面处处 try/catch。抛错版 `parseDraft` 已一并提供且有用例覆盖，四类输入均被拒绝这一实质要求已满足。**若你要求主入口也抛错，改动很小，告诉我即可。**
+
+### 未验证项（仍然）
+
+- 微信开发者工具中的 WXML/WXSS 真实编译与渲染。
+- 服务层、页面层、云函数、云存储——均尚未实现。
+- AI 真实调用、额度与内容安全（规则集已有基线，条目本身待评审）。
+- 双账户隔离、断网上传、权限拒绝等真机验收。
+
+以上各项均不得在未执行的情况下勾选 `tasks.md` 中对应条目。

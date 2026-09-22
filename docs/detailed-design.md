@@ -250,9 +250,31 @@ validateDraft(raw)  → { ok: true, value: Draft } | { ok: false, code, field }
 checkSafety(text)   → { ok: boolean, rule?: string }
 ```
 
-### 6.3 `core/limits.js`
+### 6.3 `core/errors.js` 与 `core/limits.js`
 
-已存在。本变更按需新增：错误码常量表、`supplementMaxCount`（是否设上限见 §9）、图片压缩参数。已有取值不在本变更内改动。
+**实际落地与本文档初稿的偏差**：初稿把错误码常量表放在 `core/limits.js`。实施时拆出了独立的 `core/errors.js`——错误码与 `ValidationError` 被 `inspiration.js`、`ai-contract.js` 以及后续的 `services/`、`server/` 共用，塞进「取值边界」模块里内聚性太差。本节按实际结构记录。
+
+`core/errors.js`（新增）：
+
+```js
+ERROR_CODES      校验错误码常量表（EMPTY_TEXT / TEXT_TOO_LONG / INVALID_ID / UNSAFE_CONTENT …）
+ERROR_MESSAGES   错误码到中文文案的映射，文案面向用户，不含开发者黑话
+ValidationError  errors: [{ field, code }]，code 取首项，页面可逐字段定位
+```
+
+错误码的值是稳定字符串，会出现在测试断言与降级判断里，改名即破坏兼容。
+
+`core/limits.js`（扩展，已有取值未改动）：
+
+| 新增键 | 值 | 用途 |
+| --- | --- | --- |
+| `idMaxLength` | 64 | 标识长度上限。标识参与云存储路径拼接，必须有明确字符集与长度约束 |
+| `aiMinTextLength` | 8 | 正文短于此长度不请求 AI 扩展，避免空洞草案且不消耗额度 |
+| `draftSectionMinItems` | 1 | AI 草案每个分区的最少条目数 |
+| `draftSectionMaxItems` | 5 | 每个分区的最多条目数 |
+| `draftItemMaxLength` | 200 | 单条目的长度上限 |
+
+**未设定的项**：`supplementMaxCount` 不设上限——规范只约束单条补充的长度，未要求条数上限；凭空加一个限制会让用户在长线灵感上撞到无谓的墙。若后续确有需要再单独提案。
 
 ### 6.4 `core/heat.js`
 
@@ -292,9 +314,9 @@ checkSafety(text)   → { ok: boolean, rule?: string }
 
 ## 10. 实施前仍需拍板的决策
 
-| # | 决策 | 影响 |
+| # | 决策 | 状态 |
 | --- | --- | --- |
-| 1 | 补充条数是否设上限（`supplementMaxCount`） | 影响校验逻辑与错误提示文案 |
-| 2 | 越界内容规则集的具体条目与误伤处理 | 影响 `checkSafety` 的实现与测试用例 |
-| 3 | AI 走云开发内置能力，还是自建调第三方 | 决定密钥是否需要进环境变量、额度限流在哪一层实现，两种写法的实现差异很大 |
-| 4 | `requestId` 缓存的服务端 TTL | 影响重试窗口与存储成本 |
+| 1 | 补充条数是否设上限（`supplementMaxCount`） | **已定**：不设上限，理由见 §6.3 |
+| 2 | 越界内容规则集的具体条目与误伤处理 | **已落地基线，仍需评审**。`SAFETY_RULES` 已实现覆盖外链 / 医疗用药 / 极端行为三类，规则刻意保守并已有「不误伤普通词」的测试；具体条目与误伤处置方式仍待你确认 |
+| 3 | AI 走云开发内置能力，还是自建调第三方 | **未定**，阻塞 `linggan_ai` 与环境变量设计，不阻塞 `core/` |
+| 4 | `requestId` 缓存的服务端 TTL | **未定**，阻塞 `server/`，不阻塞 `core/` |
