@@ -1,10 +1,10 @@
 {
-  "description": "灵感记录：灵感随手记与 AI 扩展（初始化骨架，未接入云环境）",
+  "description": "灵感拾光簿：灵感随手记与 AI 扩展（云环境未接入）",
   "miniprogramRoot": "miniprogram/",
   "cloudfunctionRoot": "cloudfunctions/",
   "compileType": "miniprogram",
-  "appid": "touristappid",
-  "projectname": "灵感记录",
+  "appid": "wxed8fdc5d559d973d",
+  "projectname": "灵感拾光簿",
   "setting": {
     "urlCheck": true,
     "es6": true,

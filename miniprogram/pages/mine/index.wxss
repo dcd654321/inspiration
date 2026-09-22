@@ -1,24 +1,30 @@
-.status-row {
+.kv {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 16rpx 0;
-  border-bottom: 2rpx solid #f0f0f4;
+  padding: 28rpx 32rpx;
+  font-size: 29rpx;
+  border-bottom: 2rpx solid var(--line);
 }
 
-.status-row:last-of-type {
+.kv:last-child {
   border-bottom: none;
 }
 
-.on {
-  color: #2f7d4f;
+.val-off {
+  font-size: 27rpx;
+  color: var(--ink-3);
 }
 
-.off {
-  color: #9a9aa5;
+.val-on {
+  font-size: 27rpx;
+  font-weight: 500;
+  color: var(--brand);
 }
 
-.status-note {
-  margin-top: 16rpx;
-  color: #6b6b76;
+.prose {
+  padding: 28rpx 32rpx 32rpx;
   font-size: 26rpx;
+  line-height: 1.78;
+  color: var(--ink-2);
 }

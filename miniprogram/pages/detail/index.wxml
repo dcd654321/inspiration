@@ -1,13 +1,194 @@
-<view class="page">
-  <view class="title">灵感详情</view>
+<view class="page" wx:if="{{ready}}">
+  <block wx:if="{{missing}}">
+    <view class="empty">
+      <view class="et">找不到这条灵感</view>
+      <view class="ed">它可能已经被删除了。</view>
+    </view>
+  </block>
 
-  <view class="placeholder">
-    骨架版本：正文、补充时间线、照片与热度均尚未实现。
-    详情页将展示原始正文（不可改写）、按时间排序的补充、照片以及热度分与理由。
+  <block wx:else>
+    <view class="stamp">{{time}}</view>
+
+    <!-- 原文：可以直接编辑。不放进卡片，字号最大——它是锚点 -->
+    <view class="origin">
+      <block wx:if="{{editing}}">
+        <textarea
+          class="origin-editor"
+          value="{{editDraft}}"
+          maxlength="{{textMax}}"
+          auto-height
+          bindinput="onEditInput"
+        />
+        <view class="origin-acts">
+          <button class="btn btn-sm" bindtap="onSaveEdit">保存</button>
+          <button class="btn btn-plain btn-sm" bindtap="onCancelEdit">取消</button>
+        </view>
+        <view wx:if="{{editError}}" class="notice notice-err">
+          <view class="mark"></view>
+          <text>{{editError}}</text>
+        </view>
+      </block>
+
+      <block wx:else>
+        <view class="origin-text">{{text}}</view>
+        <view class="origin-acts">
+          <button class="btn btn-quiet btn-sm" bindtap="onStartEdit">编辑原文</button>
+          <button
+            wx:if="{{historyCount > 0}}"
+            class="btn btn-plain btn-sm"
+            bindtap="onOpenHistory"
+          >历史版本（{{historyCount}}）</button>
+        </view>
+      </block>
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 补充时间线：按时间正序。长按一条可修改 / 合并进灵感 / 删除 -->
+    <view class="section-head" style="margin-top: 36rpx">
+      <text class="k">补充</text>
+      <text class="v">{{supplements.length}}</text>
+    </view>
+
+    <view wx:if="{{supplements.length === 0 && hidden.length === 0}}" class="hint-line">还没有补充</view>
+
+    <view wx:else class="timeline">
+      <block wx:for="{{supplements}}" wx:key="id">
+        <view
+          class="tl-item {{item.isAi ? 'tl-ai' : ''}}"
+          data-id="{{item.id}}"
+          bindlongpress="onSupplementLongPress"
+        >
+          <view class="tl-when">
+            <text>{{item.time}}</text>
+            <text wx:if="{{item.isAi}}" class="tag tag-ai">AI 生成</text>
+          </view>
+
+          <!-- 行内修改：旧内容会留在历史里 -->
+          <block wx:if="{{editingSupplementId === item.id}}">
+            <textarea
+              class="tl-editor"
+              value="{{supplementEditDraft}}"
+              maxlength="{{supplementMax}}"
+              auto-height
+              bindinput="onSupplementEditInput"
+            />
+            <view class="tl-acts">
+              <button class="btn btn-sm" bindtap="onSupplementEditSave">保存</button>
+              <button class="btn btn-plain btn-sm" bindtap="onSupplementEditCancel">取消</button>
+            </view>
+            <view wx:if="{{supplementEditError}}" class="notice notice-err">
+              <view class="mark"></view>
+              <text>{{supplementEditError}}</text>
+            </view>
+          </block>
+
+          <view wx:else class="tl-what">{{item.content}}</view>
+        </view>
+      </block>
+
+      <!--
+        已收起的补充。**必须能展开、能恢复**——默认隐藏 + 没有入口 = 删除，
+        而规范明确要求它们可查看、可恢复。
+      -->
+      <view wx:if="{{hidden.length > 0}}" class="hidden-block">
+        <view class="hidden-row" bindtap="onToggleHidden">
+          <text>{{hidden.length}} 条{{hidden[0].hiddenLabel}} · {{hiddenExpanded ? '收起' : '展开'}}</text>
+        </view>
+
+        <block wx:if="{{hiddenExpanded}}">
+          <view
+            wx:for="{{hidden}}"
+            wx:key="id"
+            class="tl-item tl-hidden"
+            data-id="{{item.id}}"
+            bindlongpress="onSupplementLongPress"
+          >
+            <view class="tl-when">
+              <text>{{item.time}}</text>
+              <text class="tag tag-ai">{{item.hiddenLabel}}</text>
+            </view>
+            <view class="tl-what">{{item.content}}</view>
+            <view class="tl-hint">长按可恢复或删除</view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 追加补充 -->
+    <view class="compose">
+      <textarea
+        class="compose-editor"
+        value="{{supplementDraft}}"
+        maxlength="{{supplementMax}}"
+        placeholder="添加补充"
+        placeholder-class="compose-ph"
+        auto-height
+        bindinput="onSupplementInput"
+      />
+      <view class="compose-foot">
+        <text class="count">{{supplementDraft.length}} / {{supplementMax}}</text>
+        <button
+          class="btn btn-sm"
+          bindtap="onSubmitSupplement"
+          disabled="{{supplementDraft.length === 0}}"
+        >提交</button>
+      </view>
+
+      <view wx:if="{{supplementError}}" class="notice notice-err">
+        <view class="mark"></view>
+        <text>{{supplementError}}</text>
+      </view>
+    </view>
+
+    <!-- 能力未开放时，只说明不提供入口，也不展示任何看似 AI 的结果 -->
+    <view class="section-head" style="margin-top: 44rpx"><text class="k">照片</text></view>
+    <view class="panel closed-note">照片还不支持添加。</view>
+
+    <view class="section-head" style="margin-top: 44rpx"><text class="k">AI 扩展</text></view>
+    <view class="panel closed-note">AI 扩展还没开放。</view>
+
+    <view wx:if="{{error}}" class="notice notice-err">
+      <view class="mark"></view>
+      <text>{{error}}</text>
+    </view>
+
+    <view style="margin-top: 48rpx">
+      <button class="btn btn-danger btn-block" bindtap="onDelete">删除灵感</button>
+    </view>
+  </block>
+
+  <!-- 长按操作面板 -->
+  <view wx:if="{{sheetVisible}}" class="mask" bindtap="onSheetDismiss">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">{{sheetTargetLabel}}</view>
+
+      <block wx:if="{{sheetIsHidden}}">
+        <view class="sheet-item" bindtap="onSheetRestore">恢复<text class="sub">重新出现在时间线上</text></view>
+      </block>
+      <block wx:else>
+        <view class="sheet-item" bindtap="onSheetEdit">修改<text class="sub">旧内容保留在历史中</text></view>
+        <view class="sheet-item" bindtap="onSheetFold">合并进灵感<text class="sub">追加至原文末尾</text></view>
+      </block>
+
+      <view class="sheet-item sheet-danger" bindtap="onSheetDelete">删除<text class="sub">不可恢复</text></view>
+      <view class="sheet-cancel" bindtap="onSheetDismiss">取消</view>
+    </view>
   </view>
 
-  <view class="card">
-    <view class="hint">灵感标识</view>
-    <view>{{id || '未传入'}}</view>
+  <!-- 删除确认。整个产品里唯一不可恢复的操作，不能一次点击就生效 -->
+  <view wx:if="{{confirmVisible}}" class="mask mask-center">
+    <view class="dialog">
+      <view class="dialog-title">删除补充</view>
+      <view class="dialog-body">这条补充将被移除，<text class="dialog-warn">此操作无法撤销</text>。</view>
+      <view class="dialog-quote">
+        <view class="dialog-quote-t">{{confirmQuote}}</view>
+        <view class="dialog-quote-m">{{confirmQuoteTime}}</view>
+      </view>
+      <view class="dialog-acts">
+        <view class="dialog-act" bindtap="onConfirmDismiss">取消</view>
+        <view class="dialog-act dialog-act-danger" bindtap="onConfirmDelete">删除</view>
+      </view>
+    </view>
   </view>
 </view>

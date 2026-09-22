@@ -1,0 +1,23 @@
+<view class="page" wx:if="{{ready}}">
+  <block wx:if="{{missing}}">
+    <view class="empty">
+      <view class="et">找不到这条灵感</view>
+      <view class="ed">它可能已经被删除了。</view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="stamp">{{versions.length}} 个早期版本</view>
+
+    <!-- 只读。没有编辑入口，也没有删除入口——这是「你说过的话不会被悄悄抹掉」的界面体现 -->
+    <view wx:for="{{versions}}" wx:key="id" class="hv">
+      <view class="hv-t">{{item.text}}</view>
+      <view class="hv-m">{{item.time}} 被替换</view>
+    </view>
+
+    <view class="hv-now">
+      <view class="hv-now-k">当前原文</view>
+      <view class="hv-now-t">{{current}}</view>
+    </view>
+  </block>
+</view>

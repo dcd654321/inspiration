@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>灵感拾光簿 · 页面原型</title>
+<style>
+  :root {
+    /* 墨色由深到浅。比原稿偏中性、略暖，避免冷灰把主色衬得发白 */
+    --ink:        #16161d;
+    --ink-2:      #5f5f6e;
+    --ink-3:      #9b9baa;
+
+    --paper:      #f5f5f8;   /* 页面底 */
+    --surface:    #ffffff;   /* 承载面 */
+    --line:       #e8e8ee;   /* 发丝分隔线 */
+    --line-strong:#d8d8e2;
+
+    --brand:      #3d3d8f;   /* 沿用 app.wxss 的主色 */
+    --brand-soft: #ececf7;
+    --brand-line: #c9c9e6;
+
+    --danger:     #b3382c;
+    --danger-soft:#fbeeec;
+    --danger-line:#efc9c4;
+
+    --warn-ink:   #8a6420;
+    --warn-soft:  #fdf4e3;
+
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+
+    --pad: 20px;             /* 页面左右留白 */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #e9e9ef;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 72px;
+  }
+
+  /* ============ 文档页头 ============ */
+  .doc-head { max-width: 1200px; margin: 0 auto 36px; }
+  .doc-head h1 {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin-bottom: 10px;
+  }
+  .doc-head p {
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.75;
+    max-width: 62ch;
+  }
+  .doc-head code {
+    background: #dfe0e8;
+    padding: 1.5px 6px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  /* ============ 画板 ============ */
+  .board {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px 28px;
+    align-items: flex-start;
+  }
+  .slot { width: 375px; }
+  .slot-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -.005em;
+    margin-bottom: 6px;
+  }
+  .slot-note {
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.65;
+    margin-bottom: 14px;
+    min-height: 46px;
+    max-width: 34ch;
+  }
+  .slot-note b { font-weight: 600; color: var(--ink); }
+
+  /* ============ 手机外框 ============ */
+  .phone {
+    width: 375px;
+    height: 726px;
+    background: var(--paper);
+    border-radius: 26px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+      0 0 0 1px rgba(22, 22, 29, .07),
+      0 1px 2px rgba(22, 22, 29, .04),
+      0 18px 40px -12px rgba(22, 22, 29, .18);
+  }
+
+  /* 状态栏 */
+  .statusbar {
+    flex: 0 0 auto;
+    height: 26px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px 0 22px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--ink);
+  }
+  .statusbar .glyphs { display: flex; gap: 4px; align-items: center; }
+  .statusbar .glyphs i {
+    display: block;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+  .glyphs .sig  { width: 3px; height: 6px; opacity: .45; }
+  .glyphs .sig2 { width: 3px; height: 8px; opacity: .7; }
+  .glyphs .sig3 { width: 3px; height: 10px; }
+  .glyphs .bat  {
+    width: 20px; height: 10px;
+    background: none;
+    border: 1.2px solid var(--ink);
+    border-radius: 3px;
+    opacity: .5;
+    position: relative;
+  }
+  .glyphs .bat::after {
+    content: "";
+    position: absolute; inset: 1.6px;
+    background: var(--ink);
+    border-radius: 1px;
+    width: 72%;
+  }
+
+  /* 导航栏 */
+  .navbar {
+    flex: 0 0 auto;
+    height: 44px;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    position: relative;
+  }
+  .navbar .back {
+    position: absolute;
+    left: 16px;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .navbar .back::before {
+    content: "";
+    width: 8px; height: 8px;
+    border-left: 1.8px solid var(--ink);
+    border-bottom: 1.8px solid var(--ink);
+    transform: rotate(45deg);
+    margin-left: 3px;
+  }
+
+  .screen {
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 18px var(--pad) 24px;
+  }
+  .screen.scroll { overflow-y: auto; }
+  .screen.flush { padding: 0 0 24px; }   /* 需要通栏的页面自己控制内边距 */
+
+  /* ============ Tab 栏 ============ */
+  .tabbar {
+    flex: 0 0 auto;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    display: flex;
+    padding-bottom: 8px;
+  }
+  .tabbar .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 9px 0 4px;
+    font-size: 10.5px;
+    letter-spacing: .01em;
+    color: var(--ink-3);
+  }
+  .tabbar .tab.on { color: var(--brand); }
+  .tabbar .tab svg { width: 22px; height: 22px; display: block; }
+
+  /* 底部横条 */
+  .home-ind {
+    flex: 0 0 auto;
+    height: 14px;
+    background: var(--surface);
+    display: flex;
+    justify-content: center;
+  }
+  .home-ind::after {
+    content: "";
+    width: 118px; height: 4px;
+    background: var(--ink);
+    opacity: .22;
+    border-radius: 3px;
+    margin-top: 1px;
+  }
+
+  /* ============ 排版 ============ */
+  .page-title {
+    font-size: 22px;
+    font-weight: 650;
+    letter-spacing: -.02em;
+    line-height: 1.35;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.7;
+    margin-top: 5px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 var(--pad);
+    margin-bottom: 9px;
+  }
+  .section-head .k {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: var(--ink-2);
+  }
+  .section-head .v { font-size: 12px; color: var(--ink-3); }
+
+  /* 承载面：只在真正需要「一块内容」的地方用，不滥用 */
+  .panel {
+    background: var(--surface);
+    border-radius: var(--r-md);
+  }
+  .panel.plain { border-radius: 0; }
+
+  /* ============ 编辑区 ============ */
+  .composer {
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 16px 16px 14px;
+    margin-top: 18px;
+  }
+  .composer .editor {
+    min-height: 108px;
+    font-size: 16.5px;
+    line-height: 1.75;
+    letter-spacing: .01em;
+  }
+  .editor.empty { color: var(--ink-3); }
+  .composer .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+  }
+  .count { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .count.near { color: var(--danger); }
+
+  /* ============ 按钮 ============ */
+  .btn {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: .01em;
+    border: none;
+    border-radius: var(--r-sm);
+    padding: 0 22px;
+    height: 40px;
+    background: var(--brand);
+    color: #fff;
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn.block { display: flex; width: 100%; }
+  .btn:disabled {
+    background: #e4e4ec;
+    color: var(--ink-3);
+  }
+  .btn.quiet {
+    background: transparent;
+    color: var(--brand);
+    border: 1px solid var(--brand-line);
+  }
+  .btn.plain {
+    background: var(--surface);
+    color: var(--ink-2);
+    border: 1px solid var(--line-strong);
+  }
+  .btn.danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger-line);
+  }
+  .btn.sm { height: 34px; font-size: 13.5px; padding: 0 16px; border-radius: 7px; }
+
+  /* ============ 提示条 ============ */
+  .notice {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    margin-top: 12px;
+    padding: 11px 13px;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .notice .mark {
+    flex: 0 0 auto;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    margin-top: 2.5px;
+    position: relative;
+  }
+  .notice .mark::after {
+    content: "";
+    position: absolute;
+    left: 6.4px; top: 3.6px;
+    width: 2.2px; height: 5.4px;
+    background: #fff;
+    border-radius: 1px;
+  }
+  .notice .mark::before {
+    content: "";
+    position: absolute;
+    left: 6.4px; bottom: 3.2px;
+    width: 2.2px; height: 2.2px;
+    background: #fff;
+    border-radius: 50%;
+  }
+  .notice.err  { background: var(--danger-soft); border: 1px solid var(--danger-line); color: var(--danger); }
+  .notice.err .mark { background: var(--danger); }
+  .notice.warn { background: var(--warn-soft); color: var(--warn-ink); }
+  .notice.warn .mark { background: var(--warn-ink); }
+
+  /* ============ 列表 ============ */
+  .list { background: var(--surface); border-radius: var(--r-md); overflow: hidden; }
+  .row { padding: 15px 16px 14px; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: none; }
+
+  .row .body {
+    font-size: 15.5px;
+    line-height: 1.68;
+    letter-spacing: .01em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .row .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 9px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .row .meta .sep {
+    width: 1px; height: 9px;
+    background: var(--line-strong);
+  }
+  .tag {
+    font-size: 11px;
+    line-height: 1;
+    padding: 4px 8px 4px;
+    border-radius: 20px;
+    letter-spacing: .01em;
+  }
+  .tag.sync { background: var(--warn-soft); color: var(--warn-ink); }
+  .tag.fail { background: var(--danger-soft); color: var(--danger); }
+  .tag.ai   { background: var(--brand-soft); color: var(--brand); }
+
+  /* ============ 空态 ============ */
+  .empty {
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 46px 28px 44px;
+    text-align: center;
+  }
+  .empty svg { display: block; margin: 0 auto 16px; }
+  .empty .et { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .empty .ed {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.7;
+    margin-top: 6px;
+    max-width: 26ch;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ============ 详情：原文是锚点 ============ */
+  .stamp {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-3);
+    padding: 0 var(--pad) 10px;
+  }
+  .origin {
+    padding: 0 var(--pad) 22px;
+  }
+  .origin .text {
+    font-size: 19px;
+    line-height: 1.78;
+    letter-spacing: .012em;
+    font-weight: 400;
+    color: var(--ink);
+    text-wrap: pretty;
+  }
+  .origin .acts { margin-top: 18px; display: flex; gap: 8px; }
+
+  /* 历史版本入口：低调、不给数字徽标 */
+  .history-entry {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--ink-2);
+    border-bottom: 1px dashed var(--line-strong);
+    padding-bottom: 2px;
+  }
+
+  /* 已合并收起行 */
+  .merged-row {
+    margin-top: 9px;
+    font-size: 12px;
+    color: var(--ink-2);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .merged-row::before {
+    content: "";
+    width: 12px; height: 0;
+    border-top: 1.5px dashed var(--line-strong);
+  }
+
+  /* 汇总写入方式：两个选项并列，都不预选 */
+  .pick { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 4px; }
+  .opt-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 11px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    background: #fff;
+  }
+  .opt-row.on { border-color: var(--brand); background: var(--brand-soft); }
+  .radio {
+    flex: 0 0 auto;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line-strong);
+    margin-top: 2px;
+    position: relative;
+  }
+  .radio.on { border-color: var(--brand); }
+  .radio.on::after {
+    content: "";
+    position: absolute; inset: 3px;
+    border-radius: 50%;
+    background: var(--brand);
+  }
+  .opt-row .t { font-size: 13.5px; font-weight: 500; letter-spacing: .01em; }
+  .opt-row .d { font-size: 12px; color: var(--ink-2); line-height: 1.6; margin-top: 4px; }
+
+  /* 列表选择态 */
+  .pick-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding: 11px var(--pad);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .pick-bar .n { font-size: 13px; color: var(--ink-2); }
+  .row-check {
+    flex: 0 0 auto;
+    width: 19px; height: 19px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line-strong);
+    margin-right: 11px;
+    position: relative;
+  }
+  .row-check.on { background: var(--brand); border-color: var(--brand); }
+  .row-check.on::after {
+    content: "";
+    position: absolute;
+    left: 5.6px; top: 2.4px;
+    width: 4.6px; height: 9px;
+    border: solid #fff;
+    border-width: 0 1.8px 1.8px 0;
+    transform: rotate(45deg);
+  }
+  .row.picking { display: flex; align-items: flex-start; }
+
+  /* 底部操作面板（长按补充） */
+  .sheet-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(22, 22, 29, .42);
+    display: flex;
+    align-items: flex-end;
+  }
+  .sheet {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    padding: 6px 0 12px;
+  }
+  .sheet .title {
+    font-size: 12px;
+    color: var(--ink-3);
+    text-align: center;
+    padding: 12px 20px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet .item {
+    padding: 15px 20px;
+    font-size: 16px;
+    letter-spacing: .01em;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .sheet .item .sub { font-size: 12px; color: var(--ink-3); flex: 0 0 auto; }
+  .sheet .item.danger { color: var(--danger); }
+  .sheet .item.danger .sub { color: #d29b95; }
+  .sheet .cancel {
+    margin: 10px 14px 0;
+    padding: 13px 0;
+    text-align: center;
+    font-size: 16px;
+    color: var(--ink-2);
+    background: #f2f2f6;
+    border-radius: var(--r-sm);
+  }
+
+  /* 居中确认弹窗（删除） */
+  .dialog-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(22, 22, 29, .42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 30px;
+  }
+  .dialog {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 14px;
+    overflow: hidden;
+    text-align: center;
+  }
+  .dialog .dt { font-size: 16px; font-weight: 600; padding: 20px 20px 8px; letter-spacing: -.01em; }
+  .dialog .db { font-size: 13px; color: var(--ink-2); line-height: 1.7; padding: 0 20px 14px; }
+  .dialog .db b { color: var(--danger); font-weight: 600; }
+  /* 待删除内容的框：把「要删的就是这条」这件事说清楚，不让引用句孤零零浮着 */
+  .dbox {
+    margin: 0 20px 18px;
+    padding: 11px 13px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    text-align: left;
+  }
+  .dbox-t { font-size: 13.5px; line-height: 1.65; color: var(--ink); }
+  .dbox-m { font-size: 11.5px; color: var(--ink-3); margin-top: 6px; }
+  .dialog .dacts { display: flex; border-top: 1px solid var(--line); }
+  .dialog .dacts div { flex: 1; padding: 15px 0; font-size: 16px; }
+  .dialog .dacts div + div { border-left: 1px solid var(--line); }
+  .dialog .dacts .d-ok { color: var(--danger); font-weight: 500; }
+
+  /* 原文历史：只读、无删除入口，视觉上比当前原文弱一档 */
+  .hv {
+    margin: 0 var(--pad) 10px;
+    padding: 13px 14px;
+    background: var(--surface);
+    border-radius: var(--r-sm);
+    border-left: 2px solid var(--line-strong);
+  }
+  .hv-t { font-size: 14.5px; line-height: 1.7; color: var(--ink-2); letter-spacing: .01em; }
+  .hv-m { font-size: 11.5px; color: var(--ink-3); margin-top: 7px; }
+  .hv-now {
+    margin: 20px var(--pad) 0;
+    padding: 14px;
+    border: 1px solid var(--brand-line);
+    border-radius: var(--r-sm);
+    background: var(--brand-soft);
+  }
+  .hv-now-k {
+    font-size: 11.5px;
+    color: var(--brand);
+    font-weight: 600;
+    letter-spacing: .02em;
+    margin-bottom: 7px;
+  }
+  .hv-now .hv-t { color: var(--ink); }
+
+  .rule { height: 1px; background: var(--line); margin: 0 var(--pad); }
+
+  /* 时间线 */
+  .timeline { padding: 0 var(--pad); position: relative; }
+  .tl-item {
+    position: relative;
+    padding: 14px 0 14px 20px;
+  }
+  .tl-item::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 21px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #cdcdd8;
+    box-shadow: 0 0 0 3px var(--paper);
+    z-index: 1;
+  }
+  .tl-item.ai::before { background: var(--brand); }
+  .tl-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 3px; top: 26px; bottom: -2px;
+    width: 1px;
+    background: var(--line);
+  }
+  .tl-item .when {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    margin-bottom: 5px;
+  }
+  .tl-item .what { font-size: 14.5px; line-height: 1.72; letter-spacing: .01em; }
+
+  /* 补充输入 */
+  .compose-inline {
+    margin: 4px var(--pad) 0;
+    background: var(--surface);
+    border-radius: var(--r-sm);
+    padding: 12px 13px 11px;
+  }
+  .compose-inline .ph { font-size: 14px; color: var(--ink-3); line-height: 1.7; }
+  .compose-inline .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  /* 照片 */
+  .gallery { padding: 0 var(--pad); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .ph {
+    aspect-ratio: 1;
+    border-radius: var(--r-sm);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6px;
+    font-size: 10.5px;
+    line-height: 1.35;
+    letter-spacing: .01em;
+  }
+  .ph.done  { background: linear-gradient(150deg, #d9d9e4, #c3c3d2); }
+  .ph.busy  { background: linear-gradient(150deg, #c6c6d4, #b0b0c2); color: rgba(255,255,255,.92); }
+  .ph.err   { background: var(--danger-soft); border: 1px solid var(--danger-line); color: var(--danger); font-weight: 500; }
+  .ph.add {
+    background: transparent;
+    border: 1px dashed var(--line-strong);
+    color: var(--ink-3);
+  }
+  .ph.add svg { display: block; }
+  .ph .film {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,.16) 0 6px, transparent 6px 12px);
+  }
+
+  /* AI 草案：视觉上明确「还没写进你的数据」 */
+  .draft {
+    margin: 0 var(--pad);
+    border: 1px dashed var(--brand-line);
+    border-radius: var(--r-md);
+    background: #fbfbfe;
+    padding: 15px 15px 13px;
+  }
+  .draft .pending {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--brand);
+    font-weight: 600;
+    letter-spacing: .01em;
+    margin-bottom: 4px;
+  }
+  .draft .pending .dash {
+    width: 14px; height: 0;
+    border-top: 1.5px dashed var(--brand);
+  }
+  .draft .disclaim {
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.65;
+    margin-bottom: 13px;
+  }
+  .draft .group { margin-bottom: 13px; }
+  .draft .group:last-of-type { margin-bottom: 4px; }
+  .draft .gk {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    color: var(--ink-2);
+    margin-bottom: 7px;
+  }
+  .opt {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    padding: 6px 0;
+    font-size: 13.5px;
+    line-height: 1.62;
+  }
+  .box {
+    flex: 0 0 auto;
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--line-strong);
+    border-radius: 5px;
+    margin-top: 2px;
+    position: relative;
+  }
+  .box.on {
+    background: var(--brand);
+    border-color: var(--brand);
+  }
+  .box.on::after {
+    content: "";
+    position: absolute;
+    left: 4.6px; top: 1.4px;
+    width: 4.2px; height: 8.4px;
+    border: solid #fff;
+    border-width: 0 1.8px 1.8px 0;
+    transform: rotate(45deg);
+  }
+  .draft .acts { display: flex; gap: 9px; margin-top: 13px; }
+  .draft .acts .btn { flex: 1; }
+
+  /* ============ 我的页 ============ */
+  .kv {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14.5px;
+  }
+  .kv:last-child { border-bottom: none; }
+  .kv .val { font-size: 13.5px; color: var(--ink-3); }
+  .kv .val.off { color: var(--ink-3); }
+  .kv .val.on  { color: var(--brand); font-weight: 500; }
+  .prose {
+    padding: 14px 16px 16px;
+    font-size: 13px;
+    line-height: 1.78;
+    color: var(--ink-2);
+  }
+  .prose p + p { margin-top: 9px; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>灵感拾光簿 · 页面原型</h1>
+  <p>
+    按 <code>miniprogram/app.wxss</code> 的令牌与 <code>docs/ui-design.md</code> 的区块划分绘制，375px 视口（750rpx 设计稿）。
+    这是<b>原型</b>，不是可运行的小程序：WXML/WXSS 的真实编译与渲染仍需在微信开发者工具中确认。
+    信息结构与文案与设计文档一致，视觉表达为本次修订。
+  </p>
+</div>
+
+<div class="board">
+
+  <!-- ══════════ 记录页 · 空态 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">记录页 · 空态</div>
+    <div class="slot-note">冷启动默认落地。<b>保存按钮置灰</b>，避免空提交。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen">
+        <div class="page-title">记下这一句</div>
+        <div class="page-sub">半句话也可以。</div>
+        <div class="composer">
+          <div class="editor empty">此刻想到什么？</div>
+          <div class="foot">
+            <span class="count">0 / 2000</span>
+            <button class="btn" disabled>保存</button>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 记录页 · 输入中 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">记录页 · 输入中</div>
+    <div class="slot-note">计数器实时更新。<b>超过上限 90% 转警示色</b>（此处示意已越阈值）。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen">
+        <div class="page-title">记下这一句</div>
+        <div class="page-sub">半句话也可以。</div>
+        <div class="composer">
+          <div class="editor">上班路上想到：把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+          <div class="foot">
+            <span class="count near">1860 / 2000</span>
+            <button class="btn">保存</button>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 记录页 · 保存失败 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">记录页 · 同步未成功</div>
+    <div class="slot-note">内容已落本机，<b>输入照常清空</b>——留着反而会让用户重复提交。提示必须同时说清「已保存」和「还没同步」两件事。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen">
+        <div class="page-title">记下这一句</div>
+        <div class="page-sub">半句话也可以。</div>
+        <div class="composer">
+          <div class="editor empty">此刻想到什么？</div>
+          <div class="foot">
+            <span class="count">0 / 2000</span>
+            <button class="btn" disabled>保存</button>
+          </div>
+          <div class="notice err">
+            <span class="mark"></span>
+            <span>已保存。还没同步到云端，会自动重试。</span>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 记录页 · 写入失败 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">记录页 · 写入失败</div>
+    <div class="slot-note">唯一需要<b>保留输入</b>的情况——真的没存下来。与「同步未成功」视觉一致，但行为必须不同。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen">
+        <div class="page-title">记下这一句</div>
+        <div class="page-sub">半句话也可以。</div>
+        <div class="composer">
+          <div class="editor">上班路上想到：把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+          <div class="foot">
+            <span class="count">47 / 2000</span>
+            <button class="btn">保存</button>
+          </div>
+          <div class="notice err">
+            <span class="mark"></span>
+            <span>存储空间不够了，这条没能存下来。</span>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 列表页 · 有数据 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">灵感列表页 · 有数据</div>
+    <div class="slot-note">补充数、照片数仅在大于 0 时出现。<b>不显示「待同步」</b>——那是一次保存动作的中间态，转瞬即逝。只有同步失败与冲突才需要出现在界面上。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen">
+        <div class="page-title">我的灵感</div>
+
+        <div class="list" style="margin-top:18px">
+          <div class="row">
+            <div class="body">把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+            <div class="meta">
+              <span>3 小时前</span><span class="sep"></span>
+              <span>3 条补充</span><span class="sep"></span>
+              <span>1 张照片</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="body">做一个只给自己看的记账小程序，不要社交功能。</div>
+            <div class="meta">
+              <span>昨天</span><span class="sep"></span>
+              <span>2 条补充</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="body">厨房灯光换成暖色会不会让晚上做饭舒服一点。</div>
+            <div class="meta">
+              <span>3 天前</span>
+              <span class="tag fail">同步失败</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn plain block" style="margin-top:16px">新建灵感</button>
+      </div>
+      <div class="tabbar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 列表页 · 空态与失败 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">列表页 · 空态与读取失败</div>
+    <div class="slot-note">失败时<b>已缓存内容继续显示</b>，不因刷新失败清空列表。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen">
+        <div class="page-title">我的灵感</div>
+
+        <div class="empty" style="margin-top:18px">
+          <svg width="46" height="46" viewBox="0 0 46 46" fill="none" stroke="#c6c6d4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11a3 3 0 0 1 3-3h13l9 9v18a3 3 0 0 1-3 3H12a3 3 0 0 1-3-3z"/>
+            <path d="M25 8v9h9"/><path d="M16 25h13M16 31h8"/>
+          </svg>
+          <div class="et">还没有灵感</div>
+          <div class="ed">想到什么，就先记下来。</div>
+        </div>
+        <button class="btn plain block" style="margin-top:16px">新建灵感</button>
+
+        <div style="margin-top:26px">
+          <div class="section-head" style="padding:0;margin-bottom:9px"><span class="k">读取失败时</span></div>
+          <div class="notice err" style="margin-top:0">
+            <span class="mark"></span>
+            <span>没能读到最新内容，先显示已经存下来的部分。</span>
+          </div>
+          <div class="list" style="margin-top:11px">
+            <div class="row">
+              <div class="body">做一个只给自己看的记账小程序，不要社交功能。</div>
+              <div class="meta"><span>昨天</span><span class="sep"></span><span>2 条补充</span></div>
+            </div>
+          </div>
+          <button class="btn plain block" style="margin-top:12px">重试</button>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 列表页 · 选择态（AI 汇总） ══════════ -->
+  <div class="slot">
+    <div class="slot-label">列表页 · 选择态（AI 汇总）</div>
+    <div class="slot-note">勾选<b>两个以上</b>「汇总」才可用——数量不足时置灰并说明原因，不能发起调用白耗额度。底部另有「已合并 N 条」入口，<b>没有它等于把已合并的灵感删了</b>。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen" style="position:relative;padding-bottom:72px">
+        <div class="page-title">我的灵感</div>
+
+        <div class="list" style="margin-top:18px">
+          <div class="row picking">
+            <span class="row-check on"></span>
+            <div style="flex:1">
+              <div class="body">把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+              <div class="meta"><span>3 小时前</span><span class="sep"></span><span>3 条补充</span></div>
+            </div>
+          </div>
+          <div class="row picking">
+            <span class="row-check on"></span>
+            <div style="flex:1">
+              <div class="body">做一个只给自己看的记账小程序，不要社交功能。</div>
+              <div class="meta"><span>昨天</span><span class="sep"></span><span>2 条补充</span></div>
+            </div>
+          </div>
+          <div class="row picking">
+            <span class="row-check"></span>
+            <div style="flex:1">
+              <div class="body">厨房灯光换成暖色会不会让晚上做饭舒服一点。</div>
+              <div class="meta"><span>3 天前</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="merged-row" style="margin-top:22px">已合并 2 条</div>
+
+        <div class="pick-bar">
+          <span class="n">已选 2 个</span>
+          <button class="btn">汇总</button>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 详情页 · 完整 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">详情页 · 完整结构</div>
+    <div class="slot-note">原文<b>不放进卡片</b>、字号最大——它是锚点。<b>可以直接编辑</b>，改动前的版本进「历史版本」入口。被汇总的补充默认收成一行「2 条已合并」。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar"><span class="back"></span>灵感详情</div>
+      <div class="screen scroll flush">
+
+        <div class="stamp" style="padding-top:18px">
+          <span>今天 9:14</span><span>·</span><span>3 条补充</span>
+        </div>
+
+        <div class="origin">
+          <div class="text">把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+          <div class="acts">
+            <button class="btn quiet sm">编辑原文</button>
+            <button class="btn plain sm">补充</button>
+          </div>
+          <div class="history-entry">历史版本（2）</div>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="section-head" style="margin-top:18px"><span class="k">补充</span><span class="v">选择</span></div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="when"><span>昨天 21:40</span></div>
+            <div class="what">可以先按周统计，比按天更容易看出规律。</div>
+          </div>
+          <div class="tl-item ai">
+            <div class="when"><span>昨天 21:42</span><span class="tag ai">AI 汇总</span></div>
+            <div class="what">按周的密度比按天更容易看出规律，建议先用一个月的历史数据验证，再决定要不要做成图表。</div>
+            <div class="merged-row">2 条已合并 · 展开</div>
+          </div>
+          <div class="tl-item">
+            <div class="when"><span>今天 9:15</span></div>
+            <div class="what">数据量太小的话可能看不出什么，先记满两个月再说。</div>
+          </div>
+          <div class="tl-item" style="padding-bottom:6px">
+            <div class="merged-row" style="margin-top:0">1 条已并入灵感 · 展开</div>
+          </div>
+        </div>
+
+        <div class="compose-inline">
+          <div class="ph">添加补充</div>
+          <div class="foot">
+            <span class="count">0 / 1000</span>
+            <button class="btn" disabled>提交</button>
+          </div>
+        </div>
+
+        <div class="section-head" style="margin-top:26px"><span class="k">照片</span><span class="v">2 / 9</span></div>
+        <div class="gallery">
+          <div class="grid">
+            <div class="ph done"><span class="film"></span></div>
+            <div class="ph busy"><span class="film"></span>上传中</div>
+            <div class="ph err">上传失败<br>点击重试</div>
+            <div class="ph add">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                <path d="M10 5v10M5 10h10"/>
+              </svg>
+            </div>
+          </div>
+          <div class="notice warn">
+            <span class="mark"></span>
+            <span>有 1 张图片超过 2 MB，已经跳过。</span>
+          </div>
+        </div>
+
+        <div class="section-head" style="margin-top:26px"><span class="k">AI 扩展</span></div>
+        <div class="draft">
+          <div class="pending"><span class="dash"></span>未写入</div>
+          <div class="disclaim">由 AI 生成，可能不准确。勾选后才会写进这条灵感，没勾的会被丢弃。</div>
+
+          <div class="group">
+            <div class="gk">要点</div>
+            <div class="opt"><span class="box on"></span><span>按周汇总比按天更容易看出想法密度</span></div>
+            <div class="opt"><span class="box"></span><span>需要先积累至少一个月的记录才有信号</span></div>
+          </div>
+
+          <div class="group">
+            <div class="gk">下一步</div>
+            <div class="opt"><span class="box on"></span><span>先手工统计一个月，验证规律是否真的存在</span></div>
+          </div>
+
+          <div class="group">
+            <div class="gk">风险</div>
+            <div class="opt"><span class="box"></span><span>样本太少时结论不可靠，容易自我暗示</span></div>
+          </div>
+
+          <div class="acts">
+            <button class="btn">采纳所选（2 条）</button>
+            <button class="btn plain">放弃</button>
+          </div>
+        </div>
+
+        <div style="padding:26px var(--pad) 8px">
+          <button class="btn danger block">删除灵感</button>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 详情页 · 原文历史 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">详情页 · 原文历史</div>
+    <div class="slot-note">原文可以改，但改不掉历史——这是产品承诺的落点。历史<b>只读、没有删除入口</b>，入口本身也不给数字徽标：历史是备查的，不该每天提醒你改过几次。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar"><span class="back"></span>历史版本</div>
+      <div class="screen scroll flush">
+        <div class="stamp" style="padding-top:18px"><span>2 个早期版本</span></div>
+
+        <div class="hv">
+          <div class="hv-t">做一个记账小程序</div>
+          <div class="hv-m">09-20 21:14 被替换</div>
+        </div>
+        <div class="hv">
+          <div class="hv-t">做一个记账小程序，能导出</div>
+          <div class="hv-m">09-21 09:03 被替换</div>
+        </div>
+
+        <div class="hv-now">
+          <div class="hv-now-k">当前原文</div>
+          <div class="hv-t">把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 详情页 · AI 未启用 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">详情页 · AI 未启用（当前默认）</div>
+    <div class="slot-note">开关关闭时<b>不出现可点击的调用入口</b>，也不展示任何看似 AI 产出的内容。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar"><span class="back"></span>灵感详情</div>
+      <div class="screen scroll flush">
+
+        <div class="stamp" style="padding-top:18px">
+          <span>昨天 20:11</span><span>·</span><span>2 条补充</span>
+        </div>
+
+        <div class="origin">
+          <div class="text">做一个只给自己看的记账小程序，不要社交功能。</div>
+          <div class="acts"><button class="btn quiet sm">补充</button></div>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="section-head" style="margin-top:18px"><span class="k">补充</span><span class="v">2 条</span></div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="when"><span>昨天 20:22</span></div>
+            <div class="what">先做导入不支持，只支持手动记。</div>
+          </div>
+          <div class="tl-item">
+            <div class="when"><span>今天 8:02</span></div>
+            <div class="what">界面尽量简单，一屏能看完一个月。</div>
+          </div>
+        </div>
+
+        <div class="section-head" style="margin-top:26px"><span class="k">照片</span></div>
+        <div class="gallery">
+          <div class="panel" style="border:1px dashed var(--line-strong); padding:26px 16px; text-align:center">
+            <div style="font-size:13.5px;color:var(--ink-3);margin-bottom:14px">还没有照片</div>
+            <div style="display:flex;gap:9px">
+              <button class="btn plain" style="flex:1">拍照</button>
+              <button class="btn plain" style="flex:1">从相册选择</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-head" style="margin-top:26px"><span class="k">AI 扩展</span></div>
+        <div style="padding:0 var(--pad)">
+          <div class="panel" style="padding:15px 16px">
+            <div style="font-size:13px;line-height:1.75;color:var(--ink-2)">
+              AI 扩展还没开放。
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:26px var(--pad) 8px">
+          <button class="btn danger block">删除灵感</button>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 详情页 · 长按补充的操作面板 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">详情页 · 长按补充</div>
+    <div class="slot-note">长按是容易误触的手势，所以<b>「删除」用危险色、与另外两项分开、并且要再确认一次</b>。「合并进灵感」旁写清它会做什么，不能只给一个词。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar"><span class="back"></span>灵感详情</div>
+      <div class="screen scroll flush" style="position:relative">
+        <div class="stamp" style="padding-top:18px"><span>今天 9:14</span><span>·</span><span>3 条补充</span></div>
+
+        <div class="origin">
+          <div class="text">把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+          <div class="acts">
+            <button class="btn quiet sm">编辑原文</button>
+            <button class="btn plain sm">补充</button>
+          </div>
+          <div class="history-entry">历史版本（2）</div>
+        </div>
+
+        <div class="rule"></div>
+        <div class="section-head" style="margin-top:18px"><span class="k">补充</span><span class="v">选择</span></div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="when"><span>昨天 21:40</span></div>
+            <div class="what">可以先按周统计，比按天更容易看出规律。</div>
+          </div>
+          <div class="tl-item ai">
+            <div class="when"><span>昨天 21:42</span><span class="tag ai">AI 汇总</span></div>
+            <div class="what">按周的密度比按天更容易看出规律，建议先用一个月的历史数据验证，再决定要不要做成图表。</div>
+            <div class="merged-row">2 条已合并 · 展开</div>
+          </div>
+          <div class="tl-item">
+            <div class="when"><span>今天 9:15</span></div>
+            <div class="what">数据量太小的话可能看不出什么，先记满两个月再说。</div>
+          </div>
+        </div>
+
+        <div class="sheet-mask">
+          <div class="sheet">
+            <div class="title">这条补充 · 昨天 21:40</div>
+            <div class="item">修改<span class="sub">旧内容保留在历史中</span></div>
+            <div class="item">合并进灵感<span class="sub">追加至原文末尾</span></div>
+            <div class="item danger">删除<span class="sub">不可恢复</span></div>
+            <div class="cancel">取消</div>
+          </div>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 删除确认 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">删除确认</div>
+    <div class="slot-note">点「删除」后必须再拦一道。这是<b>整个产品里唯一不可恢复的操作</b>，不能一次点击就生效。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar"><span class="back"></span>灵感详情</div>
+      <div class="screen scroll flush" style="position:relative">
+        <div class="stamp" style="padding-top:18px"><span>今天 9:14</span><span>·</span><span>3 条补充</span></div>
+
+        <div class="origin">
+          <div class="text">把每天记的灵感做成时间轴，能看出自己哪段时间想法最密。</div>
+          <div class="acts">
+            <button class="btn quiet sm">编辑原文</button>
+            <button class="btn plain sm">补充</button>
+          </div>
+          <div class="history-entry">历史版本（2）</div>
+        </div>
+
+        <div class="rule"></div>
+        <div class="section-head" style="margin-top:18px"><span class="k">补充</span><span class="v">选择</span></div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="when"><span>昨天 21:40</span></div>
+            <div class="what">可以先按周统计，比按天更容易看出规律。</div>
+          </div>
+          <div class="tl-item ai">
+            <div class="when"><span>昨天 21:42</span><span class="tag ai">AI 汇总</span></div>
+            <div class="what">按周的密度比按天更容易看出规律，建议先用一个月的历史数据验证，再决定要不要做成图表。</div>
+            <div class="merged-row">2 条已合并 · 展开</div>
+          </div>
+          <div class="tl-item">
+            <div class="when"><span>今天 9:15</span></div>
+            <div class="what">数据量太小的话可能看不出什么，先记满两个月再说。</div>
+          </div>
+        </div>
+
+        <div class="dialog-mask">
+          <div class="dialog">
+            <div class="dt">删除补充</div>
+            <div class="db">这条补充将被移除，<b>此操作无法撤销</b>。</div>
+            <div class="dbox">
+              <div class="dbox-t">可以先按周统计，比按天更容易看出规律。</div>
+              <div class="dbox-m">昨天 21:40</div>
+            </div>
+            <div class="dacts">
+              <div>取消</div>
+              <div class="d-ok">删除</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 汇总草案 · 写入方式 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">汇总草案 · 写入方式</div>
+    <div class="slot-note">整条链路上<b>不可逆程度最高的一步</b>。两个选项都不预选，确认按钮在未选前保持置灰——不能替用户决定。「覆盖」旁必须写清后果。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar"><span class="back"></span>汇总</div>
+      <div class="screen scroll flush">
+        <div class="stamp" style="padding-top:18px"><span>由 2 条补充汇总</span></div>
+
+        <div class="draft" style="margin-top:8px">
+          <div class="pending"><span class="dash"></span>未写入</div>
+          <div class="disclaim">由 AI 生成，可能不准确，也可能漏掉你写过的细节。确认后才会写入你的灵感。</div>
+
+          <div style="font-size:14.5px;line-height:1.78;letter-spacing:.01em;color:var(--ink);padding:2px 0 4px">
+            按周的密度比按天更容易看出规律，建议先用一个月的历史数据验证，再决定要不要做成图表。
+          </div>
+
+          <div class="gk" style="margin-top:16px">写入方式</div>
+          <div class="pick">
+            <div class="opt-row">
+              <span class="radio"></span>
+              <div>
+                <div class="t">覆盖补充</div>
+                <div class="d">被汇总的 2 条将收起，之后可展开恢复。内容不会丢失。</div>
+              </div>
+            </div>
+            <div class="opt-row">
+              <span class="radio"></span>
+              <div>
+                <div class="t">新增补充</div>
+                <div class="d">原有 2 条保持原样，仍独立可见。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="acts">
+            <button class="btn" disabled>确认</button>
+            <button class="btn plain">放弃</button>
+          </div>
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ 我的页 ══════════ -->
+  <div class="slot">
+    <div class="slot-label">我的页</div>
+    <div class="slot-note">能力状态按真实开关生成。<b>不区分本机与云端存储</b>——保存后自动同步，失败才提示。文案里也不得出现热度或任何评分暗示。</div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="glyphs"><i class="sig"></i><i class="sig2"></i><i class="sig3"></i><i class="bat"></i></span></div>
+      <div class="navbar">灵感拾光簿</div>
+      <div class="screen">
+        <div class="page-title">我的</div>
+
+        <div class="section-head" style="padding:0;margin:22px 0 9px"><span class="k">能力</span></div>
+        <div class="panel">
+          <div class="kv"><span>云端同步</span><span class="val off">未启用</span></div>
+          <div class="kv"><span>AI 扩展</span><span class="val off">未启用</span></div>
+        </div>
+
+        <div class="section-head" style="padding:0;margin:26px 0 9px"><span class="k">数据与隐私</span></div>
+        <div class="panel">
+          <div class="prose">
+            <p>灵感和补充存在你的账号里，别的微信账户看不到。</p>
+            <p>照片只给你自己看，不会被分享。删除灵感时，对应的照片会一起删掉。</p>
+          </div>
+        </div>
+
+        <div class="section-head" style="padding:0;margin:26px 0 9px"><span class="k">反馈</span></div>
+        <button class="btn plain block" style="height:44px">提交反馈</button>
+      </div>
+      <div class="tabbar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 20h16"/><path d="M14.5 4.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/>
+          </svg>记录
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9.5h7M8.5 14h4.5"/>
+          </svg>灵感
+        </div>
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8.5" r="3.3"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>
+          </svg>我的
+        </div>
+      </div>
+      <div class="home-ind"></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

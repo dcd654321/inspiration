@@ -1,0 +1,51 @@
+.stamp {
+  font-size: 24rpx;
+  color: var(--ink-3);
+  padding: 8rpx 0 24rpx;
+}
+
+/* 历史版本比当前原文弱一档：次要文字色 + 左侧细线 */
+.hv {
+  margin-bottom: 20rpx;
+  padding: 26rpx 28rpx;
+  background: var(--surface);
+  border-radius: 16rpx;
+  border-left: 4rpx solid var(--line-strong);
+}
+
+.hv-t {
+  font-size: 29rpx;
+  line-height: 1.72;
+  letter-spacing: 0.01em;
+  color: var(--ink-2);
+}
+
+.hv-m {
+  font-size: 23rpx;
+  color: var(--ink-3);
+  margin-top: 14rpx;
+}
+
+/* 当前原文用主色框标出来，让用户一眼看出哪个是现在的 */
+.hv-now {
+  margin-top: 40rpx;
+  padding: 28rpx 28rpx 30rpx;
+  border: 2rpx solid var(--brand-line);
+  border-radius: 16rpx;
+  background: var(--brand-soft);
+}
+
+.hv-now-k {
+  font-size: 23rpx;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--brand);
+  margin-bottom: 14rpx;
+}
+
+.hv-now-t {
+  font-size: 29rpx;
+  line-height: 1.72;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
