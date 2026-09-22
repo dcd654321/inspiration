@@ -158,12 +158,68 @@ function isTooShortToExpand(text) {
   return typeof text !== 'string' || text.trim().length < LIMITS.aiMinTextLength;
 }
 
+/**
+ * 汇总结果的契约校验（`{ text: string }`）。
+ *
+ * 与 validateDraft 的差别：汇总**不产出结构化三分区**，只产出一段连续文本——
+ * 汇总的本质是把多条收成一条，不是重新分析。所以这里没有分区与条目数的概念，
+ * 只有「一段非空、不超长、不越界的话」。
+ *
+ * 两种校验共用同一条内容安全规则（checkSafety），不各写一套。
+ */
+function validateSummary(raw) {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { ok: false, code: ERROR_CODES.INVALID_TYPE, field: 'summary' };
+  }
+  if (!Object.prototype.hasOwnProperty.call(raw, 'text') || raw.text === undefined || raw.text === null) {
+    return { ok: false, code: ERROR_CODES.MISSING_FIELD, field: 'text' };
+  }
+  if (typeof raw.text !== 'string') {
+    return { ok: false, code: ERROR_CODES.INVALID_TYPE, field: 'text' };
+  }
+
+  const text = raw.text.trim();
+  if (text.length === 0) {
+    return { ok: false, code: ERROR_CODES.EMPTY_ITEM, field: 'text' };
+  }
+  if (text.length > LIMITS.summaryMaxLength) {
+    return { ok: false, code: ERROR_CODES.ITEM_TOO_LONG, field: 'text' };
+  }
+
+  const safety = checkSafety(text);
+  if (!safety.ok) {
+    return { ok: false, code: ERROR_CODES.UNSAFE_CONTENT, field: 'text', rule: safety.rule };
+  }
+
+  return { ok: true, value: deepFreeze({ text }) };
+}
+
+/** 抛错版，供需要中断流程的调用方使用。 */
+function parseSummary(raw) {
+  const result = validateSummary(raw);
+  if (!result.ok) {
+    throw new ValidationError([{ field: result.field, code: result.code }]);
+  }
+  return result.value;
+}
+
+/**
+ * 该不该发起一次汇总。少于两条（补充）或两个（灵感）没有意义，
+ * **必须在调用前拦住**——否则会白白消耗一次生成额度。
+ */
+function isTooFewToSummarize(itemCount) {
+  return typeof itemCount !== 'number' || itemCount < LIMITS.mergeMinItems;
+}
+
 module.exports = {
   SECTIONS,
   SAFETY_RULES,
   validateDraft,
   validateStructure,
   parseDraft,
+  validateSummary,
+  parseSummary,
   checkSafety,
-  isTooShortToExpand
+  isTooShortToExpand,
+  isTooFewToSummarize
 };

@@ -9,8 +9,11 @@ const assert = require('node:assert');
 const {
   validateDraft,
   parseDraft,
+  validateSummary,
+  parseSummary,
   checkSafety,
   isTooShortToExpand,
+  isTooFewToSummarize,
   SAFETY_RULES
 } = require('../miniprogram/core/ai-contract');
 const { LIMITS } = require('../miniprogram/core/limits');
@@ -198,4 +201,82 @@ test('正文过短时不请求扩展', () => {
   assert.strictEqual(isTooShortToExpand(''), true);
   assert.strictEqual(isTooShortToExpand(null), true);
   assert.strictEqual(isTooShortToExpand('做一个能导出的记账小程序'), false);
+});
+
+// ---------------------------------------------------------------- 汇总结果契约
+
+test('合法汇总结果通过校验', () => {
+  const result = validateSummary({ text: '按周统计比按天更容易看出规律。' });
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.value.text, '按周统计比按天更容易看出规律。');
+  assert.ok(Object.isFrozen(result.value));
+});
+
+test('汇总结果首尾空白被规范化', () => {
+  const result = validateSummary({ text: '  前后有空格  ' });
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.value.text, '前后有空格');
+});
+
+test('汇总结果为空、缺字段或类型不对都被拒绝', () => {
+  assert.strictEqual(validateSummary({ text: '' }).code, ERROR_CODES.EMPTY_ITEM);
+  assert.strictEqual(validateSummary({ text: '   ' }).code, ERROR_CODES.EMPTY_ITEM);
+  assert.strictEqual(validateSummary({}).code, ERROR_CODES.MISSING_FIELD);
+  assert.strictEqual(validateSummary({ text: 123 }).code, ERROR_CODES.INVALID_TYPE);
+  assert.strictEqual(validateSummary(null).code, ERROR_CODES.INVALID_TYPE);
+  assert.strictEqual(validateSummary('一段字符串').code, ERROR_CODES.INVALID_TYPE);
+  assert.strictEqual(validateSummary(['数组']).code, ERROR_CODES.INVALID_TYPE);
+});
+
+test('汇总结果超长被拒绝，恰好到上限时通过', () => {
+  const tooLong = '啊'.repeat(LIMITS.summaryMaxLength + 1);
+  assert.strictEqual(validateSummary({ text: tooLong }).code, ERROR_CODES.ITEM_TOO_LONG);
+
+  const atLimit = '啊'.repeat(LIMITS.summaryMaxLength);
+  assert.strictEqual(validateSummary({ text: atLimit }).ok, true);
+});
+
+test('汇总结果同样过内容安全，与扩展草案共用同一套规则', () => {
+  const cases = [
+    ['按处方调整用药剂量', 'MEDICAL'],
+    ['参考 https://example.com/doc', 'EXTERNAL_LINK'],
+    ['可能让人产生轻生念头', 'EXTREME_BEHAVIOR']
+  ];
+
+  for (const [text, rule] of cases) {
+    const result = validateSummary({ text });
+    assert.strictEqual(result.ok, false, `「${text}」应被拒绝`);
+    assert.strictEqual(result.code, ERROR_CODES.UNSAFE_CONTENT);
+    assert.strictEqual(result.rule, rule);
+  }
+});
+
+test('汇总结果不误伤普通内容', () => {
+  const benign = [
+    '把页面里的链接逻辑抽成单独模块',
+    '两条补充说的其实是一件事，合并成一条更清楚',
+    '先按周统计，样本够了再看趋势'
+  ];
+  for (const text of benign) {
+    assert.strictEqual(validateSummary({ text }).ok, true, `「${text}」被误伤了`);
+  }
+});
+
+test('汇总也有抛错版', () => {
+  assert.strictEqual(parseSummary({ text: '正常结果' }).text, '正常结果');
+  assert.throws(
+    () => parseSummary({ text: '' }),
+    (err) => err instanceof ValidationError && err.code === ERROR_CODES.EMPTY_ITEM
+  );
+});
+
+test('少于两条不发起汇总——必须在调用前拦住，否则白耗额度', () => {
+  assert.strictEqual(isTooFewToSummarize(0), true);
+  assert.strictEqual(isTooFewToSummarize(1), true);
+  assert.strictEqual(isTooFewToSummarize(undefined), true);
+  assert.strictEqual(isTooFewToSummarize('2'), true);
+  assert.strictEqual(isTooFewToSummarize(2), false);
+  assert.strictEqual(isTooFewToSummarize(5), false);
 });
