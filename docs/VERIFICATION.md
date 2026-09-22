@@ -73,3 +73,44 @@
 **需要确认**：本文件前两条记录（工程初始化、安装 OpenSpec skills）均记有 `npm test`、`npm run check`、`npm run openspec -- validate` 通过，且 `package-lock.json` 的 `lockfileVersion` 为 `3`（由 npm 7+ 生成），说明当时确有 Node 20+ 可用。当前环境与之不一致，请确认是否 Node 被降级或 PATH 发生变化。**在 Node 升级到 20.19.0 之前，本仓库的全部自动化验证都无法执行**，本次改动也因此未经自动校验，不得据此判定通过。
 
 未执行项不等同于失败，也不得在未执行的情况下勾选 `tasks.md` 中对应条目。
+
+## 2026-09-22 · 升级 Node 并补跑被阻塞的验证
+
+背景：上一节记录的三条验证因环境中只有 Node v12.22.12 而无法执行。本次升级 Node 后全部补跑，环境阻塞已解除。
+
+### 环境变更
+
+| 项目 | 变更前 | 变更后 |
+| --- | --- | --- |
+| Node | v12.22.12 | v24.21.0（当前 LTS） |
+| npm | 6.14.16 | 11.19.0 |
+| 安装位置 | `E:\nodejs` | `E:\nodejs`（路径不变） |
+| 旧版本去向 | —— | 完整保留在 `E:\nodejs-v12-backup`，可回退 |
+
+Node 24 取自官方 `node-v24.21.0-win-x64.zip`。`E:\nodejs\` 原目录的 ACL 未给当前用户写权限（仅 `SYSTEM` 与 `Administrators` 有完全控制），因此「改名」这一步由用户在管理员终端执行，其余（下载、解压、放置、校验）由本次会话完成。`E:\nodejs\` 仍是系统级 PATH 的条目标，路径未变动，无需改环境变量。
+
+### 补跑的验证
+
+| 项目 | 命令 | 结果 |
+| --- | --- | --- |
+| 运行环境 | `node --version` / `npm --version` | `v24.21.0` / `11.19.0` |
+| 单元测试 | `npm test` | 通过：6 项，pass 6 / fail 0 / duration 102.9ms |
+| 结构检查 | `npm run check` | 通过：`PASS 40 syntax/config/page checks.` |
+| 规范校验 | `npm run openspec -- validate --all --strict` | 通过：1 passed, 0 failed |
+
+上一节列为「未执行」的三条现已全部执行并通过。**规范校验同时确认：`specs/inspiration-heat/spec.md` 虽已从提案的能力清单中移除，仍留在变更目录内，但未导致 `--strict` 校验失败。** 归档前移出该目录的要求依然有效。
+
+### 关于结构检查计数由 39 变为 40
+
+不是代码改动造成的，仓库内容未变。`scripts/check.cjs` 遍历仓库内所有 `.json`（仅跳过 `node_modules`、`.git`、`qa`、`.agents`），本次会话中客户端在 `.claude/` 下生成了 `settings.local.json`，被计入 +1。该文件未被 git 跟踪，且被全局 ignore 规则 `**/.claude/settings.local.json` 排除，不会进入仓库。
+
+**但这暴露一个可复现性问题**：`PASS N` 中的 N 取决于本机是否存在该文件，同一份代码在不同机器上会得到不同的数字，不适合作为跨环境比对的基线。后续若要稳定该数字，需让 `check.cjs` 跳过 `.claude/`，或改为只记录「通过 / 失败」而不记录计数。**本次不做改动**，仅记录该问题。
+
+### 未验证项（仍然）
+
+- 微信开发者工具中的 WXML/WXSS 真实编译与渲染。
+- 云函数部署、集合创建、云存储权限配置。
+- AI 真实调用、额度与内容安全验证。
+- 双账户隔离、断网上传、权限拒绝等真机验收。
+
+以上各项均不得在未执行的情况下勾选 `tasks.md` 中对应条目。
