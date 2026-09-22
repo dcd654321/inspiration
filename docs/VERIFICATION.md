@@ -8,10 +8,15 @@
 
 | 项目 | 命令 | 结果 |
 | --- | --- | --- |
-| 依赖安装 | `npm install` | 见下方记录 |
-| 结构检查 | `npm run check` | 见下方记录 |
-| 单元测试 | `npm test` | 见下方记录 |
-| 规范校验 | `npm run openspec -- validate --all --strict` | 见下方记录 |
+| 依赖安装 | `npm install` | 通过：80 个包，0 个漏洞 |
+| 结构检查 | `npm run check` | 通过：`PASS 39 syntax/config/page checks.` |
+| 单元测试 | `npm test` | 通过：6 项测试，0 失败 |
+| 规范校验 | `npm run openspec -- validate --all --strict` | 通过：1 项通过，0 失败 |
+| 变更清点 | `npm run openspec -- list` | `add-inspiration-mvp  0/36 tasks` |
+
+单元测试覆盖的 6 项不变量：云开关为 `false` 且 `envId` 为空；AI 开关为 `false`；资源名统一 `linggan_` 前缀；取值边界在合理范围；`createId` 连续 500 次无重复；小程序包与云函数内不含模型密钥；`app.json` 页面文件齐全且 tabBar 指向有效页面。
+
+版本控制：已在 `dev` 分支建立初始提交 `2933a94`，工作区干净，未配置远端、未推送。
 
 未执行（需独立授权或真机）：
 
