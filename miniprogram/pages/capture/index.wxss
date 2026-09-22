@@ -1,17 +1,35 @@
+.composer {
+  background: var(--surface);
+  border-radius: 24rpx;
+  padding: 32rpx 32rpx 28rpx;
+  margin-top: 36rpx;
+}
+
 .editor {
   width: 100%;
-  min-height: 200rpx;
-  font-size: 32rpx;
-  line-height: 1.7;
+  min-height: 216rpx;
+  font-size: 33rpx;
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+  color: var(--ink);
 }
 
-.editor-placeholder {
-  color: #a8a8b3;
+.editor-ph {
+  color: var(--ink-3);
 }
 
-.counter {
-  text-align: right;
-  color: #a8a8b3;
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 28rpx;
+}
+
+.count {
   font-size: 24rpx;
-  margin-top: 12rpx;
+  color: var(--ink-3);
+}
+
+.count-near {
+  color: var(--danger);
 }

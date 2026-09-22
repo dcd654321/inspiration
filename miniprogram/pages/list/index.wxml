@@ -1,15 +1,48 @@
 <view class="page">
-  <view class="title">我的灵感</view>
-  <view class="hint">按最近更新时间倒序排列。</view>
+  <view class="page-title">我的灵感</view>
 
-  <view wx:if="{{inspirations.length === 0}}" class="placeholder">
-    这里还没有灵感。工程骨架版本尚未接入数据，记录与列表读取将在
-    add-inspiration-mvp 实施后可用。
+  <view wx:if="{{loading}}" class="empty">
+    <view class="et">读取中…</view>
   </view>
 
-  <view class="card" wx:for="{{inspirations}}" wx:key="id">
-    <view>{{item.text}}</view>
-  </view>
+  <block wx:elif="{{items.length === 0}}">
+    <view class="empty">
+      <view class="et">还没有灵感</view>
+      <view class="ed">想到什么，就先记下来。</view>
+    </view>
+    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onAdd">新建灵感</button>
+  </block>
 
-  <button class="button-primary" bindtap="onAdd">去记一条</button>
+  <block wx:else>
+    <view class="list" style="margin-top: 36rpx">
+      <view
+        wx:for="{{items}}"
+        wx:key="id"
+        class="row"
+        data-id="{{item.id}}"
+        bindtap="onOpen"
+      >
+        <view class="body">{{item.excerpt}}</view>
+        <view class="meta">
+          <text>{{item.time}}</text>
+          <block wx:if="{{item.supplements}}">
+            <view class="sep"></view>
+            <text>{{item.supplements}}</text>
+          </block>
+          <block wx:if="{{item.photos}}">
+            <view class="sep"></view>
+            <text>{{item.photos}}</text>
+          </block>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{error}}" class="notice notice-err">
+      <view class="mark"></view>
+      <text>{{error}}</text>
+    </view>
+    <button wx:if="{{error}}" class="btn btn-plain btn-block" style="margin-top: 24rpx" bindtap="onRetry">重试</button>
+
+    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onAdd">新建灵感</button>
+  </block>
 </view>

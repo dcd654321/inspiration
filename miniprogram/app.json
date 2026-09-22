@@ -3,10 +3,11 @@
     "pages/capture/index",
     "pages/list/index",
     "pages/mine/index",
-    "pages/detail/index"
+    "pages/detail/index",
+    "pages/history/index"
   ],
   "window": {
-    "navigationBarTitleText": "灵感记录",
+    "navigationBarTitleText": "灵感拾光簿",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#ffffff"

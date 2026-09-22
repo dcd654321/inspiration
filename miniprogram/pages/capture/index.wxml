@@ -1,23 +1,32 @@
 <view class="page">
-  <view class="title">记下这一句</view>
-  <view class="hint">先写下来，之后可以随时补充、拍照，再让 AI 帮你展开。</view>
+  <view class="page-title">记下这一句</view>
+  <view class="page-sub">半句话也可以。</view>
 
-  <view class="card">
+  <view class="composer">
     <textarea
       class="editor"
       value="{{draft}}"
       maxlength="{{maxLength}}"
       placeholder="此刻想到什么？"
-      placeholder-class="editor-placeholder"
+      placeholder-class="editor-ph"
       bindinput="onInput"
+      disabled="{{saving}}"
       auto-height
     />
-    <view class="counter">{{draft.length}} / {{maxLength}}</view>
-    <button class="button-primary" bindtap="onSave">保存</button>
-  </view>
 
-  <view class="placeholder">
-    工程骨架版本：保存、补充、拍照与 AI 扩展均尚未实现。
-    详细范围与验收标准见 openspec/changes/add-inspiration-mvp/proposal.md。
+    <view class="foot">
+      <text class="count {{nearLimit ? 'count-near' : ''}}">{{draft.length}} / {{maxLength}}</text>
+      <button
+        class="btn"
+        bindtap="onSave"
+        disabled="{{draft.length === 0 || saving}}"
+      >{{saving ? '保存中…' : '保存'}}</button>
+    </view>
+
+    <!-- 失败提示常驻页面，不用会自动消失的 toast：用户错过之后会以为已经保存 -->
+    <view wx:if="{{error}}" class="notice notice-err">
+      <view class="mark"></view>
+      <text>{{error}}</text>
+    </view>
   </view>
 </view>
