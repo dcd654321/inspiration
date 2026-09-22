@@ -33,6 +33,20 @@ const repository = require('../server/repository');
 const protocol = require('../server/protocol');
 const { LIMITS } = require('../miniprogram/core/limits');
 
+/**
+ * 按行切分，**吃掉行尾的 `\r`**。
+ *
+ * 这不是洁癖：仓库的 `core.autocrlf` 是 `true`，所以 `git checkout` 之后工作区文件
+ * 会变成 CRLF。而 JavaScript 里 `.` **不匹配 `\r`**，于是 `(.+)$` 这类正则在 CRLF 上
+ * 直接失配——闸门会静默失去作用，却仍然"跑得很正常"。
+ *
+ * 这个坑真的踩过：一次 checkout 之后 5 项测试变红，而在此之前它们一直是绿的，
+ * 只是因为当时工作区恰好是 LF。
+ */
+function lines(text) {
+  return text.split(/\r?\n/);
+}
+
 /** 取出一段章节内容。找不到起点直接报错——静默返回空串会让闸门变成摆设。 */
 function section(text, startMarker, endMarker) {
   const from = text.indexOf(startMarker);
@@ -45,7 +59,7 @@ function section(text, startMarker, endMarker) {
 /** 取出 markdown 表格第一列里的反引号标识符。 */
 function firstColumnNames(sectionText) {
   const names = [];
-  for (const line of sectionText.split('\n')) {
+  for (const line of lines(sectionText)) {
     const m = line.match(/^\|\s*`([A-Za-z0-9_[\]-]+)`\s*\|/);
     if (m) names.push(m[1]);
   }
@@ -55,7 +69,7 @@ function firstColumnNames(sectionText) {
 /** 取出文档里列出的、且没标「不写入」的字段名。 */
 function documentedFields(sectionText) {
   const names = [];
-  for (const line of sectionText.split('\n')) {
+  for (const line of lines(sectionText)) {
     const m = line.match(/^\|\s*`([A-Za-z0-9_]+)`\s*\|(.+)$/);
     if (!m) continue;
     if (line.indexOf('不写入') !== -1) continue;  // 明确标注本变更不写入的字段，代码里不该有

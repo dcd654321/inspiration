@@ -20,12 +20,26 @@ const IN_SCOPE = ['inspiration-capture', 'photo-capture', 'ai-expansion', 'ai-su
 /** 只有这两种状态需要指向真实测试。 */
 const COVERED_STATUSES = ['已覆盖', '部分覆盖'];
 
+/**
+ * 按行切分，**吃掉行尾的 `\r`**。
+ *
+ * 仓库的 `core.autocrlf` 是 `true`，`git checkout` 之后工作区文件会变成 CRLF。
+ * 而 JavaScript 里 `.` **不匹配 `\r`**，于是 `^#### Scenario: (.+)$` 这类正则
+ * 在 CRLF 上直接失配——闸门会静默失去作用，却仍然"跑得很正常"。
+ *
+ * 这个坑真的踩过：一次 checkout 之后 5 项测试变红，在此之前它们一直是绿的，
+ * 只是因为当时工作区恰好是 LF。
+ */
+function lines(text) {
+  return text.split(/\r?\n/);
+}
+
 function readScenarios() {
   const out = [];
   for (const name of IN_SCOPE) {
-    const lines = fs.readFileSync(path.join(changeDir, name, 'spec.md'), 'utf8').split('\n');
+    const body = lines(fs.readFileSync(path.join(changeDir, name, 'spec.md'), 'utf8'));
     let requirement = '';
-    for (const line of lines) {
+    for (const line of body) {
       const req = line.match(/^### Requirement: (.+)$/);
       if (req) { requirement = req[1].trim(); continue; }
       const scenario = line.match(/^#### Scenario: (.+)$/);
@@ -37,7 +51,7 @@ function readScenarios() {
 
 function readCoverageRows() {
   const rows = [];
-  for (const line of fs.readFileSync(coverageFile, 'utf8').split('\n')) {
+  for (const line of lines(fs.readFileSync(coverageFile, 'utf8'))) {
     const m = line.match(
       /^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(已覆盖|部分覆盖|待验收|待实现)\s*\|\s*(.*?)\s*\|\s*$/
     );
