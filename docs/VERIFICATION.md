@@ -26,3 +26,20 @@
 - 双账户隔离、断网上传、权限拒绝等真机验收。
 
 以上未执行项不等同于失败，也不得在未执行的情况下勾选 `tasks.md` 中对应条目。
+
+## 2026-09-22 · 安装 OpenSpec skills
+
+范围：仅安装 OpenSpec 的 AI 工具集成文件，未改动任何业务代码、提案内容或云配置。
+
+| 项目 | 命令 | 结果 |
+| --- | --- | --- |
+| 初始化 | `npm run openspec -- init --tools claude --no-animation` | 通过：生成 6 个 skill 与 6 个命令于 `.claude/` |
+| 配置完整性 | `md5sum openspec/config.yaml` | 前后一致（`fe6db47b…`），自定义 context 与 rules 未被覆盖 |
+| 变更范围 | `git status --short` | 仅新增 `.claude/`，既有提案文件零改动 |
+| 结构检查 | `npm run check` | 通过：`PASS 39 syntax/config/page checks.` |
+| 单元测试 | `npm test` | 通过：6 项测试，0 失败 |
+| 规范校验 | `npm run openspec -- validate --all --strict` | 通过：1 项通过，0 失败 |
+
+生成的 skill：`openspec-propose`、`openspec-apply-change`、`openspec-archive-change`、`openspec-explore`、`openspec-sync-specs`、`openspec-update-change`。对应命令：`/opsx:propose`、`/opsx:apply`、`/opsx:archive`、`/opsx:explore`、`/opsx:sync`、`/opsx:update`。
+
+提交 `ecb65b9`。**未验证项**：项目级 `.claude/skills/` 是否被当前客户端加载、skill 是否按预期自动触发，需在新会话中确认；在此之前不得把「自动走 OpenSpec」当作已生效事实。
