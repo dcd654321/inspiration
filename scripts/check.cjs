@@ -45,8 +45,23 @@ for (const tab of app.tabBar.list) {
 
 // 云函数目录必须在 project.config.json 的 cloudfunctionRoot 下且含有入口。
 const cloudRoot = path.join(root, config.cloudfunctionRoot);
-if (!fs.existsSync(path.join(cloudRoot, 'linggan_api', 'index.js'))) {
-  throw Error('Missing cloud function entry: linggan_api/index.js');
+for (const fn of ['linggan_api', 'linggan_ai']) {
+  if (!fs.existsSync(path.join(cloudRoot, fn, 'index.js'))) {
+    throw Error('Missing cloud function entry: ' + fn + '/index.js');
+  }
+  checks += 1;
+}
+
+// 云函数里的共享代码是脚本从仓库根同步过去的副本。源码改了忘了同步，
+// 本地测试全过、线上跑旧代码——这种错两边都能跑，不核对照不出来。
+const buildCloud = require('./build-cloud.cjs');
+const sync = buildCloud.verify();
+if (!sync.ok) {
+  const lines = sync.problems.map((p) => {
+    const label = { missing: '副本缺少', extra: '副本多出（源里已删）', different: '内容不同' }[p.kind];
+    return '  ' + label + '：' + p.where;
+  });
+  throw Error('云函数副本与源码不一致，运行 `node scripts/build-cloud.cjs` 同步：\n' + lines.join('\n'));
 }
 checks += 1;
 
