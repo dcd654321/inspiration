@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/capture/index",
+    "pages/list/index",
+    "pages/mine/index",
+    "pages/detail/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "灵感记录",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#ffffff"
+  },
+  "tabBar": {
+    "color": "#6b6b76",
+    "selectedColor": "#3d3d8f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/capture/index",
+        "text": "记录"
+      },
+      {
+        "pagePath": "pages/list/index",
+        "text": "灵感"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

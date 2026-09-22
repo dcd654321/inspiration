@@ -1,0 +1,21 @@
+node_modules/
+project.private.config.json
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+qa/local/
+
+# Local package runner cache and developer-only evidence.
+_npx/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+.DS_Store
+Thumbs.db
+docs/evidence-*/
+docs/evidence-*.png
+docs/audits/**/*.png

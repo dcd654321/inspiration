@@ -1,0 +1,24 @@
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid #f0f0f4;
+}
+
+.status-row:last-of-type {
+  border-bottom: none;
+}
+
+.on {
+  color: #2f7d4f;
+}
+
+.off {
+  color: #9a9aa5;
+}
+
+.status-note {
+  margin-top: 16rpx;
+  color: #6b6b76;
+  font-size: 26rpx;
+}

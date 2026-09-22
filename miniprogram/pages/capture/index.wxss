@@ -1,0 +1,17 @@
+.editor {
+  width: 100%;
+  min-height: 200rpx;
+  font-size: 32rpx;
+  line-height: 1.7;
+}
+
+.editor-placeholder {
+  color: #a8a8b3;
+}
+
+.counter {
+  text-align: right;
+  color: #a8a8b3;
+  font-size: 24rpx;
+  margin-top: 12rpx;
+}

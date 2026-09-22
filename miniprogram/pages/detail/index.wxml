@@ -1,0 +1,13 @@
+<view class="page">
+  <view class="title">灵感详情</view>
+
+  <view class="placeholder">
+    骨架版本：正文、补充时间线、照片与热度均尚未实现。
+    详情页将展示原始正文（不可改写）、按时间排序的补充、照片以及热度分与理由。
+  </view>
+
+  <view class="card">
+    <view class="hint">灵感标识</view>
+    <view>{{id || '未传入'}}</view>
+  </view>
+</view>
