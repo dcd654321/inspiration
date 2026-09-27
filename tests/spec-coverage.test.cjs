@@ -11,11 +11,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const changeDir = path.join(root, 'openspec/changes/add-inspiration-mvp/specs');
 const coverageFile = path.join(root, 'docs/spec-coverage.md');
 
-// 本变更范围内的规范。inspiration-heat 已暂缓、整份不在本变更内，见 docs/spec-coverage.md。
-const IN_SCOPE = ['inspiration-capture', 'photo-capture', 'ai-expansion', 'ai-summarize'];
+// 已建立的变更；待实施场景同样纳入对齐闸门。inspiration-heat 已暂缓。
+const IN_SCOPE = [
+  ...['inspiration-capture', 'photo-capture', 'ai-expansion', 'ai-summarize']
+    .map((name) => ['add-inspiration-mvp', name]),
+  ['add-content-output', 'content-output'],
+  ['repair-cloud-sync', 'backup-recovery'],
+  ['add-sharing-feedback', 'sharing-feedback']
+];
 
 /** 只有这两种状态需要指向真实测试。 */
 const COVERED_STATUSES = ['已覆盖', '部分覆盖'];
@@ -36,8 +41,8 @@ function lines(text) {
 
 function readScenarios() {
   const out = [];
-  for (const name of IN_SCOPE) {
-    const body = lines(fs.readFileSync(path.join(changeDir, name, 'spec.md'), 'utf8'));
+  for (const [change, name] of IN_SCOPE) {
+    const body = lines(fs.readFileSync(path.join(root, 'openspec/changes', change, 'specs', name, 'spec.md'), 'utf8'));
     let requirement = '';
     for (const line of body) {
       const req = line.match(/^### Requirement: (.+)$/);

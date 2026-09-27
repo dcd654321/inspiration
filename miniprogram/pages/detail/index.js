@@ -1,13 +1,24 @@
 const { LIMITS, createId } = require('../../core/limits');
 const inspiration = require('../../core/inspiration');
 const { formatRelative, formatAbsolute } = require('../../core/format');
-const { ERROR_MESSAGES } = require('../../core/errors');
+const { buildUseText } = require('../../services/content-output');
+
+const DISPLAY_ERRORS = {
+  EMPTY_TEXT: '写点内容再保存',
+  TEXT_TOO_LONG: '正文最多 ' + LIMITS.textMaxLength + ' 字',
+  EMPTY_SUPPLEMENT: '写点补充再添加',
+  SUPPLEMENT_TOO_LONG: '补充最多 ' + LIMITS.supplementMaxLength + ' 字',
+  ALREADY_MERGED: '这条补充已经收起，可先恢复后再操作',
+  ALREADY_FOLDED: '这条补充已经并入正文，可先恢复后再操作',
+  SUPPLEMENT_NOT_FOUND: '这条补充已经不存在，请返回后重试',
+  LIMIT_EXCEEDED: '内容超出上限，请缩短后重试'
+};
 
 function messageFor(err) {
   if (err && Array.isArray(err.errors) && err.errors.length > 0) {
-    return ERROR_MESSAGES[err.errors[0].code] || '内容不合规。';
+    return DISPLAY_ERRORS[err.errors[0].code] || '操作没有完成，请返回后重试。';
   }
-  return '这条没能存下来。';
+  return '操作没有完成，请稍后重试。';
 }
 
 function decorateSupplement(supplement, now) {
@@ -15,7 +26,7 @@ function decorateSupplement(supplement, now) {
     id: supplement.id,
     content: supplement.content,
     time: formatRelative(supplement.createdAt, now),
-    // 长按面板的标题要标明操作对象，不能让用户猜点的是哪条
+    // 操作面板的标题要标明操作对象，不能让用户猜点的是哪条
     label: '这条补充 · ' + formatAbsolute(supplement.createdAt),
     // AI 产出必须带标记：规范要求如实标注，不得把本地结果说成 AI 生成
     isAi: supplement.source === 'ai',
@@ -35,6 +46,7 @@ Page({
     editing: false,
     editDraft: '',
     editError: '',
+    canSaveEdit: false,
     textMax: LIMITS.textMaxLength,
 
     // 时间线上正常显示的补充
@@ -42,13 +54,14 @@ Page({
     supplementDraft: '',
     supplementMax: LIMITS.supplementMaxLength,
     supplementError: '',
+    canAddSupplement: false,
 
     // 因汇总或合并进灵感而收起的补充。**必须能展开、能恢复**——
     // 默认隐藏 + 没有入口 = 删除。
     hidden: [],
     hiddenExpanded: false,
 
-    // 长按操作面板
+    // 补充操作面板
     sheetVisible: false,
     sheetTargetId: '',
     sheetTargetLabel: '',
@@ -57,7 +70,9 @@ Page({
     // 补充的行内修改
     editingSupplementId: '',
     supplementEditDraft: '',
+    supplementEditOriginal: '',
     supplementEditError: '',
+    canSaveSupplementEdit: false,
 
     // 删除确认弹窗
     confirmVisible: false,
@@ -65,11 +80,13 @@ Page({
     confirmQuoteTime: '',
 
     historyCount: 0,
-    error: ''
+    error: '',
+    pending: ''
   },
 
-  onLoad(query) {
+  async onLoad(query) {
     this.id = (query && query.id) || '';
+    await getApp().ensureReady();
     this.load({ resetDraft: true });
   },
 
@@ -77,7 +94,9 @@ Page({
   noop() {},
 
   // 从历史版本页返回时数据可能已变，重新读一次
-  onShow() {
+  async onShow() {
+    this.setData({ ready: false, text: '', supplements: [], hidden: [] });
+    await getApp().ensureReady();
     if (this.id) this.load();
   },
 
@@ -88,7 +107,7 @@ Page({
     const item = store ? store.getInspiration(this.id) : null;
 
     if (!item) {
-      this.setData({ ready: true, missing: true });
+      this.setData({ ready: true, missing: true, error: app && app.globalData.accountError || '' });
       return;
     }
 
@@ -109,9 +128,11 @@ Page({
     if (opts.resetDraft) {
       // 草稿从会话草稿区取回：切页回来时输入框里还应该有它
       next.supplementDraft = drafts ? drafts.get(this.id) : '';
+      next.canAddSupplement = next.supplementDraft.trim().length > 0;
       next.editing = false;
       next.editDraft = item.text;
       next.editError = '';
+      next.canSaveEdit = false;
       next.supplementError = '';
     }
 
@@ -121,32 +142,54 @@ Page({
   /** 保存并刷新。所有写操作共用这一段，避免每个动作各写一遍成功/失败处理。 */
   async persist(next, failureMessage) {
     const app = getApp();
-    const result = await app.globalData.store.saveInspiration(next);
-
-    if (!result.ok) {
+    let result;
+    try {
+      result = await app.globalData.store.saveInspiration(next);
+    } catch (err) {
       return { ok: false, message: failureMessage };
     }
+
+    if (!result.ok) {
+      return { ok: false, message: result.code === 'CONFLICT' || result.code === 'STALE_GENERATION' ||
+        result.code === 'REQUEST_ID_REUSED'
+        ? '备份出现冲突，本次修改未保存。请到「我的」查看备份状态。'
+        : failureMessage };
+    }
     if (!result.synced) {
-      this.setData({ error: '已保存。还没同步到云端，会自动重试。' });
+      this.setData({ error: '已保存，但备份未完成。请暂时不要清理小程序数据。' });
+    } else {
+      this.setData({ error: '' });
     }
     return { ok: true };
+  },
+
+  onBackToList() {
+    wx.switchTab({ url: '/pages/list/index' });
   },
 
   // ------------------------------------------------------------ 原文编辑
 
   onStartEdit() {
-    this.setData({ editing: true, editDraft: this.data.text, editError: '' });
+    if (this.data.pending) return;
+    this.setData({ editing: true, editDraft: this.data.text, editError: '', canSaveEdit: false });
   },
 
   onEditInput(event) {
-    this.setData({ editDraft: event.detail.value });
+    const value = event.detail.value;
+    this.setData({
+      editDraft: value,
+      canSaveEdit: value.trim().length > 0 && value !== this.data.text,
+      editError: ''
+    });
   },
 
   onCancelEdit() {
-    this.setData({ editing: false, editDraft: this.data.text, editError: '' });
+    if (this.data.pending) return;
+    this.setData({ editing: false, editDraft: this.data.text, editError: '', canSaveEdit: false });
   },
 
   async onSaveEdit() {
+    if (this.data.pending || !this.data.canSaveEdit) return;
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -164,13 +207,14 @@ Page({
       return;
     }
 
-    const result = await this.persist(edited, '存储空间不够了，这次修改没能存下来。');
+    this.setData({ pending: 'text', editError: '', error: '' });
+    const result = await this.persist(edited, '存储空间不足，暂时无法保存。内容还在，可清理空间后重试。');
     if (!result.ok) {
-      this.setData({ editError: result.message });
+      this.setData({ pending: '', editError: result.message });
       return;
     }
 
-    this.setData({ editing: false, editError: '' });
+    this.setData({ pending: '', editing: false, editError: '', canSaveEdit: false });
     this.load({ resetDraft: true });
   },
 
@@ -178,11 +222,46 @@ Page({
     wx.navigateTo({ url: '/pages/history/index?id=' + encodeURIComponent(this.id) });
   },
 
+  copyText(text) {
+    if (!text) return;
+    try {
+      wx.setClipboardData({
+        data: text,
+        success: () => wx.showToast({ title: '已复制', icon: 'none' }),
+        fail: () => wx.showModal({ title: '复制未完成', content: '请稍后重试。', showCancel: false })
+      });
+    } catch (err) {
+      wx.showModal({ title: '复制未完成', content: '请稍后重试。', showCancel: false });
+    }
+  },
+
+  onCopyContent() {
+    const item = getApp().globalData.store.getInspiration(this.id);
+    if (!item) return;
+    wx.showActionSheet({
+      itemList: ['仅复制正文', '复制正文与当前补充'],
+      success: (res) => this.copyText(res.tapIndex === 0 ? item.text : buildUseText(item))
+    });
+  },
+
+  onOpenOutput() {
+    wx.navigateTo({ url: '/pages/output/index?id=' + encodeURIComponent(this.id) });
+  },
+
+  onOpenShare() {
+    if (!this.id || this.data.pending) return;
+    wx.navigateTo({ url: '/pages/share-preview/index?id=' + encodeURIComponent(this.id) });
+  },
+
   // ------------------------------------------------------------ 追加补充
 
   onSupplementInput(event) {
     const value = event.detail.value;
-    this.setData({ supplementDraft: value, supplementError: '' });
+    this.setData({
+      supplementDraft: value,
+      supplementError: '',
+      canAddSupplement: value.trim().length > 0
+    });
 
     // 同步进会话草稿区：写到一半切走，回来时这半句话还在
     const drafts = getApp().globalData.drafts;
@@ -190,6 +269,7 @@ Page({
   },
 
   async onSubmitSupplement() {
+    if (this.data.pending || !this.data.canAddSupplement) return;
     const app = getApp();
     const store = app.globalData.store;
     const current = store.getInspiration(this.id);
@@ -207,25 +287,34 @@ Page({
       return;
     }
 
-    const result = await this.persist(next, '存储空间不够了，这条补充没能存下来。');
+    this.setData({ pending: 'supplement', supplementError: '', error: '' });
+    const result = await this.persist(next, '存储空间不足，暂时无法保存。内容还在，可清理空间后重试。');
     if (!result.ok) {
       // 本机没存下来：**保留输入**，清掉就等于把用户刚写的补充弄丢了
-      this.setData({ supplementError: result.message });
+      this.setData({ pending: '', supplementError: result.message });
       return;
     }
 
     const drafts = app.globalData.drafts;
     if (drafts) drafts.clear(this.id);
 
-    this.setData({ supplementDraft: '' });
+    this.setData({ pending: '', supplementDraft: '', canAddSupplement: false });
     this.load({ resetDraft: true });
-    wx.showToast({ title: '已提交', icon: 'none' });
+    wx.showToast({ title: '已添加', icon: 'none' });
   },
 
-  // ------------------------------------------------------------ 长按操作面板
+  // ------------------------------------------------------------ 补充操作面板
 
   onSupplementLongPress(event) {
-    const id = event.currentTarget.dataset.id;
+    this.openSupplementActions(event.currentTarget.dataset.id);
+  },
+
+  onSupplementAction(event) {
+    this.openSupplementActions(event.currentTarget.dataset.id);
+  },
+
+  openSupplementActions(id) {
+    if (this.data.pending) return;
     const all = this.data.supplements.concat(this.data.hidden);
     const target = all.filter((s) => s.id === id)[0];
     if (!target) return;
@@ -241,30 +330,55 @@ Page({
   },
 
   onSheetDismiss() {
+    if (this.data.pending) return;
     this.setData({ sheetVisible: false, sheetTargetId: '', sheetTargetLabel: '', sheetIsHidden: false });
   },
 
   /** 修改：切到行内编辑。与原文编辑同一套规则，旧内容进这条补充自己的历史。 */
   onSheetEdit() {
+    if (this.data.pending) return;
     const id = this.data.sheetTargetId;
     const target = this.data.supplements.filter((s) => s.id === id)[0];
     this.setData({
       sheetVisible: false,
       editingSupplementId: id,
       supplementEditDraft: target ? target.content : '',
-      supplementEditError: ''
+      supplementEditOriginal: target ? target.content : '',
+      supplementEditError: '',
+      canSaveSupplementEdit: false
     });
   },
 
   onSupplementEditInput(event) {
-    this.setData({ supplementEditDraft: event.detail.value });
+    const value = event.detail.value;
+    this.setData({
+      supplementEditDraft: value,
+      canSaveSupplementEdit: value.trim().length > 0 && value !== this.data.supplementEditOriginal,
+      supplementEditError: ''
+    });
+  },
+
+  onSheetCopy() {
+    if (this.data.pending) return;
+    const target = this.data.supplements.concat(this.data.hidden)
+      .filter((s) => s.id === this.data.sheetTargetId)[0];
+    this.onSheetDismiss();
+    if (target) this.copyText(target.content);
   },
 
   onSupplementEditCancel() {
-    this.setData({ editingSupplementId: '', supplementEditDraft: '', supplementEditError: '' });
+    if (this.data.pending) return;
+    this.setData({
+      editingSupplementId: '',
+      supplementEditDraft: '',
+      supplementEditOriginal: '',
+      supplementEditError: '',
+      canSaveSupplementEdit: false
+    });
   },
 
   async onSupplementEditSave() {
+    if (this.data.pending || !this.data.canSaveSupplementEdit) return;
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -282,18 +396,27 @@ Page({
       return;
     }
 
-    const result = await this.persist(next, '存储空间不够了，这次修改没能存下来。');
+    this.setData({ pending: 'supplementEdit', supplementEditError: '', error: '' });
+    const result = await this.persist(next, '存储空间不足，暂时无法保存。内容还在，可清理空间后重试。');
     if (!result.ok) {
-      this.setData({ supplementEditError: result.message });
+      this.setData({ pending: '', supplementEditError: result.message });
       return;
     }
 
-    this.setData({ editingSupplementId: '', supplementEditDraft: '', supplementEditError: '' });
+    this.setData({
+      pending: '',
+      editingSupplementId: '',
+      supplementEditDraft: '',
+      supplementEditOriginal: '',
+      supplementEditError: '',
+      canSaveSupplementEdit: false
+    });
     this.load({ resetDraft: true });
   },
 
   /** 合并进灵感：内容追加到原文末尾，本条收起。合并前的原文进历史，一句话都不会消失。 */
   async onSheetFold() {
+    if (this.data.pending) return;
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -310,8 +433,9 @@ Page({
       return;
     }
 
-    const result = await this.persist(next, '存储空间不够了，这次操作没能完成。');
-    this.setData({ sheetVisible: false, sheetTargetId: '' });
+    this.setData({ pending: 'fold', error: '' });
+    const result = await this.persist(next, '操作没有完成，请稍后重试。');
+    this.setData({ pending: '', sheetVisible: false, sheetTargetId: '' });
     if (!result.ok) {
       this.setData({ error: result.message });
       return;
@@ -321,6 +445,7 @@ Page({
 
   /** 恢复：只清掉收起标记，**原文不回退**——合并进去的内容照常留在原文里。 */
   async onSheetRestore() {
+    if (this.data.pending) return;
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -341,8 +466,9 @@ Page({
       return;
     }
 
-    const result = await this.persist(next, '存储空间不够了，这次恢复没能完成。');
-    this.setData({ sheetVisible: false, sheetTargetId: '' });
+    this.setData({ pending: 'restore', error: '' });
+    const result = await this.persist(next, '恢复没有完成，请稍后重试。');
+    this.setData({ pending: '', sheetVisible: false, sheetTargetId: '' });
     if (!result.ok) {
       this.setData({ error: result.message });
       return;
@@ -354,6 +480,7 @@ Page({
 
   /** 点「删除」先落到确认弹窗，不直接删。这是整个产品里唯一不可恢复的操作。 */
   onSheetDelete() {
+    if (this.data.pending) return;
     const id = this.data.sheetTargetId;
     const target = this.data.supplements.concat(this.data.hidden).filter((s) => s.id === id)[0];
     if (!target) return;
@@ -367,10 +494,12 @@ Page({
   },
 
   onConfirmDismiss() {
+    if (this.data.pending) return;
     this.setData({ confirmVisible: false, confirmQuote: '', confirmQuoteTime: '' });
   },
 
   async onConfirmDelete() {
+    if (this.data.pending) return;
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -384,8 +513,9 @@ Page({
       return;
     }
 
-    const result = await this.persist(next, '存储空间不够了，删除没能完成。');
-    this.setData({ confirmVisible: false, confirmQuote: '', confirmQuoteTime: '', sheetTargetId: '' });
+    this.setData({ pending: 'deleteSupplement', error: '' });
+    const result = await this.persist(next, '删除失败，请稍后重试。');
+    this.setData({ pending: '', confirmVisible: false, confirmQuote: '', confirmQuoteTime: '', sheetTargetId: '' });
     if (!result.ok) {
       this.setData({ error: result.message });
       return;
@@ -402,11 +532,12 @@ Page({
   // ------------------------------------------------------------ 删除灵感
 
   onDelete() {
+    if (this.data.pending) return;
     wx.showModal({
       title: '删除灵感',
-      content: '这条灵感与它的补充将被移除，此操作无法撤销。',
+      content: '确定删除灵感吗？正文、补充和照片都会一并移除，此操作无法撤销。',
       confirmText: '删除',
-      confirmColor: '#b3382c',
+      confirmColor: '#b43c32',
       cancelText: '取消',
       success: (res) => {
         if (res.confirm) this.performDelete();
@@ -415,16 +546,26 @@ Page({
   },
 
   async performDelete() {
+    if (this.data.pending) return;
+    this.setData({ pending: 'deleteInspiration', error: '' });
     const result = await getApp().globalData.store.deleteInspiration(this.id);
 
     if (!result.ok) {
-      this.setData({ error: '删除失败，内容未做改动。' });
+      this.setData({ pending: '', error: result.code === 'PHOTO_DELETE_UNAVAILABLE'
+        ? '这条含有照片，暂时无法安全删除；记录仍在。'
+        : '删除未完成，记录仍在，请稍后重试。' });
       return;
     }
     if (!result.synced) {
-      // 本机已标记删除、列表不再显示它，但云端还没确认——如实说明，不假装删干净了
-      wx.showToast({ title: '已删除，还没同步到云端', icon: 'none' });
+      this.setData({ pending: '', error: result.code === 'PHOTO_DELETE_UNAVAILABLE'
+        ? '这条含有照片，暂时无法安全删除；记录仍在。'
+        : result.code === 'CONFLICT' || result.code === 'STALE_GENERATION' ||
+          result.code === 'REQUEST_ID_REUSED'
+          ? '删除遇到备份冲突，记录仍在。请到「我的」查看。'
+          : '删除尚未完成，记录仍在；联网后可在「我的」重试备份。' });
+      return;
     }
+    this.setData({ pending: '' });
     wx.navigateBack();
   }
 });

@@ -1,5 +1,7 @@
 # 部署手册
 
+> **当前暂停按本文部署新版 `linggan_api`。** `repair-cloud-sync` 将 `generation` 与 `baseVersion` 改为必填，旧客户端会被拒绝；旧全局缓存的归属与迁移、兼容期、含照片删除协议以及受控账户回归尚未完成。本文仅保留资源配置参考，不构成发布授权。
+
 照着做一遍，云端这条线就通了。**每一步都写了怎么验证**——不是"做完就算"，是"看到什么才算做对"。
 
 ## 现在缺什么
@@ -11,7 +13,7 @@
 | 集合与权限 | ❌ 待创建 |
 | 云函数部署 | ❌ 待部署 |
 | 云存储权限 | ❌ 待配置 |
-| `cloud.js` 的 `enabled` | ❌ **仍是 `false`**，见最后一步 |
+| `cloud.js` 的 `enabled` | ✅ **已打开**（2026-09-22）。但开关打开只表示客户端会去调云端，**不表示下面这些已经做好** |
 
 ## 部署前必做的一件事
 
@@ -94,18 +96,17 @@ linggan_accounts
 
 **验证**：环境变量列表里能看到它们（值会被打码）。**没配的话 `linggan_ai` 会返回 `AI_DISABLED`**，这是有意的——它绝不伪造一个看起来像 AI 的结果。
 
-### 8. 翻开关
+### 8. 翻开关（已完成）
 
-前面都做完，再改这一个值：
+`miniprogram/config/cloud.js` 的 `enabled` 已于 2026-09-22 改为 `true`，环境 ID 也已填。
 
-```js
-// miniprogram/config/cloud.js
-enabled: true,
-```
+**但开关打开不等于云端就绪。** 它只表示客户端会去调 `linggan_api`——函数有没有部署、集合有没有建、权限规则有没有配，客户端一概不知道。
 
-**顺序不能反。** 提前翻开关的话，应用每次保存都会去调一个不存在的云函数：界面仍能用（降级成「已保存。还没同步到云端」），但日志里一直报错，**而真正的失败原因被那条降级提示盖住了**。
+所以第 1—6 步**仍然必须做完**。判断方法很简单：
 
-**验证**：改完之后重新编译，记录一条灵感。列表页那条应该**不带任何同步标记**（正常同步的条目不带标记，只有失败才带）。
+**打开后每条保存都显示「还没同步到云端」→ 回控制台查第 5 步（函数部署）与第 2、3 步（集合与权限），不要查客户端代码。**
+
+回滚：把 `enabled` 改回 `false` 重新编译，不影响云端数据。
 
 ---
 
@@ -131,3 +132,15 @@ enabled: true,
 | 数据代际 | 递增 `generation` | 旧设备的离线队列视为失效，**不写回已清理的数据** |
 
 **不要做**：删集合、清空存储桶。那是不可逆的，而且没必要——回滚靠开关和版本就够。
+
+## 分享与反馈新增资源清单（`add-sharing-feedback`，尚未执行）
+
+本节是后续受控部署准备，不修改上方“暂停部署新版 `linggan_api`”的结论。本轮只完成本地源码与自动测试；**没有创建集合、设置权限、配置密钥或上传云函数**。部署前仍须先解决 `repair-cloud-sync` 的兼容与含照片删除边界，并取得本项目云资源变更授权。
+
+1. 在**已核对属于本小程序的目标环境**创建 `linggan_shares`、`linggan_feedback`，两个集合均设“所有用户不可读写”。不得打开共享环境的“允许未登录访问”，也不得调整其他小程序的函数/集合/认证规则。
+2. 按 `docs/database-design.md` §10.3 建索引并核对唯一属性：`linggan_shares.tokenHash`、`(ownerAccountKey,requestId)` 唯一；`(ownerAccountKey,_id desc)`、`(ownerAccountKey,sourceInspirationId,revokedAt)` 普通索引。`linggan_feedback.(accountKey,requestId)`、`dedupeKey` 唯一；`(accountKey,_id desc)`、`(status,createdAt desc)` 普通索引。唯一索引创建失败时**停止部署**，先查冲突数据，不自动删除。
+3. 在 `linggan_api` 的**云函数环境变量**配置 `LINGGAN_SHARE_TOKEN_KEY`（64 位十六进制、32 字节随机密钥）与 `LINGGAN_SHARE_KEY_ID`（如 `v1`）；密钥不进 Git、客户端包或日志。轮换时用 `LINGGAN_SHARE_PREVIOUS_KEYS` 保存旧 key ID → 旧密钥的 JSON 映射，直到重试窗口结束。2026-09-27 起代码默认允许创建：`LINGGAN_SHARE_CREATE_ENABLED` 未设、空串或 `true` 均启用，`false` 或无效值暂停。若线上原有 `false`，单独更新代码不会覆盖该变量，须在授权的启用操作中改为 `true`。密钥与内容审核检查始终保留，不能靠开关绕过。`LINGGAN_SHARE_CODE_VERSION` 受控环境可设 `develop`/`trial`，正式环境使用 `release`。
+4. 核对 `cloudfunctions/linggan_api/config.json` 的 `security.msgSecCheck`、`wxacode.getUnlimited` 云调用权限。审核不可用、结果不明或小程序码失败都应失败关闭；先用**非真实个人内容**做受控调用，核对实际 SDK 返回结构。不能仅凭 Node mock 认定审核已生效。
+5. `node scripts/build-cloud.cjs`、`npm test`、`npm run check`、OpenSpec 严格校验通过后，才评估云函数/客户端配套部署。用两账户验证分享创建与他人只读、本人列表、越权拒绝、撤销/源删除后新读取失效、反馈隔离、过期与海报小程序码；分别留开发者工具和 iOS/Android 真机证据。
+
+**回退**：先把 `LINGGAN_SHARE_CREATE_ENABLED=false`，停止新建分享但保留 `share.get` 和 `share.revoke`，直到所有有效链接到期或撤销；不能直接回退到完全没有分享读取接口的旧函数，否则已发出的链接立即失效。不得为回退而删新集合或清空内容。海报图片已在用户相册/朋友圈，无法远程收回。§10.4 的 90 天/反馈保留清理任务**尚未实现**，不能把保留策略说成已自动执行；正式发布前必须补齐任务或修订隐私告知与保留规则。

@@ -1,0 +1,8 @@
+<view class="welcome-page">
+  <image class="welcome-mark" src="/assets/brand-mark.png" mode="aspectFit" />
+  <view class="page-title">灵感拾光簿</view>
+  <view class="welcome-copy">记下一个想法，之后继续补充。需要用时，再整理成一份能直接带走的文字。</view>
+  <button class="btn btn-block" bindtap="onStart">记录我的想法</button>
+  <button class="btn btn-quiet btn-block" open-type="share">分享给微信好友</button>
+  <view class="welcome-hint">分享到朋友圈可使用右上角菜单。这里不展示任何人的私人记录。</view>
+</view>

@@ -56,5 +56,5 @@
 - 拟新增文档：`docs/detailed-design.md`（接口契约、状态机、错误码）、`docs/ui-design.md`（页面区块与三态呈现）、`docs/ui-mockup.html`（可视化原型）。
 - 拟修改：`miniprogram/app.json`（页面注册）、`miniprogram/config/cloud.js`（环境与开关，保持 `enabled: false` 直到用户授权）、`miniprogram/config/cloud-resources.js`。
 - 远端范围仅限本项目 `linggan_*` 资源。**本提案不授予任何远端变更权限**：创建集合、部署云函数、启用 AI、配置环境变量均需在实施阶段单独取得授权。
-- 本地现状已核验：工程只有骨架，`config/cloud.js` 与 `config/ai.js` 的 `enabled` 均为 `false`，页面无业务逻辑。
+- 本地现状已核验（2026-09-22 更新）：业务代码已实现，自动化测试通过；**云开关已打开**（`config/cloud.js` 的 `enabled: true`，环境 ID 已填），但云端资源是否建好要看云开发控制台；AI 仍关闭（`config/ai.js` 的 `enabled: false`），模型厂商未定。逐条进度见 `docs/spec-coverage.md`。
 - 验收成功标准：用户能完成「记录 → 补充 → **改原文 → 回看历史** → 拍照 → AI 扩展 → **汇总补充** → **勾选多个灵感汇总**」全流程；**被「覆盖」的内容可展开并恢复**；两个微信账户互不可见；AI 不可用时记录、补充、浏览完全可用；删除灵感后云端照片被清理。**提案完成不等于上述标准已经达成。**

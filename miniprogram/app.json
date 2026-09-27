@@ -4,31 +4,43 @@
     "pages/list/index",
     "pages/mine/index",
     "pages/detail/index",
-    "pages/history/index"
+    "pages/history/index",
+    "pages/output/index",
+    "pages/share-preview/index",
+    "pages/shared/index",
+    "pages/my-shares/index",
+    "pages/feedback/index",
+    "pages/welcome/index"
   ],
   "window": {
     "navigationBarTitleText": "灵感拾光簿",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#ffffff"
+    "backgroundColor": "#f7f6f2"
   },
   "tabBar": {
-    "color": "#6b6b76",
-    "selectedColor": "#3d3d8f",
+    "color": "#6f6f7b",
+    "selectedColor": "#34377f",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/capture/index",
-        "text": "记录"
+        "text": "记录",
+        "iconPath": "assets/tabbar/record-idle.png",
+        "selectedIconPath": "assets/tabbar/record-active.png"
       },
       {
         "pagePath": "pages/list/index",
-        "text": "灵感"
+        "text": "灵感",
+        "iconPath": "assets/tabbar/ideas-idle.png",
+        "selectedIconPath": "assets/tabbar/ideas-active.png"
       },
       {
         "pagePath": "pages/mine/index",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "assets/tabbar/mine-idle.png",
+        "selectedIconPath": "assets/tabbar/mine-active.png"
       }
     ]
   },

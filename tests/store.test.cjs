@@ -1,313 +1,300 @@
 'use strict';
-// 本机状态与持久化的单元测试。
-//
-// 这些用例覆盖的是**降级路径**——离线、配额耗尽、同步失败。能在这里测，
-// 是因为 store 不直接依赖 wx：存储与网络都从外面注入。真机测不了的路径，
-// 靠这一层保证。
-//
-// 对应用 openspec/changes/add-inspiration-mvp/specs/inspiration-capture/spec.md
-// 的「记录与补充的持久化」一节，以及 tasks.md 2.1—2.3。
-
 const test = require('node:test');
-const assert = require('node:assert');
-
-const { createStore, STORAGE_KEYS } = require('../miniprogram/services/store');
-const inspiration = require('../miniprogram/core/inspiration');
-const { ERROR_CODES } = require('../miniprogram/core/errors');
+const assert = require('node:assert/strict');
+const { createStore, LEGACY_STORAGE_KEYS } = require('../miniprogram/services/store');
+const { createInspiration } = require('../miniprogram/core/inspiration');
 
 const NOW = 1758500000000;
+const A = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-// ---------------------------------------------------------------- 测试替身
-
-/** 内存版键值存储。可以按次数注入写入失败（配额耗尽）。 */
-function createFakeStorage() {
+function storage() {
   const data = new Map();
   return {
-    data,
-    failWrites: 0,
-    get(key) {
-      return data.has(key) ? JSON.parse(data.get(key)) : undefined;
-    },
+    data, failWrites: 0,
+    get(key) { return data.has(key) ? JSON.parse(data.get(key)) : undefined; },
     set(key, value) {
-      if (this.failWrites > 0) {
-        this.failWrites -= 1;
-        const err = new Error('exceed storage max size');
-        err.code = 'QUOTA_EXCEEDED';
-        throw err;
-      }
+      if (this.failWrites-- > 0) throw new Error('quota');
       data.set(key, JSON.stringify(value));
-    },
-    remove(key) {
-      data.delete(key);
     }
   };
 }
 
-/** 假传输层。可以指定下一次调用返回什么错误码，用来测降级。 */
-function createFakeTransport() {
+function remote(cacheScope, items = [], version = 0, generation = 1) {
+  return { cacheScope, inspirations: items, version, generation };
+}
+
+function transport(cacheScope = A) {
   return {
-    calls: [],
-    failWith: null,
+    calls: [], failure: null, version: 0, generation: 1, items: [],
     async send(action, payload, meta) {
       this.calls.push({ action, payload, requestId: meta && meta.requestId });
-      if (this.failWith) {
-        return { ok: false, code: this.failWith, message: '注入的失败' };
+      if (this.failure) return { ok: false, code: this.failure };
+      if (action === 'snapshot.pull') return { ok: true, data: remote(cacheScope, this.items, this.version, this.generation) };
+      if (payload.baseVersion !== this.version || payload.generation !== this.generation) {
+        return { ok: false, code: 'CONFLICT' };
       }
-      return { ok: true, data: { version: this.calls.length } };
+      this.version += 1;
+      if (action === 'inspiration.delete') this.items = this.items.filter((item) => item.id !== payload.inspirationId);
+      else this.items = this.items.filter((item) => item.id !== payload.upserts[0].id).concat(payload.upserts);
+      return { ok: true, data: { version: this.version } };
     }
   };
 }
 
-function newStore(overrides) {
-  const storage = createFakeStorage();
-  const transport = createFakeTransport();
-  const store = createStore(Object.assign({
-    storage, transport, now: () => NOW
-  }, overrides || {}));
-  return { store, storage, transport };
+function setup(opts = {}) {
+  const local = opts.local || storage();
+  const network = opts.network || transport(opts.scope || A);
+  const scope = opts.scope || A;
+  const store = createStore({
+    storage: local, transport: network, now: () => NOW,
+    cacheScope: scope,
+    remoteSnapshot: opts.remote || remote(scope),
+    newRequestId: opts.newRequestId
+  });
+  return { local, network, store };
 }
 
-function anInspiration(overrides) {
-  return inspiration.createInspiration(Object.assign({
-    text: '做一个记账小程序', id: 'insp_lz9k_4f2a', now: NOW
-  }, overrides || {}));
+function item(id = 'insp_a', text = '做一个记账小程序') {
+  return createInspiration({ id, text, now: NOW });
 }
 
-// ---------------------------------------------------------------- 2.1 快照
-
-test('读一个空账户拿到初始快照，不是 undefined', () => {
-  const { store } = newStore();
-  const snapshot = store.readSnapshot();
-
-  assert.deepStrictEqual(snapshot.inspirations, []);
-  assert.strictEqual(snapshot.version, 0);
-  assert.strictEqual(typeof snapshot.generation, 'number');
+test('必须有可信作用域，旧全局缓存不会自动读取或迁移', () => {
+  const local = storage();
+  local.set(LEGACY_STORAGE_KEYS.snapshot, { inspirations: [item('old', '旧内容')] });
+  assert.throws(() => createStore({ storage: local, transport: transport(), now: () => NOW }), /作用域/);
+  const { store } = setup({ local });
+  assert.deepEqual(store.listInspirations(), []);
+  assert.equal(local.get(LEGACY_STORAGE_KEYS.snapshot).inspirations[0].text, '旧内容');
 });
 
-test('写进去的快照能原样读出来', () => {
-  const { store } = newStore();
-  const insp = anInspiration();
-
-  store.writeSnapshot(Object.assign(store.readSnapshot(), { inspirations: [insp] }));
-  const back = store.readSnapshot();
-
-  assert.strictEqual(back.inspirations.length, 1);
-  assert.strictEqual(back.inspirations[0].text, '做一个记账小程序');
-  assert.deepStrictEqual(back.inspirations[0], insp, '存回来的对象应与写进去的一致');
+test('同一设备切换账户，缓存和队列按可信作用域隔离', async () => {
+  const local = storage();
+  const first = setup({ local });
+  first.network.failure = 'NETWORK';
+  await first.store.saveInspiration(item('a'));
+  const second = setup({ local, scope: B });
+  assert.deepEqual(second.store.listInspirations(), []);
+  assert.deepEqual(second.store.readQueue(), []);
+  assert.equal(first.store.readQueue().length, 1);
 });
 
-test('快照损坏时退回初始快照，而不是让整个应用读崩', () => {
-  const { store, storage } = newStore();
-  storage.data.set(STORAGE_KEYS.snapshot, '{ 这不是合法 JSON');
-
-  assert.deepStrictEqual(store.readSnapshot().inspirations, []);
+test('损坏的账户缓存停写，不用空快照覆盖', () => {
+  const local = storage();
+  const key = 'linggan:v2:' + A + ':state';
+  local.data.set(key, '{bad');
+  assert.throws(() => setup({ local }), /ACCOUNT_CACHE_DAMAGED/);
+  assert.equal(local.data.get(key), '{bad');
 });
 
-// ---------------------------------------------------------------- 2.1 待同步队列
-
-test('同一 id 重复入队只产生一次效果', () => {
-  const { store } = newStore();
-
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: { id: 'insp_a' } });
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: { id: 'insp_a' } });
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: { id: 'insp_a' } });
-
-  assert.strictEqual(store.readQueue().length, 1, '同一个 id 入队三次变成三条了');
+test('损坏的恢复副本也停写，不被启动拉取覆盖', () => {
+  const local = storage();
+  const key = 'linggan:v2:' + A + ':state';
+  local.set(key, {
+    generation: 1, version: 1, inspirations: [], queue: [], nextSequence: 1,
+    recoveries: [{ snapshot: null, pendingOps: [] }]
+  });
+  assert.throws(() => setup({ local }), /ACCOUNT_CACHE_DAMAGED/);
+  assert.equal(local.get(key).recoveries[0].snapshot, null);
 });
 
-test('同一 id 重复入队时以最后一次的内容为准', () => {
-  const { store } = newStore();
-
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: { text: '第一版' } });
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: { text: '第二版' } });
-
-  const queue = store.readQueue();
-  assert.strictEqual(queue.length, 1);
-  assert.strictEqual(queue[0].payload.text, '第二版', '重试应覆盖同一条，而不是留下旧内容');
+test('保存原子写入快照与队列，配额失败时不留下半状态', async () => {
+  const { local, store, network } = setup();
+  local.failWrites = 1;
+  const result = await store.saveInspiration(item());
+  assert.equal(result.code, 'LOCAL_WRITE_FAILED');
+  assert.deepEqual(store.readSnapshot().inspirations, []);
+  assert.deepEqual(store.readQueue(), []);
+  assert.equal(network.calls.length, 0);
 });
 
-test('不同 id 各自入队，按入队顺序排列', () => {
-  const { store } = newStore();
-
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: {} });
-  store.enqueue({ id: 'op_2', kind: 'inspiration.upsert', payload: {} });
-  store.enqueue({ id: 'op_3', kind: 'inspiration.upsert', payload: {} });
-
-  assert.deepStrictEqual(store.readQueue().map((op) => op.id), ['op_1', 'op_2', 'op_3']);
+test('保存发送版本和代际，云端确认后出队', async () => {
+  const { store, network } = setup();
+  const result = await store.saveInspiration(item());
+  assert.equal(result.synced, true);
+  assert.equal(network.calls[0].payload.baseVersion, 0);
+  assert.equal(network.calls[0].payload.generation, 1);
+  assert.equal(store.readSnapshot().version, 1);
+  assert.equal(store.readQueue().length, 0);
 });
 
-test('入队时记录入队时间，由注入的 now 提供', () => {
-  const { store } = newStore();
-
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: {} });
-
-  assert.strictEqual(store.readQueue()[0].enqueuedAt, NOW);
+test('重复保存同一 id 仍只有一条记录，版本顺序递增', async () => {
+  const { store, network } = setup();
+  await store.saveInspiration(item());
+  await store.saveInspiration(item());
+  assert.equal(store.listInspirations().length, 1);
+  assert.equal(network.items.length, 1);
+  assert.deepEqual(network.calls.map((call) => call.payload.baseVersion), [0, 1]);
 });
 
-test('出队按 id 移除，队列为空时读回空数组', () => {
-  const { store } = newStore();
-  store.enqueue({ id: 'op_1', kind: 'inspiration.upsert', payload: {} });
-  store.enqueue({ id: 'op_2', kind: 'inspiration.upsert', payload: {} });
-
-  store.dequeue('op_1');
-  assert.deepStrictEqual(store.readQueue().map((op) => op.id), ['op_2']);
-
-  store.clearQueue();
-  assert.deepStrictEqual(store.readQueue(), []);
-});
-
-// ---------------------------------------------------------------- 2.3 保存的三条路径
-
-test('保存成功：本机写入，云端确认', async () => {
-  const { store, transport } = newStore();
-  const result = await store.saveInspiration(anInspiration());
-
-  assert.strictEqual(result.ok, true);
-  assert.strictEqual(result.synced, true);
-  assert.strictEqual(store.readSnapshot().inspirations.length, 1, '本机快照里应有这条灵感');
-  assert.strictEqual(store.readQueue().length, 0, '同步成功后队列应为空');
-  assert.strictEqual(transport.calls.length, 1);
-});
-
-test('同步未成功：内容已落本机，进队列等重试', async () => {
-  const { store, transport } = newStore();
-  transport.failWith = 'INTERNAL';
-  const result = await store.saveInspiration(anInspiration());
-
-  assert.strictEqual(result.ok, true, '本机写成功就不该报失败——内容确实已经存下来了');
-  assert.strictEqual(result.synced, false);
-  assert.strictEqual(result.code, 'INTERNAL');
-  assert.strictEqual(store.readSnapshot().inspirations.length, 1, '本机快照里应有这条灵感');
-  assert.strictEqual(store.readQueue().length, 1, '同步失败的内容应进队列，等待自动重试');
-});
-
-test('本机写入失败：报告失败，且不改动已有的数据', async () => {
-  const { store, storage } = newStore();
-
-  storage.failWrites = 1;   // 下一次写入抛配额异常
-  const result = await store.saveInspiration(anInspiration());
-
-  assert.strictEqual(result.ok, false);
-  assert.strictEqual(result.code, 'LOCAL_WRITE_FAILED');
-  assert.deepStrictEqual(store.readSnapshot().inspirations, [], '写入失败时不该留下半条数据');
-});
-
-test('本机写入失败时不去调用云端', async () => {
-  const { store, storage, transport } = newStore();
-  storage.failWrites = 1;
-
-  await store.saveInspiration(anInspiration());
-
-  assert.strictEqual(transport.calls.length, 0, '本机都没存下来，不该去打扰云端');
-});
-
-test('同一 id 重复保存只产生一条灵感', async () => {
-  const { store } = newStore();
-  const insp = anInspiration();
-
-  await store.saveInspiration(insp);
-  await store.saveInspiration(insp);
-  await store.saveInspiration(insp);
-
-  assert.strictEqual(store.readSnapshot().inspirations.length, 1, '重试产生了重复的灵感');
-});
-
-test('保存同一条的更新版本，是替换而不是新增', async () => {
-  const { store } = newStore();
-  const first = anInspiration();
-  await store.saveInspiration(first);
-
-  const edited = inspiration.appendSupplement(first, { content: '补一句', id: 'sup_1', now: NOW + 1000 });
-  await store.saveInspiration(edited);
-
-  const list = store.readSnapshot().inspirations;
-  assert.strictEqual(list.length, 1);
-  assert.strictEqual(list[0].supplements.length, 1);
-});
-
-test('保存失败后队列里不会留下重复条目', async () => {
-  const { store, transport } = newStore();
-  transport.failWith = 'INTERNAL';
-  const insp = anInspiration();
-
-  await store.saveInspiration(insp);
-  await store.saveInspiration(insp);
-
-  assert.strictEqual(store.readQueue().length, 1, '同一条灵感重试两次，队列里应只有一条待同步');
-});
-
-test('队列项带着 requestId，发起同步时用的是同一个', async () => {
-  const { store, transport } = newStore();
-  transport.failWith = 'INTERNAL';
-
-  await store.saveInspiration(anInspiration());
-
+test('断网保留内容和稳定请求标识，恢复时重试同一操作', async () => {
+  const { store, network } = setup();
+  network.failure = 'NETWORK';
+  const saved = await store.saveInspiration(item());
+  assert.equal(saved.synced, false);
+  const first = network.calls[0];
   const queued = store.readQueue()[0];
-  assert.ok(queued.requestId, '队列项应带着 requestId——重试时要复用它，传输层幂等才成立');
-  assert.strictEqual(
-    transport.calls[0].requestId,
-    queued.requestId,
-    '发起同步时用的 requestId 应与入队时定下的一致'
-  );
+  assert.equal(queued.requestId, first.requestId);
+  assert.equal(queued.baseVersion, 0);
+  network.failure = null;
+  await store.retryPending();
+  assert.equal(network.calls[1].requestId, first.requestId);
+  assert.equal(network.calls[1].payload.baseVersion, 0);
+  assert.equal(store.readQueue().length, 0);
+  assert.equal(store.readSnapshot().inspirations.length, 1);
 });
 
-// ---------------------------------------------------------------- 读取
-
-test('列表按更新时间倒序，已合并与已删除的默认不出现', async () => {
-  const { store } = newStore();
-  const a = anInspiration({ id: 'insp_a', now: NOW });
-  const b = anInspiration({ id: 'insp_b', now: NOW + 1000 });
-  const c = anInspiration({ id: 'insp_c', now: NOW + 2000 });
-
-  await store.saveInspiration(a);
-  await store.saveInspiration(b);
-  await store.saveInspiration(c);
-  await store.saveInspiration(inspiration.markDeleted(c, { now: NOW + 3000 }));
-  await store.saveInspiration(inspiration.markMerged(b, { targetId: 'insp_a', now: NOW + 4000 }));
-
-  assert.deepStrictEqual(store.listInspirations().map((i) => i.id), ['insp_a']);
+test('同一账户两份本机状态的请求标识含独立随机量', async () => {
+  const first = setup({ newRequestId: () => 'req_device_a' });
+  const second = setup({ newRequestId: () => 'req_device_b' });
+  first.network.failure = 'NETWORK';
+  second.network.failure = 'NETWORK';
+  await first.store.saveInspiration(item('a'));
+  await second.store.saveInspiration(item('b'));
+  assert.notEqual(first.store.readQueue()[0].requestId, second.store.readQueue()[0].requestId);
+  assert.equal(first.store.readQueue()[0].requestId, 'req_device_a_1');
+  assert.equal(second.store.readQueue()[0].requestId, 'req_device_b_1');
 });
 
-test('按 id 取一条，取不到返回 null', async () => {
-  const { store } = newStore();
-  await store.saveInspiration(anInspiration());
-
-  assert.strictEqual(store.getInspiration('insp_lz9k_4f2a').text, '做一个记账小程序');
-  assert.strictEqual(store.getInspiration('insp_nope'), null);
+test('请求标识被复用时保留本机队列并停止自动重试', async () => {
+  const { store, network } = setup();
+  network.failure = 'REQUEST_ID_REUSED';
+  await store.saveInspiration(item());
+  assert.equal(store.getConflict().code, 'REQUEST_ID_REUSED');
+  assert.equal(store.readQueue().length, 1);
+  const calls = network.calls.length;
+  await store.retryPending();
+  assert.equal(network.calls.length, calls);
 });
 
-// ---------------------------------------------------------------- 删除
-
-test('删除：云端确认后从本机物理移除', async () => {
-  const { store } = newStore();
-  await store.saveInspiration(anInspiration());
-
-  const result = await store.deleteInspiration('insp_lz9k_4f2a');
-
-  assert.strictEqual(result.ok, true);
-  assert.strictEqual(result.synced, true);
-  assert.strictEqual(store.readSnapshot().inspirations.length, 0, '确认后应物理移除，不留软删残骸');
+test('拉取时有待备份操作不会覆盖本机内容', async () => {
+  const local = storage();
+  const first = setup({ local });
+  first.network.failure = 'NETWORK';
+  await first.store.saveInspiration(item());
+  const reopened = setup({ local, remote: remote(A, [item('cloud', '云端内容')], 2) });
+  assert.equal(reopened.store.getInspiration('insp_a').text, '做一个记账小程序');
+  assert.equal(reopened.store.getInspiration('cloud'), null);
+  assert.equal(reopened.store.readQueue().length, 1);
 });
 
-test('删除同步未成功时保留软删标记，不直接抹掉', async () => {
-  const { store, transport } = newStore();
-  await store.saveInspiration(anInspiration());
-  transport.failWith = 'INTERNAL';
-
-  const result = await store.deleteInspiration('insp_lz9k_4f2a');
-
-  assert.strictEqual(result.ok, true);
-  assert.strictEqual(result.synced, false);
-  const kept = store.readSnapshot().inspirations;
-  assert.strictEqual(kept.length, 1, '没得到确认就不该物理移除——否则本机删了、云端还在');
-  assert.ok(kept[0].deletedAt, '应留下软删标记');
-  assert.deepStrictEqual(store.listInspirations(), [], '软删的条目不该出现在列表里');
+test('冲突保留本机和远端快照，停止自动写入', async () => {
+  const { store, network } = setup();
+  network.version = 1;
+  network.items = [item('other', '另一设备')];
+  const result = await store.saveInspiration(item());
+  assert.equal(result.synced, false);
+  assert.equal(store.getBackupStatus().state, 'CONFLICT');
+  assert.equal(store.getInspiration('insp_a').text, '做一个记账小程序');
+  assert.equal(store.getConflict().remote.inspirations[0].text, '另一设备');
+  const rejected = await store.saveInspiration(item('new'));
+  assert.equal(rejected.code, 'CONFLICT');
+  assert.equal(network.items.length, 1);
 });
 
-test('删除不存在的灵感返回 NOT_FOUND', async () => {
-  const { store } = newStore();
-  const result = await store.deleteInspiration('insp_nope');
+test('用户采用云端版本前先原子留存本机恢复副本，重开后仍可读取', async () => {
+  const local = storage();
+  const { store, network } = setup({ local });
+  network.version = 1;
+  network.items = [item('remote', '另一设备的内容')];
+  await store.saveInspiration(item('local', '未备份的本机内容'));
 
-  assert.strictEqual(result.ok, false);
-  assert.strictEqual(result.code, 'NOT_FOUND');
+  const result = await store.resolveUseRemote();
+  assert.equal(result.ok, true);
+  assert.deepEqual(store.listInspirations().map((entry) => entry.id), ['remote']);
+  assert.equal(store.readQueue().length, 0);
+  assert.equal(store.getRecoveries().length, 1);
+  assert.equal(store.getRecoveries()[0].snapshot.inspirations[0].text, '未备份的本机内容');
+  assert.equal(store.getRecoveries()[0].pendingOps.length, 1);
+
+  const reopened = setup({ local, remote: remote(A, network.items, network.version) });
+  assert.equal(reopened.store.getRecoveries()[0].snapshot.inspirations[0].text, '未备份的本机内容');
+  assert.equal(reopened.store.getInspiration('remote').text, '另一设备的内容');
+  const otherAccount = setup({ local, scope: B });
+  assert.equal(otherAccount.store.getRecoveries().length, 0);
+});
+
+test('恢复副本写入失败时不切换版本、不清空原队列', async () => {
+  const { store, local, network } = setup();
+  network.version = 1;
+  network.items = [item('remote')];
+  await store.saveInspiration(item('local'));
+  local.failWrites = 1;
+  const result = await store.resolveUseRemote();
+  assert.equal(result.code, 'LOCAL_WRITE_FAILED');
+  assert.equal(store.getBackupStatus().state, 'CONFLICT');
+  assert.equal(store.readQueue().length, 1);
+  assert.equal(store.getInspiration('local').text, '做一个记账小程序');
+  assert.equal(store.getRecoveries().length, 0);
+});
+
+test('没有冲突时不得用恢复动作覆盖当前记录', async () => {
+  const { store, network } = setup();
+  const before = network.calls.length;
+  const result = await store.resolveUseRemote();
+  assert.equal(result.code, 'NO_CONFLICT');
+  assert.equal(network.calls.length, before);
+});
+
+test('含照片的本机冲突不会切换为仅可复制文字的恢复副本', async () => {
+  const photoItem = Object.assign({}, item('photo'), { photos: [{ id: 'p', fileId: 'cloud://photo' }] });
+  const { store, network } = setup();
+  network.version = 1;
+  network.items = [item('remote')];
+  await store.saveInspiration(photoItem);
+  const result = await store.resolveUseRemote();
+  assert.equal(result.code, 'PHOTO_RECOVERY_UNAVAILABLE');
+  assert.equal(store.getInspiration('photo').id, 'photo');
+  assert.equal(store.readQueue().length, 1);
+  assert.equal(store.getRecoveries().length, 0);
+});
+
+test('代际落后时保留本机内容并停止重试', async () => {
+  const { store, network } = setup();
+  network.failure = 'STALE_GENERATION';
+  await store.saveInspiration(item());
+  assert.equal(store.getBackupStatus().state, 'STALE_GENERATION');
+  assert.equal(store.readQueue().length, 1);
+  assert.equal(store.listInspirations().length, 1);
+});
+
+test('删除使用独立动作，未确认前记录仍可见', async () => {
+  const { store, network } = setup();
+  await store.saveInspiration(item());
+  network.failure = 'NETWORK';
+  const pending = await store.deleteInspiration('insp_a');
+  assert.equal(pending.synced, false);
+  assert.equal(store.listInspirations().length, 1);
+  assert.equal(network.calls[1].action, 'inspiration.delete');
+  network.failure = null;
+  await store.retryPending();
+  assert.equal(store.listInspirations().length, 0);
+});
+
+test('照片删除被拒绝时不假报完成，不隐藏本机记录', async () => {
+  const { store, network } = setup();
+  await store.saveInspiration(item());
+  network.failure = 'PHOTO_DELETE_UNAVAILABLE';
+  const result = await store.deleteInspiration('insp_a');
+  assert.equal(result.synced, false);
+  assert.equal(result.code, 'PHOTO_DELETE_UNAVAILABLE');
+  assert.equal(store.listInspirations().length, 1);
+});
+
+test('本机已知含照片时不入删除队列，保留原记录', async () => {
+  const photoItem = Object.assign({}, item(), { photos: [{ id: 'photo_a', fileId: 'cloud://file' }] });
+  const { store, network } = setup({ remote: remote(A, [photoItem], 1) });
+  network.version = 1;
+  const result = await store.deleteInspiration(photoItem.id);
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'PHOTO_DELETE_UNAVAILABLE');
+  assert.equal(store.readQueue().length, 0);
+  assert.equal(store.getInspiration(photoItem.id).text, photoItem.text);
+});
+
+test('列表按更新时间排序，已合并与已删除的默认隐藏', () => {
+  const hidden = Object.assign({}, item('hidden'), { deletedAt: NOW + 1 });
+  const visible = item('visible');
+  const { store } = setup({ remote: remote(A, [hidden, visible], 2) });
+  assert.deepEqual(store.listInspirations().map((entry) => entry.id), ['visible']);
 });

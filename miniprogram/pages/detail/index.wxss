@@ -21,6 +21,7 @@
 
 .origin-acts {
   display: flex;
+  flex-wrap: wrap;
   gap: 16rpx;
   margin-top: 36rpx;
 }
@@ -74,11 +75,49 @@
 .tl-when {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  font-size: 23rpx;
+  justify-content: space-between;
+  gap: 20rpx;
+  font-size: 25rpx;
   color: var(--ink-3);
   margin-bottom: 10rpx;
 }
+
+.output-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin: 24rpx 0 40rpx;
+}
+
+.detail-next .section-head {
+  margin-bottom: 12rpx;
+}
+
+.tl-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  min-width: 0;
+}
+
+.tl-more {
+  flex: 0 0 auto;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  margin: -20rpx -20rpx -20rpx 0;
+  padding: 0 20rpx;
+  border: none;
+  background: transparent;
+  color: var(--brand);
+  font-size: 25rpx;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tl-more::after { border: none; }
 
 .tl-what {
   font-size: 29rpx;
@@ -89,7 +128,6 @@
 /* ---------------------------------------------------------------- 追加补充 */
 
 .compose {
-  margin-top: 12rpx;
   background: var(--surface);
   border-radius: 20rpx;
   padding: 24rpx 26rpx 22rpx;
@@ -119,16 +157,6 @@
   color: var(--ink-3);
 }
 
-/* ---------------------------------------------------------------- 未开放的能力 */
-
-/* 只说明，不给入口——也不展示任何看起来像结果的内容 */
-.closed-note {
-  padding: 30rpx 32rpx;
-  font-size: 26rpx;
-  line-height: 1.75;
-  color: var(--ink-2);
-}
-
 /* ---------------------------------------------------------------- 补充的行内修改 */
 
 .tl-editor {
@@ -152,20 +180,29 @@
 }
 
 .hidden-row {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  font-size: 24rpx;
-  color: var(--ink-2);
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 88rpx;
+  margin: 0;
   padding: 14rpx 0;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: var(--ink-2);
+  background: transparent;
+  border-radius: 0;
   border-bottom: 2rpx dashed var(--line-strong);
 }
+
+.hidden-row::after { border: none; }
 
 .tl-hidden {
   opacity: 0.72;
 }
 
 .tl-hint {
-  font-size: 22rpx;
+  font-size: 25rpx;
   color: var(--ink-3);
   margin-top: 8rpx;
 }
@@ -190,7 +227,7 @@
   padding: 0 60rpx;
 }
 
-/* 长按操作面板 */
+/* 补充操作面板 */
 .sheet {
   width: 100%;
   background: var(--surface);
@@ -212,16 +249,23 @@
   justify-content: space-between;
   padding: 30rpx 40rpx;
   font-size: 32rpx;
+  line-height: 1.4;
+  width: 100%;
+  margin: 0;
+  background: var(--surface);
+  border-radius: 0;
   letter-spacing: 0.01em;
   border-bottom: 2rpx solid var(--line);
 }
 
+.sheet-item::after { border: none; }
+
 .sheet-item .sub {
-  font-size: 24rpx;
+  font-size: 26rpx;
   color: var(--ink-3);
 }
 
-/* 长按是容易误触的手势：删除用危险色，并且和另外两项在视觉上分开 */
+/* 删除用危险色，并且和另外两项在视觉上分开 */
 .sheet-danger {
   color: var(--danger);
 }
@@ -231,14 +275,23 @@
 }
 
 .sheet-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 20rpx 28rpx 0;
-  padding: 26rpx 0;
+  min-height: 88rpx;
+  padding: 0;
+  width: calc(100% - 56rpx);
+  border: none;
   text-align: center;
   font-size: 32rpx;
+  line-height: 1;
   color: var(--ink-2);
   background: #f2f2f6;
   border-radius: 16rpx;
 }
+
+.sheet-cancel::after { border: none; }
 
 /* 删除确认 */
 .dialog {
@@ -297,9 +350,20 @@
 
 .dialog-act {
   flex: 1;
-  padding: 30rpx 0;
+  min-height: 96rpx;
+  padding: 0;
   font-size: 32rpx;
+  line-height: 1;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.dialog-act::after { border: none; }
 
 .dialog-act + .dialog-act {
   border-left: 2rpx solid var(--line);
@@ -308,5 +372,12 @@
 .dialog-act-danger {
   color: var(--danger);
   font-weight: 500;
+}
+
+.sheet-item[disabled],
+.sheet-cancel[disabled],
+.dialog-act[disabled],
+.tl-more[disabled] {
+  opacity: 0.55;
 }
 

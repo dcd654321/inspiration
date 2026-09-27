@@ -9,18 +9,35 @@
 // 而取上下文那一步是云函数入口的事（`cloudfunctions/linggan_api/index.js`）。
 
 const { createRepository, CODE } = require('./repository');
+const crypto = require('node:crypto');
 
-const ACTIONS = ['snapshot.pull', 'snapshot.push', 'inspiration.delete'];
+const ACTIONS = [
+  'snapshot.pull', 'snapshot.push', 'inspiration.delete',
+  'share.create', 'share.get', 'share.listMine', 'share.revoke', 'share.qr',
+  'feedback.create', 'feedback.listMine', 'feedback.reportShare'
+];
 
 const PROTOCOL_CODE = {
   unauthenticated: 'UNAUTHENTICATED',
   forbiddenSource: 'FORBIDDEN_SOURCE',
   invalidAction: 'INVALID_ACTION',
+  requestIdReused: 'REQUEST_ID_REUSED',
+  invalidPayload: 'INVALID_PAYLOAD',
   internal: 'INTERNAL'
 };
 
 function fail(code, message) {
   return { ok: false, code, message: message || code };
+}
+
+function requestFingerprint(action, payload) {
+  const canonical = JSON.stringify([action, payload], (key, value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const sorted = {};
+    Object.keys(value).sort().forEach((name) => { sorted[name] = value[name]; });
+    return sorted;
+  });
+  return crypto.createHash('sha256').update(canonical).digest('hex');
 }
 
 /**
@@ -33,9 +50,11 @@ function fail(code, message) {
 function createProtocol(options) {
   const opts = options || {};
   const repository = opts.repository || createRepository(opts);
+  const sharing = opts.sharing || null;
   const requestCache = opts.requestCache || null;
   const cacheTtlMs = typeof opts.cacheTtlMs === 'number' ? opts.cacheTtlMs : 10 * 60 * 1000;
   const now = opts.now;
+  const inFlight = new Map();
 
   /**
    * 处理一次调用。
@@ -59,37 +78,76 @@ function createProtocol(options) {
       return fail(PROTOCOL_CODE.invalidAction, '未知的操作');
     }
 
-    // 传输层幂等：同一 requestId 重试直接返回上次的结果。
+    // 传输层幂等：同一 requestId 只可重试相同的动作与参数。
     // 与实体级幂等（按 id upsert）是两回事，两者都要有——前者防的是「请求重复到达」，
     // 后者防的是「同一份数据被提交多次」。
-    const cacheKey = requestCache && typeof request.requestId === 'string' && request.requestId.length > 0
+    // 分享的只读结果与撤销状态有关，绝不能命中旧的传输层成功缓存。
+    // 创建动作在新集合里做跨实例幂等，反馈也有持久去重键。
+    const cacheKey = requestCache && !/^(share|feedback)\./.test(request.action) &&
+      typeof request.requestId === 'string' && request.requestId.length > 0
       ? accountKey + ':' + request.requestId
       : null;
+    let fingerprint = null;
 
     if (cacheKey) {
+      try { fingerprint = requestFingerprint(request.action, request.payload); }
+      catch (err) { return fail(PROTOCOL_CODE.invalidPayload, '操作内容无效'); }
       const cached = requestCache.get(cacheKey);
-      if (cached && now() - cached.at < cacheTtlMs) return cached.response;
-    }
-
-    let response;
-    try {
-      if (request.action === 'snapshot.pull') {
-        response = await repository.pull(accountKey);
-      } else if (request.action === 'snapshot.push') {
-        response = await repository.push(accountKey, request.payload);
-      } else {
-        response = await repository.remove(accountKey, request.payload);
+      if (cached && now() - cached.at < cacheTtlMs) {
+        return cached.fingerprint === fingerprint
+          ? cached.response
+          : fail(PROTOCOL_CODE.requestIdReused, '请求标识与操作内容不一致');
       }
-    } catch (err) {
-      // 未预期的异常一律收敛成一个稳定的码，不把堆栈透给客户端
-      response = fail(PROTOCOL_CODE.internal, '服务暂时不可用');
+      const pending = inFlight.get(cacheKey);
+      if (pending) {
+        return pending.fingerprint === fingerprint
+          ? pending.promise
+          : fail(PROTOCOL_CODE.requestIdReused, '请求标识与操作内容不一致');
+      }
     }
 
-    if (cacheKey) {
-      requestCache.set(cacheKey, { at: now(), response });
-    }
+    const execute = async () => {
+      let response;
+      try {
+        if (request.action === 'snapshot.pull') {
+          response = await repository.pull(accountKey);
+        } else if (request.action === 'snapshot.push') {
+          response = await repository.push(accountKey, request.payload);
+        } else if (request.action === 'inspiration.delete') {
+          response = await repository.remove(accountKey, request.payload);
+        } else if (!sharing) {
+          response = fail('SERVICE_UNAVAILABLE', '这项服务暂时不可用');
+        } else if (request.action === 'share.create') {
+          response = await sharing.createShare(accountKey, request.payload, request.requestId);
+        } else if (request.action === 'share.get') {
+          response = await sharing.getShare(accountKey, request.payload);
+        } else if (request.action === 'share.listMine') {
+          response = await sharing.listMine(accountKey, request.payload);
+        } else if (request.action === 'share.revoke') {
+          response = await sharing.revokeShare(accountKey, request.payload);
+        } else if (request.action === 'share.qr') {
+          response = await sharing.getShareCode(accountKey, request.payload);
+        } else if (request.action === 'feedback.create') {
+          response = await sharing.createFeedback(accountKey, request.payload, request.requestId);
+        } else if (request.action === 'feedback.listMine') {
+          response = await sharing.listFeedback(accountKey, request.payload);
+        } else {
+          response = await sharing.reportShare(accountKey, request.payload, request.requestId);
+        }
+      } catch (err) {
+        // 未预期的异常一律收敛成一个稳定的码，不把堆栈透给客户端
+        response = fail(PROTOCOL_CODE.internal, '服务暂时不可用');
+      }
+      if (cacheKey && response && response.ok === true) {
+        requestCache.set(cacheKey, { at: now(), fingerprint, response });
+      }
+      return response;
+    };
 
-    return response;
+    if (!cacheKey) return execute();
+    const promise = execute().finally(() => { inFlight.delete(cacheKey); });
+    inFlight.set(cacheKey, { fingerprint, promise });
+    return promise;
   }
 
   return { handle, ACTIONS, CODE };

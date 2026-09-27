@@ -12,7 +12,8 @@ const REQUEST_ID_PREFIX = 'req_';
 
 /** 生成一个请求标识。同一逻辑操作重试时必须复用同一个值，否则传输层幂等不成立。 */
 function createRequestId() {
-  return REQUEST_ID_PREFIX + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+  return REQUEST_ID_PREFIX + Date.now().toString(36) + '_' +
+    Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 }
 
 /**

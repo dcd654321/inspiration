@@ -1,23 +1,65 @@
 <view class="page">
-  <view class="page-title">我的</view>
-
-  <view class="section-head" style="margin: 44rpx 0 18rpx"><text class="k">能力</text></view>
-  <view class="panel">
-    <view class="kv">
-      <text>云端同步</text>
-      <text class="{{cloudEnabled ? 'val-on' : 'val-off'}}">{{cloudEnabled ? '已启用' : '未启用'}}</text>
+  <view class="profile-head">
+    <image class="profile-mark" src="/assets/brand-mark.png" mode="aspectFit" />
+    <view>
+      <view class="page-title">我的</view>
+      <view class="page-sub">记录当下的想法，随时补充完善。</view>
     </view>
-    <view class="kv">
-      <text>AI 扩展</text>
-      <text class="{{aiEnabled ? 'val-on' : 'val-off'}}">{{aiEnabled ? '已启用' : '未启用'}}</text>
+  </view>
+
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">备份状态</text></view>
+  <view class="panel privacy-panel">
+    <view class="use-copy">{{backupText}}</view>
+    <view wx:if="{{legacyNotice}}" class="use-copy">{{legacyNotice}}</view>
+    <button wx:if="{{backupPending}}" class="btn btn-quiet btn-block" bindtap="onRetryBackup" disabled="{{backupBusy}}">重新备份</button>
+    <button wx:if="{{backupConflict}}" class="btn btn-quiet btn-block" bindtap="onOpenList">查看并留存本机内容</button>
+    <button wx:if="{{backupConflict && remoteItems.length > 0}}" class="btn btn-plain btn-block" bindtap="onToggleRemote">{{remoteExpanded ? '收起云端内容' : '查看云端内容'}}</button>
+    <button wx:if="{{backupConflict}}" class="btn btn-plain btn-block" bindtap="onUseRemote" disabled="{{backupBusy}}">采用当前云端版本</button>
+    <view wx:if="{{remoteExpanded}}" class="remote-records">
+      <view wx:for="{{remoteItems}}" wx:key="id" class="remote-item">
+        <text class="remote-text" selectable="true">{{item.text}}</text>
+        <button class="btn btn-plain btn-block" data-id="{{item.id}}" bindtap="onCopyRemote">复制这条云端文字</button>
+      </view>
+    </view>
+    <view wx:if="{{recoveryCount > 0}}" class="use-copy">另有 {{recoveryCount}} 份本机只读恢复副本。它们不会自动同步或删除。</view>
+    <button wx:if="{{recoveryCount > 0}}" class="btn btn-plain btn-block" bindtap="onToggleRecovery">{{recoveryExpanded ? '收起恢复副本' : '查看恢复副本'}}</button>
+    <view wx:if="{{recoveryExpanded}}" class="remote-records">
+      <view wx:for="{{recoveryItems}}" wx:key="key" class="remote-item">
+        <view class="use-copy">保留于 {{item.label}}</view>
+        <text class="remote-text" selectable="true">{{item.text}}</text>
+        <button class="btn btn-plain btn-block" data-key="{{item.key}}" bindtap="onCopyRecovery">复制这条恢复文字</button>
+      </view>
     </view>
   </view>
 
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">数据与隐私</text></view>
-  <view class="panel">
-    <view class="prose">{{privacyNote}}</view>
+  <view class="panel privacy-panel">
+    <view class="privacy-item" wx:for="{{privacyNotes}}" wx:key="*this">
+      <view class="privacy-dot"></view>
+      <text>{{item}}</text>
+    </view>
+  </view>
+
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">从记录到使用</text></view>
+  <view class="panel use-panel">
+    <view class="use-copy">在灵感详情中继续补充；需要使用时，可以整理、复制文字，或生成 TXT 文件留存。</view>
+    <button class="btn btn-quiet btn-block" bindtap="onOpenList">查看我的灵感</button>
   </view>
 
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">反馈</text></view>
-  <button class="btn btn-plain btn-block" open-type="feedback">提交反馈</button>
+  <button class="btn btn-plain btn-block" bindtap="onOpenFeedback">给我们提建议</button>
+  <button class="btn btn-plain btn-block" open-type="feedback">向微信反馈</button>
+
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">分享</text></view>
+  <view class="panel use-panel">
+    <view class="use-copy">分享小程序不会带出你的记录。分享单条内容时，你会先看到对方能读到的文字。</view>
+    <button class="btn btn-quiet btn-block" bindtap="onOpenWelcome">分享小程序</button>
+    <button class="btn btn-plain btn-block" bindtap="onOpenMyShares">我的分享</button>
+  </view>
+
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">关于</text></view>
+  <view class="panel about-panel">
+    <view class="about-title">灵感拾光簿</view>
+    <view class="about-copy">记下突然想到的事，之后补充、修改，回看想法怎样一步步成形。</view>
+  </view>
 </view>

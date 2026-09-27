@@ -1,48 +1,64 @@
 <view class="page">
-  <view class="page-title">我的灵感</view>
-
-  <view wx:if="{{loading}}" class="empty">
-    <view class="et">读取中…</view>
+  <view class="page-heading">
+    <view class="page-title">我的灵感</view>
+    <button class="btn-link" bindtap="onAdd">记一条</button>
   </view>
+
+  <view wx:if="{{backupNotice}}" class="notice notice-warn list-notice"><view class="mark"></view><text>{{backupNotice}}</text></view>
+
+  <view wx:if="{{loading}}" class="skeleton-list">
+    <view class="skeleton-row" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line"></view>
+    </view>
+  </view>
+
+  <block wx:elif="{{error && items.length === 0}}">
+    <view class="empty error-empty">
+      <view class="et">暂时无法读取灵感</view>
+      <view class="ed">这次读取没有完成，请稍后重试。</view>
+    </view>
+    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onRetry">重新读取</button>
+  </block>
 
   <block wx:elif="{{items.length === 0}}">
     <view class="empty">
+      <image class="empty-mark" src="/assets/brand-mark.png" mode="aspectFit" />
       <view class="et">还没有灵感</view>
-      <view class="ed">想到什么，就先记下来。</view>
+      <view class="ed">从一个想法开始，之后可以继续补充、整理并复制使用。</view>
     </view>
-    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onAdd">新建灵感</button>
+    <button class="btn btn-block" style="margin-top: 32rpx" bindtap="onAdd">记下第一个想法</button>
   </block>
 
   <block wx:else>
+    <view wx:if="{{error}}" class="notice notice-warn list-notice">
+      <view class="mark"></view>
+      <text>{{error}}</text>
+    </view>
+    <button wx:if="{{error}}" class="btn btn-plain btn-block" style="margin-top: 20rpx" bindtap="onRetry">重新读取</button>
+
     <view class="list" style="margin-top: 36rpx">
       <view
         wx:for="{{items}}"
         wx:key="id"
         class="row"
+        hover-class="row-active"
+        hover-stay-time="80"
         data-id="{{item.id}}"
         bindtap="onOpen"
       >
-        <view class="body">{{item.excerpt}}</view>
-        <view class="meta">
-          <text>{{item.time}}</text>
-          <block wx:if="{{item.supplements}}">
-            <view class="sep"></view>
-            <text>{{item.supplements}}</text>
-          </block>
-          <block wx:if="{{item.photos}}">
-            <view class="sep"></view>
-            <text>{{item.photos}}</text>
-          </block>
+        <view class="row-main">
+          <view class="body">{{item.excerpt}}</view>
+          <view class="meta">
+            <text>{{item.time}}</text>
+            <block wx:if="{{item.supplements}}">
+              <view class="sep"></view>
+              <text>{{item.supplements}}</text>
+            </block>
+          </view>
         </view>
+        <text class="row-enter">查看</text>
       </view>
     </view>
-
-    <view wx:if="{{error}}" class="notice notice-err">
-      <view class="mark"></view>
-      <text>{{error}}</text>
-    </view>
-    <button wx:if="{{error}}" class="btn btn-plain btn-block" style="margin-top: 24rpx" bindtap="onRetry">重试</button>
-
-    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onAdd">新建灵感</button>
   </block>
 </view>

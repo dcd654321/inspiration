@@ -1,0 +1,36 @@
+<view class="page" wx:if="{{ready}}">
+  <view class="page-title">分享这条文字</view>
+  <view class="page-sub">先确认对方会看到什么，再选择分享方式。</view>
+  <view wx:if="{{missing}}" class="notice notice-err">{{error}}</view>
+  <block wx:else>
+    <view class="section-label">选择补充</view>
+    <view class="selection-note">当前正文会一并分享；照片、修改记录和收起的补充不会加入。</view>
+    <view wx:if="{{options.length === 0}}" class="selection-note">这条灵感没有可选的补充。</view>
+    <button wx:for="{{options}}" wx:key="id" class="share-option {{item.selected ? 'share-option-on' : ''}}"
+      data-id="{{item.id}}" bindtap="onToggle">
+      <text class="share-check">{{item.selected ? '✓' : ''}}</text><text class="share-option-text">{{item.content}}</text>
+    </button>
+
+    <view class="section-label">对方将看到</view>
+    <view class="share-preview"><text selectable="true">{{preview}}</text></view>
+    <view class="share-rule">有效期 30 天。拿到分享链接的人都能查看；撤销链接也无法收回已复制的文字或已发布的海报。</view>
+
+    <view wx:if="{{error}}" class="notice notice-err"><view class="mark"></view><text>{{error}}</text></view>
+    <view wx:if="{{notice}}" class="notice"><view class="mark"></view><text>{{notice}}</text></view>
+
+    <button class="btn btn-block share-action" bindtap="onPrepareChat" disabled="{{busy}}">{{busy ? '准备中…' : '确认，准备发给微信好友'}}</button>
+    <button wx:if="{{chatPrepared}}" class="btn btn-quiet btn-block share-action" open-type="share">选择微信好友</button>
+    <button class="btn btn-plain btn-block share-action" bindtap="onPreparePoster" disabled="{{busy}}">确认，制作朋友圈海报</button>
+    <button wx:if="{{!posterReady &amp;&amp; canRetryPoster}}" class="btn btn-plain btn-block share-action" bindtap="onRetryPoster" disabled="{{busy}}">重试生成海报</button>
+
+    <view wx:if="{{posterReady}}" class="poster-section">
+      <view class="section-label">海报预览 · {{posterFiles.length}} 张</view>
+      <scroll-view scroll-x="true" class="poster-scroll">
+        <image wx:for="{{posterFiles}}" wx:key="*this" src="{{item}}" mode="widthFix" class="poster-thumb" />
+      </scroll-view>
+      <button class="btn btn-block" bindtap="onSavePosters" disabled="{{saving || allSaved}}">{{saving ? '保存中…' : (allSaved ? '已保存全部海报' : '保存全部海报到相册')}}</button>
+    </view>
+    <button class="btn btn-plain btn-block share-action" bindtap="onOpenMyShares">查看我的分享</button>
+    <canvas canvas-id="posterCanvas" class="poster-canvas" width="750" height="1000"></canvas>
+  </block>
+</view>

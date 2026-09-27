@@ -1,5 +1,5 @@
 {
-  "description": "灵感拾光簿：灵感随手记与 AI 扩展（云环境未接入）",
+  "description": "灵感拾光簿：随手记下想法，之后继续补充",
   "miniprogramRoot": "miniprogram/",
   "cloudfunctionRoot": "cloudfunctions/",
   "compileType": "miniprogram",

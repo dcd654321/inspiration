@@ -1,16 +1,42 @@
-.stamp {
-  font-size: 24rpx;
-  color: var(--ink-3);
-  padding: 8rpx 0 24rpx;
+.history-head {
+  margin: 52rpx 0 14rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
 }
 
-/* 历史版本比当前原文弱一档：次要文字色 + 左侧细线 */
+.history-list {
+  position: relative;
+  padding-left: 32rpx;
+}
+
+.history-list::before {
+  content: "";
+  position: absolute;
+  left: 7rpx;
+  top: 30rpx;
+  bottom: 34rpx;
+  width: 2rpx;
+  background: var(--line-strong);
+}
+
+/* 修改记录是开放列表，不用厚重卡片包裹每一条 */
 .hv {
-  margin-bottom: 20rpx;
-  padding: 26rpx 28rpx;
-  background: var(--surface);
-  border-radius: 16rpx;
-  border-left: 4rpx solid var(--line-strong);
+  position: relative;
+  padding: 26rpx 0 30rpx;
+  border-bottom: 2rpx solid var(--line);
+}
+
+.hv::before {
+  content: "";
+  position: absolute;
+  left: -32rpx;
+  top: 34rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 4rpx solid var(--spark);
 }
 
 .hv-t {
@@ -21,22 +47,21 @@
 }
 
 .hv-m {
-  font-size: 23rpx;
+  font-size: 26rpx;
   color: var(--ink-3);
-  margin-top: 14rpx;
+  margin-bottom: 12rpx;
 }
 
-/* 当前原文用主色框标出来，让用户一眼看出哪个是现在的 */
+/* 当前内容先出现，用户无需滚到底部才能建立比较基准 */
 .hv-now {
-  margin-top: 40rpx;
-  padding: 28rpx 28rpx 30rpx;
-  border: 2rpx solid var(--brand-line);
-  border-radius: 16rpx;
-  background: var(--brand-soft);
+  padding: 32rpx 34rpx 34rpx;
+  border-left: 6rpx solid var(--spark);
+  border-radius: 20rpx;
+  background: var(--surface);
 }
 
 .hv-now-k {
-  font-size: 23rpx;
+  font-size: 26rpx;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--brand);

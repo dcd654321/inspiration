@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="page-title">{{reporting ? '举报这份分享' : '意见反馈'}}</view>
+  <view class="page-sub">{{reporting ? '请说明你认为不合适的地方。' : '遇到问题或有新的想法，都可以告诉我们。'}}</view>
+  <view wx:if="{{!reporting}}" class="feedback-categories">
+    <button wx:for="{{categories}}" wx:key="value" data-value="{{item.value}}"
+      class="feedback-category {{category === item.value ? 'feedback-category-on' : ''}}" bindtap="onCategory">{{item.label}}</button>
+  </view>
+  <textarea class="feedback-editor" value="{{body}}" maxlength="1000" auto-height
+    placeholder="请写下具体情况（至少 10 字）" bindinput="onInput" />
+  <view class="feedback-count">{{body.length}} / 1000</view>
+  <view class="feedback-note">请勿填写密码、身份证号等敏感信息。提交后可在下方查看状态，暂不提供回复时限。</view>
+  <view wx:if="{{error}}" class="notice notice-err"><text>{{error}}</text></view>
+  <view wx:if="{{notice}}" class="notice"><text>{{notice}}</text></view>
+  <button class="btn btn-block" bindtap="onSubmit" disabled="{{busy}}">{{busy ? '提交中…' : (reporting ? '提交举报' : '提交反馈')}}</button>
+
+  <view class="section-label">我的反馈</view>
+  <view wx:if="{{loading}}" class="feedback-note">正在加载…</view>
+  <view wx:elif="{{items.length === 0}}" class="feedback-note">还没有反馈记录。</view>
+  <view wx:for="{{items}}" wx:key="feedbackId" class="feedback-record">
+    <view class="feedback-record-head"><text>{{item.categoryText}}</text><text>{{item.statusText}}</text></view>
+    <view class="feedback-record-body">{{item.body}}</view>
+    <view class="feedback-record-date">{{item.date}}</view>
+  </view>
+  <button wx:if="{{nextBefore}}" class="btn btn-plain btn-block" bindtap="onMore">加载更多</button>
+</view>

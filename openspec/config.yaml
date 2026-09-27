@@ -7,7 +7,7 @@ context: |
   当前仅完成工程初始化骨架；四项核心能力中的三项（记录补充、拍照上传、AI 扩展）尚未实现，热度提炼已于 2026-09-22 决定暂缓，留待后续独立变更。
   仅 dev 开发，用户测试确认且明确要求后才能合并到 main。
   现状以代码和验证证据为准；未实现的行为不得写成已实现事实。
-  云环境与 AI 默认关闭（config/cloud.js、config/ai.js 的 enabled 均为 false）。
+  云开关已打开（config/cloud.js 的 enabled: true，环境 ID 已填），但云端资源是否建好要看控制台，代码看不出来；AI 仍关闭（config/ai.js 的 enabled: false），模型厂商未定。
   新资源前缀 linggan_；不擅自改其他小程序或共用认证资源。
   拍照上传的图片属用户个人内容，删除灵感时须同步清理云存储文件。
   AI 输出必须经 core/ai-contract.js 校验后才可展示或写入，AI 不可用时基础记录必须可用。
