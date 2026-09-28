@@ -24,6 +24,8 @@ function validRemote(remote, scope) {
 function createStore(options) {
   const opts = options || {};
   const { storage, transport, now, cacheScope, remoteSnapshot } = opts;
+  const photosEnabled = remoteSnapshot && remoteSnapshot.photosEnabled === true;
+  const isCurrent = typeof opts.isCurrent === 'function' ? opts.isCurrent : () => true;
   const newRequestId = typeof opts.newRequestId === 'function' ? opts.newRequestId : createRequestId;
   if (!storage || typeof now !== 'function') throw new Error('createStore 需要 storage 与 now()');
   if (typeof cacheScope !== 'string' || !SCOPE_PATTERN.test(cacheScope)) throw new Error('无效的账户缓存作用域');
@@ -104,6 +106,7 @@ function createStore(options) {
     if (!transport) return { ok: false, code: 'NETWORK' };
     let last = { ok: true, synced: true };
     for (let attempt = 0; attempt < MAX_RETRY_PER_PASS; attempt += 1) {
+      if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
       const state = readState();
       if (state.conflict) return { ok: false, code: state.conflict.code };
       if (state.queue.length === 0) return last;
@@ -113,16 +116,17 @@ function createStore(options) {
         operation = Object.assign({}, operation, { baseVersion: state.version });
         writeState(Object.assign({}, state, { queue: [operation].concat(state.queue.slice(1)) }));
       }
-      const action = operation.kind === 'delete' ? 'inspiration.delete' : 'snapshot.push';
-      const payload = operation.kind === 'delete'
-        ? { inspirationId: operation.inspirationId, baseVersion: operation.baseVersion, generation: state.generation }
-        : { upserts: [operation.inspiration], baseVersion: operation.baseVersion, generation: state.generation };
+      const action = operation.kind === 'delete' ? 'inspiration.delete' : operation.kind === 'photoDelete' ? 'photo.delete' : 'snapshot.push';
+      const payload = operation.kind === 'delete' || operation.kind === 'photoDelete'
+        ? Object.assign({ inspirationId: operation.inspirationId, baseVersion: operation.baseVersion, generation: state.generation }, operation.kind === 'photoDelete' ? { photoId: operation.photoId } : {})
+        : { upserts: operation.kind === 'batch' ? operation.inspirations : [operation.inspiration], baseVersion: operation.baseVersion, generation: state.generation };
       let response;
       try {
         response = await transport.send(action, payload, { requestId: operation.requestId });
       } catch (err) {
         return { ok: false, code: 'NETWORK' };
       }
+      if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
       if (!response || !response.ok) {
         const code = response && response.code || 'INTERNAL';
         if (code === 'CONFLICT' || code === 'STALE_GENERATION' || code === 'PHOTO_DELETE_UNAVAILABLE' ||
@@ -132,6 +136,7 @@ function createStore(options) {
             const pulled = await transport.send('snapshot.pull', {});
             if (pulled && pulled.ok && validRemote(pulled.data, cacheScope)) remote = pulled.data;
           } catch (err) { /* 冲突先保留，稍后仍可重新获取远端快照。 */ }
+          if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
           const latest = readState();
           writeState(Object.assign({}, latest, { conflict: { code, remote } }));
         }
@@ -149,7 +154,9 @@ function createStore(options) {
         queue: latest.queue.slice(1),
         inspirations: operation.kind === 'delete'
           ? latest.inspirations.filter((item) => item.id !== operation.inspirationId)
-          : latest.inspirations
+            .map((item) => item.mergedInto === operation.inspirationId ? Object.assign({}, item, { mergedInto: null }) : item)
+          : operation.kind === 'photoDelete' ? latest.inspirations.map((item) => item.id === operation.inspirationId
+            ? Object.assign({}, item, { photos: (item.photos || []).filter((photo) => photo.id !== operation.photoId) }) : item) : latest.inspirations
       }));
       last = { ok: true, synced: true };
     }
@@ -165,21 +172,24 @@ function createStore(options) {
 
   /** 用户明确选择云端版本后，先保留本机完整副本，再原子切换活动快照。 */
   async function resolveUseRemote() {
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     if (retryPromise) {
       try { await retryPromise; } catch (err) { /* 原队列仍在；以下重新核对状态。 */ }
     }
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     const state = readState();
     if (!state.conflict) return { ok: false, code: 'NO_CONFLICT' };
     if (!transport) return { ok: false, code: 'NETWORK' };
     let pulled;
     try { pulled = await transport.send('snapshot.pull', {}); }
     catch (err) { return { ok: false, code: 'NETWORK' }; }
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     if (!pulled || !pulled.ok || !validRemote(pulled.data, cacheScope)) {
       return { ok: false, code: 'PULL_FAILED' };
     }
     const latest = readState();
     if (!latest.conflict) return { ok: false, code: 'NO_CONFLICT' };
-    if (latest.inspirations.some((item) => Array.isArray(item.photos) &&
+    if (!photosEnabled && latest.inspirations.some((item) => Array.isArray(item.photos) &&
         item.photos.some((photo) => photo.fileId))) {
       return { ok: false, code: 'PHOTO_RECOVERY_UNAVAILABLE' };
     }
@@ -223,14 +233,21 @@ function createStore(options) {
   }
 
   async function saveInspiration(item) {
+    return saveInspirations([item]);
+  }
+
+  async function saveInspirations(items) {
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     const state = readState();
     if (state.conflict) return { ok: false, code: state.conflict.code };
-    if (!item || typeof item.id !== 'string' || item.deletedAt) return { ok: false, code: 'INVALID_PAYLOAD' };
-    const index = state.inspirations.findIndex((existing) => existing.id === item.id);
-    const inspirations = index === -1
-      ? state.inspirations.concat([item])
-      : state.inspirations.map((existing, i) => i === index ? item : existing);
-    const { sequence, entry } = queueOperation(state, { kind: 'upsert', inspiration: item });
+    if (!Array.isArray(items) || !items.length || items.length > 21 || items.some((item) => !item || typeof item.id !== 'string' || item.deletedAt) ||
+        new Set(items.map((x) => x.id)).size !== items.length) return { ok: false, code: 'INVALID_PAYLOAD' };
+    if (state.queue.some((op) => ['delete', 'photoDelete'].includes(op.kind) && items.some((item) => item.id === op.inspirationId))) return { ok: false, code: 'PHOTO_CLEANUP_PENDING' };
+    const byId = new Map(state.inspirations.map((item) => [item.id, item]));
+    items.forEach((item) => byId.set(item.id, item));
+    const inspirations = Array.from(byId.values());
+    const operation = items.length === 1 ? { kind: 'upsert', inspiration: items[0] } : { kind: 'batch', inspirations: items };
+    const { sequence, entry } = queueOperation(state, operation);
     try {
       writeState(Object.assign({}, state, {
         inspirations, nextSequence: sequence, queue: state.queue.concat([entry])
@@ -243,14 +260,19 @@ function createStore(options) {
   }
 
   async function deleteInspiration(id) {
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     const state = readState();
     if (state.conflict) return { ok: false, code: state.conflict.code };
     const target = state.inspirations.find((item) => item.id === id);
     if (!target) return { ok: false, code: 'NOT_FOUND' };
-    if (Array.isArray(target.photos) && target.photos.some((photo) => photo.fileId)) {
+    if (!photosEnabled && Array.isArray(target.photos) && target.photos.some((photo) => photo.fileId)) {
       return { ok: false, code: 'PHOTO_DELETE_UNAVAILABLE' };
     }
     const { sequence, entry } = queueOperation(state, { kind: 'delete', inspirationId: id });
+    if (state.queue.some((op) => ['delete', 'photoDelete'].includes(op.kind) && op.inspirationId === id)) {
+      const result = await retryPending();
+      return { ok: true, synced: !getInspiration(id), code: result.code };
+    }
     try {
       writeState(Object.assign({}, state, { nextSequence: sequence, queue: state.queue.concat([entry]) }));
     } catch (err) { return { ok: false, code: 'LOCAL_WRITE_FAILED' }; }
@@ -264,12 +286,30 @@ function createStore(options) {
     return readState().inspirations.filter((item) => !isDeleted(item) && !isMerged(item)).sort(byUpdatedAtDesc);
   }
 
+  async function deletePhoto(inspirationId, photoId) {
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+    const state = readState();
+    if (!photosEnabled) return { ok: false, code: 'PHOTO_DELETE_UNAVAILABLE' };
+    if (state.conflict) return { ok: false, code: state.conflict.code };
+    const item = getInspiration(inspirationId);
+    if (!item || !(item.photos || []).some((photo) => photo.id === photoId)) return { ok: false, code: 'NOT_FOUND' };
+    if (!state.queue.some((op) => ['delete', 'photoDelete'].includes(op.kind) && op.inspirationId === inspirationId)) {
+      const { sequence, entry } = queueOperation(state, { kind: 'photoDelete', inspirationId, photoId });
+      try { writeState(Object.assign({}, state, { nextSequence: sequence, queue: state.queue.concat([entry]) })); }
+      catch (err) { return { ok: false, code: 'LOCAL_WRITE_FAILED' }; }
+    }
+    let result;
+    try { result = await retryPending(); } catch (err) { result = { code: 'NETWORK' }; }
+    const latest = getInspiration(inspirationId);
+    return { ok: true, synced: !latest || !(latest.photos || []).some((photo) => photo.id === photoId), code: result.code };
+  }
+
   function getInspiration(id) {
     return readState().inspirations.find((item) => item.id === id) || null;
   }
 
   return { readSnapshot, readQueue, getConflict, getRecoveries, getBackupStatus, retryPending, resolveUseRemote,
-    saveInspiration, deleteInspiration, listInspirations, getInspiration };
+    saveInspiration, saveInspirations, deleteInspiration, deletePhoto, listInspirations, getInspiration };
 }
 
 module.exports = { createStore, LEGACY_STORAGE_KEYS, emptySnapshot };

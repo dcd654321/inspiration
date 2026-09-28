@@ -9,6 +9,8 @@
 
   <block wx:else>
     <view class="stamp">{{time}}</view>
+    <view wx:if="{{isAi}}" class="notice">AI 汇总内容，请核对后使用。</view>
+    <view wx:if="{{merged}}" class="notice">此条灵感已合并，内容仍完整保留。<button class="btn-link" bindtap="onRestoreInspiration" disabled="{{pending}}">恢复为独立灵感</button></view>
 
     <!-- 原文：可以直接编辑。不放进卡片，字号最大——它是锚点 -->
     <view class="origin">
@@ -33,7 +35,7 @@
       <block wx:else>
         <view class="origin-text">{{text}}</view>
         <view class="origin-acts">
-          <button class="btn btn-quiet btn-sm" bindtap="onStartEdit">修改内容</button>
+          <button wx:if="{{!merged}}" class="btn btn-quiet btn-sm" bindtap="onStartEdit">修改内容</button>
           <button
             wx:if="{{historyCount > 0}}"
             class="btn btn-plain btn-sm"
@@ -44,7 +46,7 @@
     </view>
 
     <!-- 补充是详情页的主动作：进入页面即可看到，不必越过时间线。 -->
-    <view wx:if="{{!editing}}" class="detail-next">
+    <view wx:if="{{!editing && !merged}}" class="detail-next">
       <view class="section-head"><text class="k">继续补充</text></view>
       <view class="compose">
         <textarea
@@ -75,11 +77,28 @@
         <button class="btn btn-quiet btn-sm" bindtap="onOpenOutput">整理内容</button>
         <button class="btn btn-plain btn-sm" bindtap="onCopyContent">复制内容</button>
         <button class="btn btn-plain btn-sm" bindtap="onOpenShare">分享文字</button>
+        <button wx:if="{{aiEnabled}}" class="btn btn-plain btn-sm" bindtap="onAiExpand">扩展想法</button>
+        <button wx:if="{{aiEnabled && supplements.length > 1}}" class="btn btn-plain btn-sm" bindtap="onAiSummarize">汇总补充</button>
       </view>
     </view>
 
     <view class="divider"></view>
+    <view wx:if="{{!merged}}" class="organization">
+      <view class="section-head"><text class="k">整理标记</text></view>
+      <input value="{{tagsDraft}}" bindinput="onTagsInput" maxlength="64" placeholder="标签，以逗号分隔，最多五个" aria-label="标签" />
+      <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageSelect"><view class="stage-picker">阶段：{{stages[stageIndex].label}} · 选择</view></picker>
+      <button class="btn btn-plain btn-sm" bindtap="onSaveOrganization" disabled="{{pending}}">保存标记</button>
+    </view>
+    <view wx:if="{{provenance.length}}" class="provenance"><view class="section-head"><text class="k">汇总来源</text></view><button wx:for="{{provenance}}" wx:key="id" class="btn-link source-link" data-id="{{item.id}}" bindtap="onOpenSource" disabled="{{!item.exists}}">{{item.label}}</button></view>
 
+    <view wx:if="{{photosEnabled || photos.length}}" class="photos-section">
+      <view class="section-head"><text class="k">照片</text><text class="v">{{photos.length}} / 9</text></view>
+      <view class="photo-grid"><view wx:for="{{photos}}" wx:key="id" class="photo-cell"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" bindtap="onPreviewPhoto" /><button wx:else class="btn-link" data-id="{{item.id}}" bindtap="onPreviewPhoto">{{item.failed ? '重新查看照片' : '照片加载中'}}</button><button wx:if="{{photosEnabled && !merged}}" class="btn-link" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy}}">删除照片</button></view></view>
+      <view wx:for="{{photoDrafts}}" wx:key="id" class="photo-pending"><image src="{{item.localPath}}" mode="aspectFill" show-menu-by-longpress="{{false}}" /><view><view>照片处理中</view><button class="btn-link" data-id="{{item.id}}" bindtap="onRetryPhoto" disabled="{{photoBusy}}">重试</button><button class="btn-link" data-id="{{item.id}}" bindtap="onDiscardPhoto" disabled="{{photoBusy}}">放弃照片</button></view></view>
+      <button wx:if="{{photosEnabled && !merged}}" class="btn btn-plain btn-block" bindtap="onAddPhoto" disabled="{{photoBusy || pending}}" loading="{{photoBusy}}">添加照片</button>
+      <view class="hint-line">照片仅用于这条灵感，不加入分享或 AI 整理。</view>
+    </view>
+    <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
     <!-- 补充时间线：按时间正序。点「更多」或长按均可打开操作面板 -->
     <view class="section-head" style="margin-top: 36rpx">
       <text class="k">补充</text>
@@ -108,7 +127,7 @@
             <textarea
               class="tl-editor"
               value="{{supplementEditDraft}}"
-              maxlength="{{supplementMax}}"
+              maxlength="{{supplementEditMax}}"
               auto-height
               bindinput="onSupplementEditInput"
             />
@@ -123,6 +142,8 @@
           </block>
 
           <view wx:else class="tl-what">{{item.content}}</view>
+          <button wx:if="{{item.sources.length}}" class="btn-link" data-id="{{item.id}}" bindtap="onToggleSupplementSources">查看汇总来源（{{item.sources.length}}）</button>
+          <view wx:if="{{provenanceSupplementId === item.id}}" class="source-trace"><view wx:for="{{item.sources}}" wx:for-item="source" wx:key="id">{{source.content}}</view></view>
         </view>
       </block>
 

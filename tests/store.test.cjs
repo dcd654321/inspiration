@@ -59,6 +59,22 @@ function item(id = 'insp_a', text = '做一个记账小程序') {
   return createInspiration({ id, text, now: NOW });
 }
 
+test('失效账户实例不再发送队列或确认迟到结果，内容留在原账户', async () => {
+  const local = storage(); let active = true, complete, calls = 0;
+  const store = createStore({ storage: local, cacheScope: A, remoteSnapshot: remote(A), now: () => NOW,
+    isCurrent: () => active, transport: { send: () => { calls++; return new Promise((resolve) => { complete = resolve; }); } } });
+  const pending = store.saveInspiration(item());
+  active = false; complete({ ok: true, data: { version: 1 } });
+  assert.equal((await pending).synced, false);
+  assert.equal(store.readQueue().length, 1, '不确认旧会话的迟到回执');
+  assert.equal((await store.retryPending()).code, 'ACCOUNT_SESSION_CHANGED');
+  assert.equal((await store.saveInspiration(item('second'))).code, 'ACCOUNT_SESSION_CHANGED');
+  assert.equal((await store.deleteInspiration('insp_a')).code, 'ACCOUNT_SESSION_CHANGED');
+  assert.equal(calls, 1);
+  assert.equal(local.data.has('linggan:v2:' + B + ':state'), false);
+  assert.equal(store.getInspiration('insp_a').text, item().text);
+});
+
 test('必须有可信作用域，旧全局缓存不会自动读取或迁移', () => {
   const local = storage();
   local.set(LEGACY_STORAGE_KEYS.snapshot, { inspirations: [item('old', '旧内容')] });

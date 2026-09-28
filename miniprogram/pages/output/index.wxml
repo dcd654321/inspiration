@@ -17,6 +17,9 @@
 
     <block wx:if="{{mode === 'organize'}}">
       <block wx:if="{{phase === 'select'}}">
+        <view class="section-label">选择使用方式</view>
+        <view class="template-options"><button wx:for="{{templates}}" wx:key="id" class="template-option {{templateId === item.id ? 'template-selected' : ''}}" data-template="{{item.id}}" bindtap="onTemplateChange">{{item.name}}</button></view>
+        <view class="selection-note">模板提供可编辑的结构，不改写原文，也不补充事实。</view>
         <view class="section-label">选择要带入使用稿的补充</view>
         <view class="selection-note">正文始终保留；已并入正文或已合并的补充不会重复加入。</view>
         <view wx:if="{{options.length === 0}}" class="empty-options">还没有可选择的补充，可以直接整理正文。</view>
@@ -28,11 +31,12 @@
           </view>
         </button>
         <button class="btn btn-block main-action" bindtap="onGenerate">生成使用稿{{selectedCount > 0 ? '（' + selectedCount + ' 条补充）' : ''}}</button>
+        <button wx:if="{{draft}}" class="btn btn-quiet btn-block secondary-action" bindtap="onResumeDraft">返回当前稿件</button>
       </block>
 
       <block wx:else>
         <button class="back-select" bindtap="onBackToSelection" disabled="{{busy}}">重新选择补充</button>
-        <view class="selection-note">重新生成会替换下方编辑内容。需要保留当前版本时，请先复制或另存。</view>
+        <view class="selection-note">可以直接编辑；重新生成前会询问是否替换你修改过的内容。</view>
         <textarea class="draft-editor" value="{{draft}}" maxlength="-1" bindinput="onDraftInput" />
         <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">{{draft.length}} 字 · 另存上限 {{maxLength}} 字</view>
         <button class="btn btn-block main-action" bindtap="onCopyDraft">复制使用稿</button>

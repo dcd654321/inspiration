@@ -1,0 +1,12 @@
+{
+  "CreateIndexes": [
+    {
+      "IndexName": "expiresAt_asc",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "expiresAt", "Direction": "1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    }
+  ]
+}

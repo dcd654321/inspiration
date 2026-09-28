@@ -12,7 +12,8 @@ const resources = require('./cloud-resources');
 
 module.exports = {
   enabled: true,
-  envId: 'cloud1-d6g4hu8txdd86e48c',
+  envId: 'product-d2g59zty74d7d1ec1',
+  resourceAppid: 'wx7ad85943fe81e095',
   apiFunction: resources.apiFunction,
   timeoutMs: 10000
 };

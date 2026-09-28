@@ -115,3 +115,10 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+.template-options { display: flex; flex-wrap: wrap; gap: 16rpx; margin: 18rpx 0; }
+.template-options .template-option { width: auto; flex: 0 0 auto; margin: 0; padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; font-size: 26rpx; background: var(--surface); color: var(--ink-2); border: 1rpx solid var(--line); border-radius: 18rpx; }
+.template-option::after { border: 0; }
+.template-options .template-selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
+
+.page .option { width: 100%; margin: 24rpx 0 0; box-sizing: border-box; }
+.page .mode-tab { width: auto; margin: 0; display: flex; align-items: center; justify-content: center; }

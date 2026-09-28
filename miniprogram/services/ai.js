@@ -31,7 +31,7 @@ const CODE = {
 /** 降级时的提示。规范要求每种失效都明确告知，且不影响基础功能。 */
 const MESSAGE = {
   [CODE.disabled]: 'AI 扩展还没开放。',
-  [CODE.timeout]: '这次生成花的时间太长，已经停下。可以重试。',
+  [CODE.timeout]: '这次等待已超时，未保存生成内容。请稍后重试。',
   [CODE.quotaExceeded]: '本次可用额度已用完。',
   [CODE.contractInvalid]: '这次生成的内容不符合要求，没有采用。可以重试。',
   [CODE.unsafeContent]: '这次生成的内容不适合展示，已经丢弃。',
@@ -100,6 +100,10 @@ function createAiService(options) {
 
     if (outcome.__error) {
       if (quota && typeof quota.refund === 'function') quota.refund();
+      const remoteCode = outcome.__error.code;
+      if (Object.values(CODE).includes(remoteCode)) return fail(remoteCode);
+      if (remoteCode === 'AI_RATE_LIMITED') return { ok: false, code: remoteCode, message: '操作较频繁，请稍后再试。' };
+      if (remoteCode === 'AI_REQUEST_REPLAY') return { ok: false, code: remoteCode, message: '这次请求已处理，请重新生成。' };
       return fail(CODE.failed);
     }
 

@@ -172,3 +172,10 @@ test('本轮整改：我的页只说明已可用的文字出口并可返回灵�
   assert.match(logic, /wx\.switchTab\(\{ url: '\/pages\/list\/index' \}\)/);
   assert.doesNotMatch(logic, /照片不会被分享/);
 });
+test('WXML 表达式不使用 HTML 实体转义逻辑运算符', () => {
+  const pages = path.join(root, 'miniprogram/pages');
+  for (const name of fs.readdirSync(pages)) {
+    const file = path.join(pages, name, 'index.wxml');
+    if (fs.existsSync(file)) assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /\{\{[^}]*&(?:amp|lt|gt);/);
+  }
+});

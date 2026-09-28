@@ -13,6 +13,7 @@ Page({
     recoveryItems: [],
     recoveryExpanded: false,
     recoveryCount: 0,
+    usageEnabled: false, usageVisible: false, usageReport: '', usageError: '',
     privacyNotes: [
       '灵感默认仅你可见；只有你确认分享的文字才会生成分享链接。',
       '照片和修改记录不会加入文字分享。'
@@ -21,7 +22,7 @@ Page({
 
   async onShow() {
     this.setData({ remoteItems: [], remoteExpanded: false, recoveryItems: [], recoveryExpanded: false,
-      recoveryCount: 0, backupText: '正在确认账户与备份状态…' });
+      recoveryCount: 0, usageReport: '', usageVisible: false, usageEnabled: false, usageError: '', backupText: '正在确认账户与备份状态…' });
     const app = getApp();
     const store = app && await app.ensureReady();
     if (!store) {
@@ -30,6 +31,8 @@ Page({
       return;
     }
     this.updateBackup(store);
+    try { this.setData({ usageEnabled: Boolean(app.globalData.metrics && app.globalData.metrics.read().enabled), usageVisible: false, usageReport: '', usageError: '' }); }
+    catch (err) { this.setData({ usageError: '使用统计暂时无法读取。' }); }
     if (typeof wx.onNetworkStatusChange === 'function' && typeof wx.offNetworkStatusChange === 'function') {
       this.removeNetworkListener();
       this.networkListener = async (status) => {
@@ -63,6 +66,7 @@ Page({
         recoveryItems.push({
           key: index + '_' + item.id,
           label: formatAbsolute(entry.savedAt),
+          id: item.id, recoveryIndex: index, photoCount: (item.photos || []).length,
           text: buildArchiveText(item, entry.savedAt)
         });
       });
@@ -71,7 +75,7 @@ Page({
       recoveryItems,
       recoveryCount: recoveries.length,
       remoteItems: remote && Array.isArray(remote.inspirations)
-        ? remote.inspirations.map((item) => ({ id: item.id, text: buildArchiveText(item, Date.now()) }))
+        ? remote.inspirations.map((item) => ({ id: item.id, text: buildArchiveText(item, Date.now()), photoCount: (item.photos || []).length }))
         : [],
       legacyNotice: getApp().globalData.legacyCachePresent
         ? '检测到旧版记录。为避免误归属到其他账户，暂不自动展示或迁移；请勿清理小程序数据。'
@@ -103,6 +107,19 @@ Page({
   onCopyRecovery(event) {
     const target = this.data.recoveryItems.find((item) => item.key === event.currentTarget.dataset.key);
     if (target) this.copyText(target.text);
+  },
+  onUsageSetting(event) {
+    try { const metrics = getApp().globalData.metrics; metrics.setEnabled(event.detail.value); this.setData({ usageEnabled: metrics.read().enabled, usageReport: '', usageVisible: false, usageError: '' }); }
+    catch (err) { this.setData({ usageError: '统计设置未保存，请稍后重试。' }); }
+  },
+  onViewUsage() {
+    try { this.setData({ usageReport: getApp().globalData.metrics.report(), usageVisible: true, usageError: '' }); }
+    catch (err) { this.setData({ usageError: '统计暂时无法读取。' }); }
+  },
+  onCopyUsage() { if (this.data.usageReport) this.copyText(this.data.usageReport); },
+  onRecoveryPhotos(event) {
+    const data = event.currentTarget.dataset;
+    wx.navigateTo({ url: '/pages/photo-viewer/index?id=' + encodeURIComponent(data.id) + (data.remote ? '&remote=1' : '&recovery=' + data.index) });
   },
 
   copyText(value) {

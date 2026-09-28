@@ -6,6 +6,9 @@
     "pages/detail/index",
     "pages/history/index",
     "pages/output/index",
+    "pages/material-output/index",
+    "pages/ai-workbench/index",
+    "pages/photo-viewer/index",
     "pages/share-preview/index",
     "pages/shared/index",
     "pages/my-shares/index",
@@ -45,5 +48,6 @@
     ]
   },
   "sitemapLocation": "sitemap.json",
-  "style": "v2"
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
 }

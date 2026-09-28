@@ -4,7 +4,7 @@
   <view wx:if="{{error}}" class="notice notice-err"><text>{{error}}</text></view>
   <button wx:if="{{error}}" class="btn btn-plain btn-block" bindtap="onRetry">重新加载</button>
   <view wx:if="{{loading}}" class="myshares-state">正在加载…</view>
-  <view wx:elif="{{items.length === 0 &amp;&amp; !error}}" class="myshares-state">还没有创建过内容分享。打开一条灵感，就可以选择文字分享。</view>
+  <view wx:elif="{{items.length === 0 && !error}}" class="myshares-state">还没有创建过内容分享。打开一条灵感，就可以选择文字分享。</view>
   <view wx:for="{{items}}" wx:key="shareId" class="myshares-card">
     <view class="myshares-top"><text class="myshares-status">{{item.statusText}}</text><text>{{item.channelText}}</text></view>
     <view class="myshares-title">{{item.title}}</view>

@@ -4,7 +4,7 @@
 
 第三件最重要。云开发的数据库**不校验字段类型、不校验长度、没有外键、不管引用完整性**——把这些当成「数据库会管」是这类项目最常见的跑偏方式。
 
-> 范围：§1—9 描述 `add-inspiration-mvp` 的既有账户数据及同步整改；§10 描述 `add-sharing-feedback` **待实施**的新集合。热度提炼已暂缓，`heat` 字段保留但当前不写入。
+> 范围：§1—9 为账户数据及同步设计，§10 为已实现的分享反馈结构，§11—15 为配额、组织字段、AI、照片任务与自愿统计。所有新资源仍需单独授权创建和云端验收。热度提炼暂缓，`heat` 当前不写入。
 
 ## 1. 选型带来的三个硬事实
 
@@ -19,8 +19,8 @@
 | 集合名 | 用途 | 文档粒度 |
 | --- | --- | --- |
 | `linggan_accounts` | 全部业务数据 | 一个微信账户一份 |
-| `linggan_shares`（待实施） | 用户主动创建的受控文字分享快照 | 一次分享一份 |
-| `linggan_feedback`（待实施） | 意见反馈与内容举报 | 一次提交一份 |
+| `linggan_shares`（云端待验收） | 用户主动创建的受控文字分享快照 | 一次分享一份 |
+| `linggan_feedback`（云端待验收） | 意见反馈与内容举报 | 一次提交一份 |
 
 **账户核心仍只用一个集合，是刻意的。** 灵感正文、补充、图片记录仍内嵌在同一份账户文档里，因为它们总是一起读写。分享与反馈不是灵感子文档：分享允许持凭证者跨账户只读，反馈有独立的状态与保留周期，所以另建集合，不能据此把私人照片或完整历史外移。
 
@@ -36,6 +36,7 @@
 | `version` | number | 服务端 | 账户级版本号，每次成功写入递增，用于冲突判定 |
 | `updatedAt` | number | 服务端 | 服务端时间戳（毫秒） |
 | `inspirations` | array | 客户端提交、服务端校验 | 灵感数组，见 3.2 |
+| `photoCleanup` | array | 服务端 | 待清理任务；旧账户缺省 []，与记录同一 CAS 写入 |
 
 ### 3.2 `inspirations[]` 元素
 
@@ -48,6 +49,10 @@
 | `updatedAt` | number | 是 | 非负整数 | 列表按它倒序 |
 | `supplements` | array | 是 | 可空数组 | 见 3.4 |
 | `photos` | array | 是 | 可空数组 | 见 3.5 |
+| `tags` | string[] | 是 | 最多 5 个，单个 12 字，不重复 | 旧记录缺省为空 |
+| `stage` | string | 是 | `seed` / `growing` / `ready` | 想法 / 整理中 / 可使用；旧记录缺省 seed |
+| `source` | string | 是 | `user` / `ai` | 当前正文的来源，AI 后续编辑仍保留标记 |
+| `summarySources` | string[] | 是 | 最多 20 个来源 id | 汇总追溯，不复制正文；来源删除后显示已删除 |
 | `mergedInto` | string \| null | 是 | 灵感的 `id`，不得指向自身 | 被 AI 汇总进哪一条 |
 | `deletedAt` | number \| null | 是 | | 软删标记，云端确认后才物理移除 |
 | `heat` | object | 否 | **本变更不写入** | 热度已暂缓，字段名保留以避免后续迁移 |
@@ -67,10 +72,11 @@
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `id` | string | 同上，幂等键 |
-| `content` | string | 内容，≤ 1000 字符 |
+| `content` | string | 普通补充 ≤ 1000 字符，AI 汇总补充 ≤ 2000 字符；编辑沿用对应上限 |
 | `contentHistory` | array | 这条补充自己的历史，结构同 3.3 |
 | `createdAt` | number | 记录时间 |
 | `source` | string | `'user'` 或 `'ai'`。AI 产出**必须**标为 `'ai'`，界面据此标注 |
+| `sourceIds` | string[] | 汇总来源补充 id，普通补充为空；旧记录缺省为空 |
 | `mergedInto` | string \| null | 被 AI 汇总时指向汇总结果的 `id` |
 | `foldedAt` | number \| null | 被**合并进灵感**的时刻（界面标签「合并进灵感」） |
 
@@ -109,6 +115,8 @@
 因此：**客户端一律经 `linggan_api` 云函数读写**，云函数从 `cloud.getWXContext()` 取身份。代价是每一次读写都要过一次云函数调用，收益是身份不可能被伪造。
 
 ### 4.3 云存储
+
+共享环境部署补充（本地实现、平台待验收）：账户标识只接受本项目的可信来源 AppID/OpenID；跨账号调用使用完整的 FROM_APPID/FROM_OPENID，不以资源方身份替代。哈希结构不变，无云数据库字段迁移。客户端缓存按资源方 AppID 和环境 ID 增加外层命名空间，旧缓存保留但不自动重放到 product。集合均要求禁止客户端直读写；共用 cloudbase_auth、其他集合和全局存储规则不得随本项目部署改写。
 
 | 项 | 值 |
 | --- | --- |
@@ -173,9 +181,9 @@
 
 本机 `linggan:v2:<cacheScope>:state` 的恢复字段为 `recoveries[]`；每项包含 `savedAt`、`reason`、`snapshot`（冲突时本机快照）和 `pendingOps`（未确认操作）。它与活动快照、队列在单键中原子写入，绝不上传到云端。采用云端版本时先追加恢复副本，写入成功后才能清空活动队列；普通启动拉取必须保留该数组。若因容量不足无法写入恢复副本，保持冲突状态，不执行切换。
 
-## 10. 分享与反馈新增集合（`add-sharing-feedback`，待实施）
+## 10. 分享与反馈新增集合（`add-sharing-feedback`，已实现、云端待验收）
 
-本节字段及服务端代码已落在本地工程，**当前云端不一定存在集合、索引或权限规则，清理任务也尚未实现**。不得仅因文档与代码落地就认为分享可用。新集合均使用 `linggan_` 前缀，不修改其他小程序集合或共用认证设置。新集合不改变 `linggan_accounts` 的字段清单；§3 的结构校验仍只针对现有账户文档。
+本节字段及服务端代码已落在本地工程，**当前云端不一定存在集合、索引或权限规则**。清理任务已有本地实现，未部署或运行。不得仅因文档与代码落地就认为分享可用。新集合均使用 `linggan_` 前缀，不修改其他小程序集合或共用认证设置。新集合不改变 `linggan_accounts` 的字段清单；§3 的结构校验仍只针对现有账户文档。
 
 ### 10.1 `linggan_shares` 字段
 
@@ -248,6 +256,42 @@
 2. `share.get` 每次按令牌哈希查记录，检查 `expiresAt`、`revokedAt`、`payloadPurgedAt`，再查来源账户 `generation` 和灵感仍存在且未删除；任何查询失败都返回统一不可查看状态，不用旧缓存。**源删除确认后的新读取**不能再取得快照。已在途的读取和已外发的海报/截图无法回收，界面不得承诺绝对撤回。
 3. 撤销写入 `revokedAt` 后新读取失效。删除来源时先尽力撤销其分享，再走原删除协议；即使跨集合操作部分失败，来源复核仍应在源删除后拒绝。账户清空使代际变化，旧分享即失效。云端恢复/回滚不得重新启用已撤销令牌。
 4. 过期或撤销满 90 天后，受控清理任务删除 `snapshot` 与 `tokenCiphertext`，保留 `_id`、所有者、时间、渠道意图及状态元数据供“我的分享”回看；账户删除时按经授权的数据删除流程清掉本人分享和反馈。不能对 `expiresAt` 直接建 TTL 索引，否则过期记录从“我的分享”消失，违背管理需求。清理任务未部署前须声明个人内容仍保留，不得写成自动清理已生效。
-5. 反馈产品保留方案：关闭后 180 天或仍未关闭但创建满 365 天，受控任务删除正文及记录；页面展示可回看的时间范围。此为待实施的产品规则，正式启用前需与隐私告知一致并核实云端删除证据。
+5. 反馈保留方案：关闭后 180 天或仍未关闭但创建满 365 天，受控任务删除正文及记录；页面展示可回看的时间范围。清理代码已实现且默认演练，未部署执行，正式启用前核对隐私告知和删除证据。
 
 朋友圈海报存入用户相册及其自行发布的朋友圈，**不属于上述云数据库清理范围**；撤销只能让海报码所指分享页失效，不能删除图片上已展示的文字。任何生成的临时图片在小程序本机缓存中按会话清理，不上传用户照片；分享封面和海报只由已确认的文字快照绘制。
+
+## 11. 原子配额与访问计数（`complete-product-workflows`）
+
+`linggan_usage` 每账户一文档，`_id=SHA256(accountKey)`，客户端全拒绝。字段：`accountKey:string`、`dayStart:number`（UTC+8 自然日）、`shareCount:number`、`feedbackCount:number`、`activeShares:Array<{shareId:string,expiresAt:number}>`、`updatedAt:number`。配额文档与新增业务记录在同一 `runTransaction` 中写入；超限抛错回滚。每日上限为分享 10、反馈 5，有效分享最多 20；撤销与删除分享占位在同一事务处理。过期占位在下次写时剔除。当日重试与去重由原有唯一索引保证，失败事务不占额。
+
+首次初始化从现有分享/反馈读取当日计数和有效分享引用；上线前必须停止旧版绕过配额的写入实例，再初始化/启用新版。不把这一过程称为自动完成的迁移。活跃引用若已有超限记录，保守阻止新建，不删数据。
+
+`linggan_rate_limits` 以 `SHA256(accountKey + action + windowStart)` 为 `_id`。字段：`action:string`、`windowStart:number`、`used:number`、`expiresAt:number`。初始化后通过 `_id + used < limit` 条件原子递增，成功更新一条才放行；无身份、初始化失败或更新异常均失败关闭。窗口均为 60 秒：创建分享 20、读取分享 60、生成码 5、本人分享列表/撤销 30、反馈提交/举报 10、反馈列表 30。计数文档窗口结束 24 小时后可清理，索引 `expiresAt`。
+
+清理索引：`linggan_shares.(payloadPurgedAt,expiresAt,_id)`、`(payloadPurgedAt,revokedAt,_id)`；`linggan_feedback.(status,closedAt,_id)`、`(status,createdAt,_id)`。清理候选分过期/撤销/关闭/未关闭扫描，最多每类 100 条，避免全表读取。提交清理时再按 `_id` 和期限/状态匹配；分享只置空 `snapshot/tokenCiphertext` 并写 `payloadPurgedAt`，反馈条件删除。失败记录保留下轮重试。
+
+## 12. 本机回顾偏好
+
+键 `linggan:v2:<cacheScope>:review`，只有取得可信快照后才创建服务。字段 `enabled:boolean`（默认 true）、`dayKey:string`（UTC+8 日期）、`selectedId:string|null`、`dismissed:boolean`。不含正文、照片、搜索词或账户原始标识；不进入云端灵感快照。损坏时仅重置偏好，不改用户记录。设置写入失败向页面返回异常，不把失败写入算作关闭成功。
+
+## 13. AI 配额与请求凭证
+
+`linggan_ai_usage`：`_id=SHA256(accountKey|dayStart)`；`dayStart:number`、`used:number`、`minuteStart:number`、`minuteUsed:number`、`requests:Record<requestHash,{status:'pending'|'done'|'failed',fingerprint:string}>`、`expiresAt:number`。账户原始身份、提示词和生成内容均不落库；仅受信云函数可读写。每日最多 100 次尝试（含失败），防止退款重试撑大文档。预留及终态/退款用事务串行化；重复请求返回 `AI_REQUEST_REPLAY`，不同输入复用返回 `REQUEST_ID_REUSED`，不重发模型。7 天到期，可由授权维护任务条件清理，索引 expiresAt。
+
+Store 队列新增 `kind:'batch'`、`inspirations:Inspiration[]`；快照和整批队列在同次本机写入，服务端只接受一次 CAS。旧 `upsert/delete` 队列保持兼容。合并必须校验目标存在、非删除、无自指或环；删除目标时恢复引用它的来源。服务端不接受缩短或改写已有历史内容。
+
+## 14. 照片闭环
+
+`snapshot.pull` 的 `storagePrefix` 为已核验环境的 `cloud://环境.桶/` 前缀；客户端用于在上传前确定准确 fileID，避免上传响应丢失后无法定位孤立文件。照片暂存另记 `attempted:boolean`；先落该状态再上传，放弃时只清理固定对象，不重新上传。
+
+账户 `photoCleanup[]` 字段：`id:string`（删除对象类型+id）、`inspirationId:string`、`photoId:string|null`（null 删除整条）、`fileIds:string[]`、`removedIds:string[]`（已确认清理进度）、`requestedAt:number`。首次删除先按版本 CAS 写任务，原记录保留且该记录暂停改写；此后同一删除动作可不依赖旧 baseVersion 继续清理。文件成功删除或 SDK 明确返回已不存在才完成；失败返回 `PHOTO_CLEANUP_PENDING`，任务和记录保留。进度写入失败可重复删除同一文件；未知 SDK 状态不视作成功。所有文件处理成功后重新读取账户、CAS 清任务及记录/照片；绝不声称已删除的文件可回滚。`photoCleanup` 不接受客户端回传。
+
+`snapshot.pull` 增加 `photosEnabled:boolean` 能力，不是持久字段。只有服务端 `LINGGAN_PHOTOS_ENABLED=true` 且环境文件前缀配置有效时可新增照片/删除含照片记录；启用须先核验仅创建者读写存储规则。上传文件 ID 必须精确匹配当前环境前缀+`linggan/<可信accountKey>/<inspirationId>/<photoId>`，不得引用别的账户、记录、环境或任意 URL；缺失配置失败关闭。照片移除只走 `photo.delete`，不得通过推送静默丢弃文件引用。
+
+本机键 `linggan:v2:<scope>:photo-drafts`：数组元素 `id/inspirationId/localPath/fileId/state`，state 为 prepared/uploaded/discarding；只在当前可信账户作用域读取。先持久化本机文件和任务，再上传固定路径；上传成功先存 fileId，后保存照片记录，失败可重试。用户明确放弃时先清已上传文件、再删除本机文件及任务；任一步失败保留任务。备份确认前不删本机文件。照片冲突恢复保留完整引用和本机任务，并提供恢复副本照片预览，不将图片写入文字导出或分享。
+
+## 15. 自愿本机统计
+
+跨灵感手动选材（`add-material-output`）不新增集合、持久字段或本机键。素材选择和未保存稿件仅在页面内存；另存生成标准 user 来源记录，`summarySources` 保持空数组，不将手动组合冒充 AI 汇总。复制不会写入数据库。
+
+键 `linggan:v2:<scope>:usage`，字段 `enabled:boolean` 默认 false、`days:Record<YYYY-MM-DD,Record<event,count>>`；仅当前设备近三十个 UTC+8 自然日。事件白名单 `record_saved/supplement_saved/output_copied/output_saved/search_opened/review_opened/save_failed/backup_pending`。事件无附带属性，不存内容/id/时间点/搜索词/标签名/模型结果，不自动上传、不跨设备合计。每计数上限 100000；关闭以一次写入清空。导出只含日期和聚合计数，不含存储键/账户哈希。此数据不等于真实发表、全量留存率或全账户统计。

@@ -3,7 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
-const { createSharingFeedbackService, makeSnapshot, dayStart } = require('../server/sharing-feedback');
+const { createSharingFeedbackService: rawSharingService, makeSnapshot, dayStart } = require('../server/sharing-feedback');
+const createSharingFeedbackService = (options) => rawSharingService(Object.assign({ rateLimit: async () => true }, options));
 const { createProtocol } = require('../server/protocol');
 const { createRepository } = require('../server/repository');
 const { paginatePoster } = require('../miniprogram/services/share-poster');

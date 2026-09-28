@@ -1,7 +1,7 @@
 const { LIMITS, createId } = require('../../core/limits');
 const { createInspiration } = require('../../core/inspiration');
 const { formatAbsolute } = require('../../core/format');
-const { currentSupplements, buildUseText, buildArchiveText } = require('../../services/content-output');
+const { currentSupplements, buildTemplateText, buildArchiveText, USE_TEMPLATES } = require('../../services/content-output');
 
 Page({
   data: {
@@ -12,6 +12,9 @@ Page({
     options: [],
     selectedCount: 0,
     draft: '',
+    draftEdited: false,
+    templateId: 'free',
+    templates: USE_TEMPLATES,
     maxLength: LIMITS.textMaxLength,
     archive: '',
     txtPath: '',
@@ -92,14 +95,24 @@ Page({
       return;
     }
     const ids = this.data.options.filter((entry) => entry.selected).map((entry) => entry.id);
-    this.setData({
-      phase: 'edit',
-      draft: buildUseText(item, ids),
-      error: '',
-      notice: '',
-      savedId: ''
-    });
+    const generated = buildTemplateText(item, ids, this.data.templateId);
+    const epoch = this.loadedEpoch;
+    const originalDraft = this.data.draft;
+    const apply = () => {
+      if (this.disposed || epoch !== this.loadedEpoch || epoch !== getApp().globalData.sessionEpoch || originalDraft !== this.data.draft) return;
+      this.setData({ phase: 'edit', draft: generated, draftEdited: false, error: '', notice: '', savedId: '' });
+    };
+    if (this.data.draftEdited && this.data.draft !== generated) {
+      wx.showModal({ title: '替换当前使用稿？', content: '你编辑过当前稿件。重新生成将替换这些编辑，原始记录不会改变。',
+        confirmText: '替换', cancelText: '保留', success: (result) => { if (result.confirm) apply(); } });
+    } else apply();
   },
+
+  onTemplateChange(event) {
+    const templateId = event.currentTarget.dataset.template;
+    if (USE_TEMPLATES.some((template) => template.id === templateId)) this.setData({ templateId });
+  },
+  onResumeDraft() { if (this.data.draft) this.setData({ phase: 'edit' }); },
 
   onBackToSelection() {
     if (this.data.busy) return;
@@ -107,10 +120,11 @@ Page({
   },
 
   onDraftInput(event) {
-    this.setData({ draft: event.detail.value, error: '', notice: '', savedId: '' });
+    this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '', savedId: '' });
   },
 
   copyText(text) {
+    const app = getApp(), epoch = app.globalData.sessionEpoch;
     if (!text || !text.trim()) {
       this.setData({ error: '没有可复制的内容。', notice: '' });
       return;
@@ -118,7 +132,7 @@ Page({
     try {
       wx.setClipboardData({
         data: text,
-        success: () => this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。' }),
+        success: () => { if (this.disposed || epoch !== app.globalData.sessionEpoch) return; this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。' }); if (text === this.data.draft && app.globalData.metrics) app.globalData.metrics.track('output_copied'); },
         fail: () => this.setData({ error: '复制未完成，请稍后重试。', notice: '' })
       });
     } catch (err) {
@@ -136,6 +150,8 @@ Page({
 
   async onSaveAsNew() {
     if (this.data.busy) return;
+    const app = getApp(), store = app.globalData.store, epoch = app.globalData.sessionEpoch;
+    if (!store || this.disposed || this.loadedEpoch !== epoch) return;
     const draft = this.data.draft;
     if (!draft.trim()) {
       this.setData({ error: '请先写下要保存的内容。', notice: '' });
@@ -157,10 +173,11 @@ Page({
     this.setData({ busy: true, error: '', notice: '' });
     let result;
     try {
-      result = await getApp().globalData.store.saveInspiration(next);
+      result = await store.saveInspiration(next);
     } catch (err) {
       result = null;
     }
+    if (this.disposed || epoch !== app.globalData.sessionEpoch || app.globalData.store !== store) return;
     if (!result || !result.ok) {
       this.setData({ busy: false, error: '另存失败，使用稿还在，可稍后重试或先复制。' });
       return;
@@ -172,6 +189,7 @@ Page({
         ? '已另存为新灵感，原记录未改动。'
         : '已另存，但备份未完成。请暂时不要清理小程序数据。'
     });
+    if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
   },
 
   onOpenSaved() {

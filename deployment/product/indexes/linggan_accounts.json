@@ -1,0 +1,12 @@
+{
+  "CreateIndexes": [
+    {
+      "IndexName": "accountKey_unique",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "accountKey", "Direction": "1" }],
+        "MgoIsUnique": true,
+        "MgoIsSparse": false
+      }
+    }
+  ]
+}

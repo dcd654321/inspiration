@@ -1,6 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const sharedCloud = require('./helpers/shared-cloud.cjs');
 
 const A = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const B = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
@@ -32,6 +33,7 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
       setStorageSync(key, value) { data.set(key, JSON.parse(JSON.stringify(value))); },
       getStorageInfoSync() { return { keys: Array.from(data.keys()) }; }
     };
+    global.wx.cloud = sharedCloud(global.wx.cloud);
     delete require.cache[appPath];
     require(appPath);
     const app = Object.assign({}, definition, { globalData: Object.assign({}, definition.globalData) });
@@ -43,12 +45,14 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
     app.onShow();
     await app.ensureReady();
     const activeStore = app.globalData.store;
+    app.globalData.drafts.set('a', 'A 尚未提交的补充');
     activeStore.retryPending = async () => { retryCount += 1; };
     networkListener({ isConnected: true });
     assert.equal(retryCount, 1, '前台网络恢复触发一次有界重试');
 
     app.onHide();
     assert.equal(app.globalData.store, null);
+    assert.equal(app.globalData.drafts.get('a'), '');
     networkListener({ isConnected: true });
     assert.equal(retryCount, 1, '后台不能触发个人数据重试');
     account = B;
@@ -56,6 +60,10 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
     assert.equal(app.globalData.store, null, '重新确认账户前不能读上个账户缓存');
     await app.ensureReady();
     assert.deepEqual(app.globalData.store.listInspirations(), []);
+    assert.equal(app.globalData.drafts.get('a'), '', 'B 不读取 A 的内存草稿');
+    app.globalData.drafts.set('a', 'B 的草稿');
+    app.onHide(); account = A; app.onShow(); await app.ensureReady();
+    assert.equal(app.globalData.drafts.get('a'), 'A 尚未提交的补充', '同会话回到 A 保留自己的草稿');
     assert.equal(data.get('linggan:v1:snapshot').inspirations[0].text, '归属未明');
   } finally {
     delete require.cache[appPath];

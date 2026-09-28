@@ -19,6 +19,7 @@
       <view wx:for="{{remoteItems}}" wx:key="id" class="remote-item">
         <text class="remote-text" selectable="true">{{item.text}}</text>
         <button class="btn btn-plain btn-block" data-id="{{item.id}}" bindtap="onCopyRemote">复制这条云端文字</button>
+        <button wx:if="{{item.photoCount}}" class="btn btn-plain btn-block" data-id="{{item.id}}" data-remote="true" bindtap="onRecoveryPhotos">查看照片（{{item.photoCount}}）</button>
       </view>
     </view>
     <view wx:if="{{recoveryCount > 0}}" class="use-copy">另有 {{recoveryCount}} 份本机只读恢复副本。它们不会自动同步或删除。</view>
@@ -28,6 +29,7 @@
         <view class="use-copy">保留于 {{item.label}}</view>
         <text class="remote-text" selectable="true">{{item.text}}</text>
         <button class="btn btn-plain btn-block" data-key="{{item.key}}" bindtap="onCopyRecovery">复制这条恢复文字</button>
+        <button wx:if="{{item.photoCount}}" class="btn btn-plain btn-block" data-id="{{item.id}}" data-index="{{item.recoveryIndex}}" bindtap="onRecoveryPhotos">查看恢复照片（{{item.photoCount}}）</button>
       </view>
     </view>
   </view>
@@ -40,6 +42,8 @@
     </view>
   </view>
 
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">使用统计</text></view>
+  <view class="panel privacy-panel"><view class="use-copy">可选使用统计：仅在当前设备记录最近三十天的动作次数，不含内容或搜索词，不自动上传。关闭即清空统计。</view><switch checked="{{usageEnabled}}" bindchange="onUsageSetting" aria-label="开启本设备使用统计" color="#34377f" /><button wx:if="{{usageEnabled}}" class="btn btn-plain btn-block" bindtap="onViewUsage">查看使用统计</button><block wx:if="{{usageVisible}}"><text class="remote-text" selectable="true">{{usageReport}}</text><button class="btn btn-plain btn-block" bindtap="onCopyUsage">复制统计</button></block><view wx:if="{{usageError}}" class="notice notice-err">{{usageError}}</view></view>
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">从记录到使用</text></view>
   <view class="panel use-panel">
     <view class="use-copy">在灵感详情中继续补充；需要使用时，可以整理、复制文字，或生成 TXT 文件留存。</view>

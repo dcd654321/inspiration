@@ -9,20 +9,21 @@
 // **不要直接改这里的文件**——改了会被下次同步覆盖，而且 `npm run check` 会报不一致。
 // 要改就去改仓库根的 `server/`，然后跑 `node scripts/build-cloud.cjs`。
 
-const crypto = require('node:crypto');
 const cloud = require('wx-server-sdk');
+const { getCallerIdentity } = require('./server/wx-identity');
 
 const { createRepository } = require('./server/repository');
 const { createProtocol } = require('./server/protocol');
 const { createSharingFeedbackService } = require('./server/sharing-feedback');
+const { createCloudSharingDb } = require('./server/cloud-sharing-db');
+const { createCloudRateLimiter } = require('./server/rate-limit');
+const { createPhotoValidator } = require('./server/photo-lifecycle');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 // 与 miniprogram/config/cloud-resources.js 的 accountCollection 保持一致。
 // 云函数不能 require 小程序目录，所以这里重复一份——改名时两处都要改。
 const COLLECTION = 'linggan_accounts';
-const SHARES = 'linggan_shares';
-const FEEDBACK = 'linggan_feedback';
 
 // requestId 缓存的上限。云函数实例是复用的，Map 会跨调用存活，
 // 不设上限的话高频调用下会一直涨。超了直接清空——它是加速用的，丢了只是变慢。
@@ -49,7 +50,8 @@ function createDbAdapter() {
         generation: doc.generation,
         version: doc.version,
         updatedAt: doc.updatedAt,
-        inspirations: doc.inspirations
+        inspirations: doc.inspirations,
+        photoCleanup: doc.photoCleanup || []
       };
       const collection = db.collection(COLLECTION);
       const result = await collection.where({ accountKey, version: expectedVersion }).update({ data });
@@ -84,46 +86,6 @@ function createMemoryCache() {
   };
 }
 
-/** 新集合也只经云函数访问；客户端数据库权限保持全拒绝。 */
-function createSharingDbAdapter(accounts) {
-  async function first(collection, where) {
-    const result = await db.collection(collection).where(where).limit(1).get();
-    return result.data && result.data.length ? result.data[0] : null;
-  }
-  async function count(collection, where) {
-    const result = await db.collection(collection).where(where).count();
-    return result.total || 0;
-  }
-  function mineQuery(collection, ownerField, accountKey, before, limit) {
-    const where = { [ownerField]: accountKey };
-    if (before) where._id = db.command.lt(before);
-    return db.collection(collection).where(where).orderBy('_id', 'desc').limit(limit).get()
-      .then((result) => result.data || []);
-  }
-  return {
-    getAccount: (accountKey) => accounts.get(accountKey),
-    findShareByRequest: (ownerAccountKey, requestId) => first(SHARES, { ownerAccountKey, requestId }),
-    findShareByHash: (tokenHash) => first(SHARES, { tokenHash }),
-    findShareById: (_id) => first(SHARES, { _id }),
-    insertShare: (doc) => db.collection(SHARES).add({ data: doc }),
-    listShares: (accountKey, before, limit) => mineQuery(SHARES, 'ownerAccountKey', accountKey, before, limit),
-    countActiveShares: (ownerAccountKey, at) => count(SHARES,
-      { ownerAccountKey, revokedAt: null, expiresAt: db.command.gt(at) }),
-    countSharesSince: (ownerAccountKey, since) => count(SHARES,
-      { ownerAccountKey, createdAt: db.command.gte(since) }),
-    revokeShare: (ownerAccountKey, _id, at) => db.collection(SHARES)
-      .where({ ownerAccountKey, _id, revokedAt: null }).update({ data: { revokedAt: at } }),
-    revokeSharesForSource: (ownerAccountKey, sourceInspirationId, at) => db.collection(SHARES)
-      .where({ ownerAccountKey, sourceInspirationId, revokedAt: null }).update({ data: { revokedAt: at } }),
-    findFeedbackByRequest: (accountKey, requestId) => first(FEEDBACK, { accountKey, requestId }),
-    findFeedbackByDedupeKey: (dedupeKey) => first(FEEDBACK, { dedupeKey }),
-    insertFeedback: (doc) => db.collection(FEEDBACK).add({ data: doc }),
-    listFeedback: (accountKey, before, limit) => mineQuery(FEEDBACK, 'accountKey', accountKey, before, limit),
-    countFeedbackSince: (accountKey, since) => count(FEEDBACK,
-      { accountKey, createdAt: db.command.gte(since) })
-  };
-}
-
 const accountDb = createDbAdapter();
 const tokenKeyHex = process.env.LINGGAN_SHARE_TOKEN_KEY || '';
 function previousTokenKeys() {
@@ -143,7 +105,8 @@ function previousTokenKeys() {
 const shareCreateFlag = process.env.LINGGAN_SHARE_CREATE_ENABLED;
 const shareCreateEnabled = shareCreateFlag == null || shareCreateFlag === '' || shareCreateFlag === 'true';
 const sharing = createSharingFeedbackService({
-  db: createSharingDbAdapter(accountDb),
+  db: createCloudSharingDb({ db, accounts: accountDb }),
+  rateLimit: createCloudRateLimiter({ db }),
   now: () => Date.now(),
   createEnabled: shareCreateEnabled,
   tokenKey: /^[0-9a-fA-F]{64}$/.test(tokenKeyHex) ? Buffer.from(tokenKeyHex, 'hex') : null,
@@ -151,13 +114,24 @@ const sharing = createSharingFeedbackService({
   keyId: process.env.LINGGAN_SHARE_KEY_ID || 'v1',
   async checkPublicText(content) {
     // 云调用未授权、审核报错或结果不明确时失败关闭，绝不直接公开文字。
-    const result = await cloud.openapi.security.msgSecCheck({ content });
-    return result && (result.errCode === 0 || result.errcode === 0);
+    const caller = getCallerIdentity(cloud.getWXContext());
+    if (!caller) return false;
+    const openapi = cloud.openapi({ appid: caller.appid });
+    const chars = Array.from(content);
+    for (let offset = 0; offset < chars.length; offset += 600) {
+      const result = await openapi.security.msgSecCheck({
+        content: chars.slice(offset, offset + 600).join(''), version: 2, scene: 4, openid: caller.openid
+      });
+      if (!result || (result.errCode !== 0 && result.errcode !== 0) || !result.result || result.result.suggest !== 'pass') return false;
+    }
+    return chars.length > 0;
   },
   async generateCode(scene, page) {
+    const caller = getCallerIdentity(cloud.getWXContext());
+    if (!caller) return null;
     const requested = process.env.LINGGAN_SHARE_CODE_VERSION;
     const envVersion = ['develop', 'trial', 'release'].includes(requested) ? requested : 'release';
-    const result = await cloud.openapi.wxacode.getUnlimited({
+    const result = await cloud.openapi({ appid: caller.appid }).wxacode.getUnlimited({
       scene, page, width: 430, checkPath: envVersion === 'release', envVersion
     });
     if (!result || !result.buffer) return null;
@@ -170,7 +144,23 @@ const protocol = createProtocol({
   repository: createRepository({
     db: accountDb,
     now: () => Date.now(),
-    beforeRemove: sharing.revokeForSource
+    beforeRemove: sharing.revokeForSource,
+    photosEnabled: process.env.LINGGAN_PHOTOS_ENABLED === 'true' && /^cloud:\/\/[A-Za-z0-9_.-]+\/$/.test(process.env.LINGGAN_STORAGE_PREFIX || ''),
+    validatePhoto: createPhotoValidator(process.env.LINGGAN_STORAGE_PREFIX),
+    storagePrefix: process.env.LINGGAN_STORAGE_PREFIX,
+    async removeFiles(fileIds) {
+      const removed = [], failed = [];
+      for (const fileID of fileIds) {
+        try {
+          const result = await cloud.deleteFile({ fileList: [fileID] });
+          const file = result && result.fileList && result.fileList[0];
+          // SDK 仅 status=0 是可确认的成功；未知错误保留任务，不猜测已不存在。
+          if (file && file.fileID === fileID && (file.status === 0 || file.code === 'SUCCESS' || file.code === 'STORAGE_FILE_NONEXIST')) removed.push(fileID);
+          else failed.push(fileID);
+        } catch (err) { if (err.code === 'STORAGE_FILE_NONEXIST') removed.push(fileID); else failed.push(fileID); }
+      }
+      return { ok: failed.length === 0, removed, failed };
+    }
   }),
   sharing,
   requestCache: createMemoryCache(),
@@ -187,10 +177,8 @@ const protocol = createProtocol({
  * 哈希是稳定的——同一个账户永远得到同一个 key。
  */
 function accountKeyOf(wxContext) {
-  const appid = wxContext.APPID || '';
-  const openid = wxContext.OPENID || '';
-  if (!openid) return '';
-  return crypto.createHash('sha256').update(appid + '|' + openid).digest('hex').slice(0, 32);
+  const caller = getCallerIdentity(wxContext);
+  return caller ? caller.accountKey : '';
 }
 
 exports.main = async (event) => {

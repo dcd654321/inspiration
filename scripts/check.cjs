@@ -45,7 +45,7 @@ for (const tab of app.tabBar.list) {
 
 // 云函数目录必须在 project.config.json 的 cloudfunctionRoot 下且含有入口。
 const cloudRoot = path.join(root, config.cloudfunctionRoot);
-for (const fn of ['linggan_api', 'linggan_ai']) {
+for (const fn of ['linggan_api', 'linggan_ai', 'linggan_maintenance']) {
   if (!fs.existsSync(path.join(cloudRoot, fn, 'index.js'))) {
     throw Error('Missing cloud function entry: ' + fn + '/index.js');
   }

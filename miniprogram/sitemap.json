@@ -9,8 +9,12 @@
     { "action": "disallow", "page": "pages/shared/index" },
     { "action": "disallow", "page": "pages/my-shares/index" },
     { "action": "disallow", "page": "pages/feedback/index" },
+    { "action": "disallow", "page": "pages/material-output/index" },
+    { "action": "disallow", "page": "pages/ai-workbench/index" },
+    { "action": "disallow", "page": "pages/photo-viewer/index" },
+    { "action": "allow", "page": "pages/welcome/index" },
     {
-      "action": "allow",
+      "action": "disallow",
       "page": "*"
     }
   ]

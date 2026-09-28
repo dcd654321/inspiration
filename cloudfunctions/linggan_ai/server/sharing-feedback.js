@@ -179,7 +179,9 @@ function createSharingFeedbackService(options) {
     try { await db.insertShare(doc); }
     catch (err) {
       const raced = await db.findShareByRequest(accountKey, requestId);
-      if (!raced || raced.requestDigest !== digest) return fail('INTERNAL', '分享暂时无法创建');
+      if (!raced) return err.code === 'SHARE_LIMIT'
+        ? fail('SHARE_LIMIT', '今天创建的分享或有效分享已达上限') : fail('INTERNAL', '分享暂时无法创建');
+      if (raced.requestDigest !== digest) return fail('REQUEST_ID_REUSED', '请求标识与操作内容不一致');
       const oldToken = decryptToken(raced.tokenCiphertext);
       if (!oldToken || !await activeShare(oldToken)) {
         return fail('SHARE_RETRY_UNAVAILABLE', '原分享已无法继续，请重新创建');
@@ -204,7 +206,7 @@ function createSharingFeedbackService(options) {
     const account = await db.getAccount(accountKey);
     const items = records.map((doc) => ({
       shareId: doc._id, sourceInspirationId: doc.sourceInspirationId,
-      title: doc.snapshot ? doc.snapshot.title : '',
+      title: doc.snapshot ? doc.snapshot.title : '内容已清理',
       preview: doc.snapshot ? doc.snapshot.body.slice(0, 90) : '',
       createdAt: doc.createdAt, expiresAt: doc.expiresAt, channelIntent: doc.channelIntent,
       status: doc.revokedAt != null ? 'revoked' : doc.expiresAt <= now() || doc.payloadPurgedAt != null ? 'expired' :
@@ -275,9 +277,12 @@ function createSharingFeedbackService(options) {
       status: 'submitted', createdAt: at, updatedAt: at, closedAt: null };
     try { await db.insertFeedback(doc); }
     catch (err) {
-      const raced = await db.findFeedbackByRequest(accountKey, requestId) ||
+      const sameRequest = await db.findFeedbackByRequest(accountKey, requestId);
+      if (sameRequest && sameRequest.requestDigest !== digest) return fail('REQUEST_ID_REUSED', '请求标识与操作内容不一致');
+      const raced = sameRequest ||
         (category === 'share_report' ? await db.findFeedbackByDedupeKey(dedupeKey) : null);
-      if (!raced || raced.accountKey !== accountKey) return fail('INTERNAL', '反馈暂时无法提交');
+      if (!raced || raced.accountKey !== accountKey) return err.code === 'FEEDBACK_LIMIT'
+        ? fail('FEEDBACK_LIMIT', '今天提交的反馈已达上限') : fail('INTERNAL', '反馈暂时无法提交');
       return ok(feedbackView(raced));
     }
     return ok(feedbackView(doc));
@@ -306,8 +311,20 @@ function createSharingFeedbackService(options) {
     return ok({ items: records.map(feedbackView), nextBefore: records.length === 20 ? records[records.length - 1]._id : null });
   }
 
-  return { createShare, getShare, listMine, revokeShare, revokeForSource,
-    getShareCode, createFeedback, reportShare, listFeedback };
+  function guarded(action, fn) {
+    return async (accountKey, ...args) => {
+      try {
+        if (typeof opts.rateLimit !== 'function') throw Error('RATE_LIMIT_UNAVAILABLE');
+        if (!await opts.rateLimit(accountKey, action)) return fail('RATE_LIMITED', '操作较频繁，请稍后重试');
+      } catch (err) { return fail('RATE_LIMIT_UNAVAILABLE', '服务暂时繁忙，请稍后重试'); }
+      return fn(accountKey, ...args);
+    };
+  }
+  return { createShare: guarded('share.create', createShare), getShare: guarded('share.get', getShare),
+    listMine: guarded('share.listMine', listMine), revokeShare: guarded('share.revoke', revokeShare),
+    getShareCode: guarded('share.qr', getShareCode), createFeedback: guarded('feedback.create', createFeedback),
+    reportShare: guarded('feedback.reportShare', reportShare), listFeedback: guarded('feedback.listMine', listFeedback),
+    revokeForSource };
 }
 
 module.exports = { createSharingFeedbackService, makeSnapshot, dayStart, TOKEN_RE };

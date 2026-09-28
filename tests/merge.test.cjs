@@ -80,7 +80,7 @@ test('覆盖：目标必须是被勾选的之一', () => {
 
 // ---------------------------------------------------------------- 另存
 
-test('另存：汇总结果成为一条新灵感，来源全部收起', () => {
+test('另存：汇总结果成为一条新灵感，来源保持可见', () => {
   const merged = mergeInspirations(threeInspirations(), {
     sourceIds: ['insp_a', 'insp_b'],
     mode: 'append',
@@ -93,8 +93,8 @@ test('另存：汇总结果成为一条新灵感，来源全部收起', () => {
   assert.strictEqual(created.text, '做一个能导出 CSV 的记账小程序');
   assert.strictEqual(created.textHistory.length, 0);
 
-  assert.strictEqual(byId(merged, 'insp_a').mergedInto, 'insp_new');
-  assert.strictEqual(byId(merged, 'insp_b').mergedInto, 'insp_new');
+  assert.strictEqual(byId(merged, 'insp_a').mergedInto, null);
+  assert.strictEqual(byId(merged, 'insp_b').mergedInto, null);
   assert.strictEqual(byId(merged, 'insp_a').text, '做一个记账小程序', '另存不该改动原文');
 });
 
@@ -158,8 +158,9 @@ test('写入方式必须显式给出，没有默认值', () => {
 test('来源里有不存在或被合并过的，整批拒绝', () => {
   const merged = mergeInspirations(threeInspirations(), {
     sourceIds: ['insp_a', 'insp_b'],
-    mode: 'append',
-    newId: 'insp_new',
+    mode: 'overwrite',
+    targetId: 'insp_b',
+    historyId: 'tex_hidden',
     summaryText: '汇总结果',
     now: NOW + 3000
   });

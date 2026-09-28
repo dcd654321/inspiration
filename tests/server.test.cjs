@@ -269,14 +269,12 @@ test('标识含越权字符的提交被拒绝', async () => {
 // ---------------------------------------------------------------- 删除
 
 test('含照片的删除在安全清理协议完成前被拒绝，不会部分删文件', async () => {
-  const { protocol, storage } = setup();
-  await protocol.handle(CONTEXT, {
-    action: 'snapshot.push',
-    payload: {
-      upserts: [anInspiration({
+  const { protocol, storage, db } = setup();
+  // 模拟升级前的旧照片；未启用能力时新增照片也不允许绕过路径校验。
+  await db.put(CONTEXT.accountKey, { accountKey: CONTEXT.accountKey, generation: 1, version: 1, updatedAt: NOW,
+      inspirations: [anInspiration({
         photos: [{ id: 'pho_1', fileId: 'cloud://p1', createdAt: NOW }, { id: 'pho_2', fileId: 'cloud://p2', createdAt: NOW }]
       })]
-    }
   });
 
   const result = await protocol.handle(CONTEXT, {

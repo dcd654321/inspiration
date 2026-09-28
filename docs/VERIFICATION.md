@@ -2,6 +2,74 @@
 
 本文件记录每次验证的实际命令与结果。**未执行的项不得写成通过。**
 
+## 2026-09-28 · 组件按需注入代码质量项
+
+- 微信开发者工具截图显示「代码质量 → 组件 → 启用组件按需注入」未通过。当前项目 `project.config.json` 指向 `miniprogram/`，对应 `miniprogram/app.json` 原先没有 `lazyCodeLoading`。
+- 在 `miniprogram/app.json` 增加 `"lazyCodeLoading": "requiredComponents"`，并新增配置回归测试；未改动页面清单、`project.config.json` 或云端资源。待在微信开发者工具点击「重新扫描」核对该项，不能把本地配置检查当作平台扫描通过。
+- 本地验证：`npm test` 360/360，`npm run check` 218，OpenSpec strict 7/7，`git diff --check` 通过。账户唯一索引的云端待确认任务不受此次配置修改影响，仍须按任务 ID 核验。
+
+## 2026-09-28 · 六集合齐备，首个业务索引待确认
+
+- 恢复 `linggan_ai_usage` 创建任务 `confirmation_cloud_db_write_struct_b84508cf-f347-4b06-b2e0-55e44d8db0e2`，返回 `success / execution_success`，创建 requestId=`bb52533f-7c98-4810-81aa-eff100e71e91`。资源方集合列表 requestId=`66de1741-c13e-485c-8256-537b9051bab8` 回读六个 `linggan_` 集合均存在且 Count=0、IndexCount=2；未重发创建。
+- `linggan_accounts` 的索引列表 requestId=`e71dcc45-628f-4d46-8b1d-b7e92bec0b15` 仅有 `_id_`、`_openid_1`。使用 `deployment/product/indexes/linggan_accounts.json` 发起 `accountKey_unique` 唯一索引创建，返回 `pending / Waiting for user confirmation.`，taskId=`confirmation_cloud_db_write_struct_ad4ce1aa-5e82-4f8a-a117-005a71516a0d`。尚未计作成功；无其他并发云写，未使用 CloudBase CLI。
+- 本地复验 `npm test` 359/359、`npm run check` 217、OpenSpec strict 7/7、`git diff --check` 通过；云端索引仍待平台确认，工作区改动尚未提交。
+
+## 2026-09-28 · 最后一个集合创建待平台确认
+
+- 用户要求继续创建。`check_wechatide_status` 返回版本匹配、登录未过期、无 CLI token 要求。资源方集合列表 requestId=`3f65539a-ac0b-4809-b37d-168435f15099` 确认仍只有五个 `linggan_` 集合，均 Count=0、IndexCount=2；`linggan_ai_usage` 缺失。
+- 对 `product-d2g59zty74d7d1ec1` 发起 `cloud_db_write_struct --action createCollection --collection-name linggan_ai_usage`，返回 `pending / Waiting for user confirmation.`，taskId=`confirmation_cloud_db_write_struct_b84508cf-f347-4b06-b2e0-55e44d8db0e2`。这**不是创建成功**；按微信开发者工具异步规则不主动轮询、不重发、不并行发起其他云写。未使用 CloudBase CLI。
+- 本地复验：`npm test` 359/359、`npm run check` 217、OpenSpec strict 7/7、`git diff --check` 通过。云端剩余资源及小程序上传尚未验证或完成，改动尚未提交。
+
+## 2026-09-28 · 停用未成功的 CLI 路线并回读资源
+
+- 用户明确要求不用 CloudBase CLI。上次 `tcb login --flow web` 未成功；尝试停止会话时进程已结束，期间没有通过 CLI 进行云写。已从当前部署输入移除 `cloudbaserc.json` 和对应本地测试，忽略目录中原先下载的 CLI 包不再调用；历史尝试保留在下文。
+- `wechatide` 资源方集合列表 requestId=`a6299c52-a5e5-4257-9281-f50884a0564d` 再次回读：本项目五个已建集合均 Count=0、IndexCount=2，`linggan_ai_usage` 仍缺失。仅查询集合元数据，未读取其他项目文档或写云资源。
+- 已注册的微信开发者工具工具声明 `cloud_db_write_struct` 每次仅接收一个 `collectionName`，`cloud_fn_deploy` 每次仅接收一个函数目录；写操作须逐笔平台确认。未发现符合用户“不逐笔确认”要求的受支持批量入口；没有待确认云写任务，本轮不再发起写入。
+- `cloud_fn_list` 回读资源方环境现有九个函数，无 `linggan_api`、`linggan_ai`、`linggan_maintenance`。未查询或修改其他函数内容。
+- 移除未采用路线的本地配置后复验：`npm test` 359/359、`npm run check` 217、OpenSpec strict 7/7、`git diff --check` 通过。无新云写、无小程序上传；工作区改动尚未提交。
+
+## 2026-09-28 · product 第五个集合与一次登录准备
+
+- 原待确认任务 `confirmation_cloud_db_write_struct_f2896fc3-efee-4a84-9ba7-3778a9416b85` 查询为 `success / execution_success`，创建 requestId=`79e46139-cdd4-4c03-9e25-65d7d70b75b3`。资源方完整集合列表 requestId=`9e6b8964-dc45-4f4f-85e2-e62c89a033ff` 回读五个本项目集合都存在且 Count=0。未重复创建、未读取其他项目文档。
+- 用户要求不要逐笔确认。已注册的 wechatide `cloud_db_write_struct` 只能针对一个集合；当前没有云写待确认任务，不再发起新的逐笔确认。官方 CloudBase CLI 3.8.4 安装在已忽略的 `qa/local/cloudbase-cli/`；`tcb login --flow web` 已启动但等待用户在官方页面完成一次授权。CLI 登录及随后目标环境权限尚未验证，未进行任何 CLI 云写。未读取开发者工具本机凭据。
+- 新增 `deployment/product/cloudbaserc.json`：仅列出三个 `linggan_` 函数，环境指向 product，无环境变量、密钥或触发器。`tcb validate --json` 返回 valid=true、functions=3、errors=[]、warnings=[]。官方 API 文档确认 `tcb api` 使用登录凭据、CreateTable / UpdateTable / ModifySafeRule 针对明确集合；尚未实际调用。共享环境的全局 `tcb policy set` 明确禁止。
+- 本地复验 `npm test` **360/360**、`npm run check` **218**、OpenSpec strict **7/7**，`git diff --check` 通过。未部署函数、索引、权限或客户端，未执行 AI、照片和保留清理；本地改动尚未提交、推送或合并。
+
+## 2026-09-28 · product 第四个集合已创建
+
+- 恢复配额集合任务 `confirmation_cloud_db_write_struct_7d75bcd9-869d-44db-bee1-13615d421447`，终态 `success / execution_success`，创建 requestId=`b1b968d0-7b39-4ee3-b2b4-7dbc74c3e0eb`；未重发。
+- 资源方完整集合列表 requestId=`667198df-183a-4f1e-ae80-2616e4a2f52c` 确认 accounts、shares、feedback、usage 四个 `linggan_` 集合存在且 Count=0。未读取或改写其他项目业务数据。
+- 发起 `linggan_rate_limits` 创建，返回 `pending / Waiting for user confirmation.`，taskId=`confirmation_cloud_db_write_struct_f2896fc3-efee-4a84-9ba7-3778a9416b85`。按 wechatide 技能暂停云写，未计为创建成功。`linggan_ai_usage`、所有业务索引、规则及三个函数未实施。
+- 抓取 origin/dev 成功，保留既有工作区修改。没有函数部署、客户端上传、AI 调用或清理。
+
+## 2026-09-28 · product 第三个集合已创建
+
+- `wechatide` 0.3.9 检查为 `versionRelation=equal`、`loginExpired=false`、`tokenRequired=false`。旧待确认任务 `confirmation_cloud_db_write_struct_04b659a0-5292-470a-9d3f-965611a0fa70` 返回 `success / execution_success`，创建 requestId=`f4d634ab-cbeb-4eb0-a3c6-9df85cd9e24a`；未重发。
+- 用资源方查询完整集合列表，requestId=`c60e4886-17b8-406d-bbe6-b3934d019e0b`，回读 `linggan_accounts`、`linggan_shares`、`linggan_feedback` 均存在且 Count=0。未读取其他项目文档，不对其资源变化做写入。
+- 发起 `linggan_usage` 创建，返回 `pending / Waiting for user confirmation.`，taskId=`confirmation_cloud_db_write_struct_7d75bcd9-869d-44db-bee1-13615d421447`。按 wechatide 技能暂停云写；不得计作已创建，也不主动轮询或重发。
+- `git fetch origin dev` 成功，保留 dev 上现有未提交修改；没有业务代码改动、函数部署、客户端上传、AI 调用或数据清理。
+
+## 2026-09-27 · product 第二个集合已创建
+
+- 恢复分享集合任务 `confirmation_cloud_db_write_struct_9906885f-69f2-450a-aa7c-a805162abf78`，终态 `success / execution_success`，创建 requestId=`f1992c87-5492-46c5-a061-e921dee57db2`。未重复创建。
+- 资源方完整集合结构回读 requestId=`7d1568d1-e6af-48be-acc8-76e8deb374d0`，确认 `linggan_accounts`、`linggan_shares` 均存在且 Count=0。共享环境中其他项目亦有资源变化，本轮未修改那些资源，不据此改动本项目清单。
+- 两集合索引列表分别回读 requestId=`9d41fa9c-053e-41c9-833a-869b89e74c47`、`6ea92c4c-4e5c-4c09-8e0c-954a1e88ca1c`，都只有平台自带 `_id_`、`_openid_1`，业务索引尚未创建；未读取业务文档。
+- 新发起 `linggan_feedback` 创建，任务 `confirmation_cloud_db_write_struct_04b659a0-5292-470a-9d3f-965611a0fa70` 返回 `pending / Waiting for user confirmation.`。按 wechatide 技能暂停写入，不主动轮询、不重复发起。其余三集合、索引、规则和函数部署未发起；未进行真实业务调用或客户端上传。
+- 更新部署与待办记录，未改业务代码。抓取 origin/dev 后保留工作区；本轮复跑 359 项测试、217 项结构检查（含副本一致性）、7 项 OpenSpec strict 全部通过。未启用 AI/照片/维护清理，未提交、推送或合并。
+
+## 2026-09-27 · product 首个集合已创建与完整资源输入
+
+用户要求自行创建全部所需集合及函数。本轮继续在 dev，`git fetch origin dev` 成功，远端无新增、本地仍领先原有 1 个提交，保留既有工作区改动。
+
+- 先查询此前账户集合任务 `confirmation_cloud_db_write_struct_5e0105b9-6089-41b6-9faa-a52ede9a632c`，返回 `status=success / detail=execution_success`；内部创建成功 requestId 为 `2c972983-3743-4c33-ba7c-58ffca52bf73`。没有重复提交创建请求。
+- 以资源方 `wx7ad85943fe81e095` 对 `product-d2g59zty74d7d1ec1` 回读完整集合结构，requestId=`cc8f91ac-5614-4531-8cad-8af94e95a3dc`；`linggan_accounts` 存在，Count=0。未读取任何业务文档；列表不构成权限或业务唯一索引验证。
+- 发起 `linggan_shares` 创建，返回 `status=pending / Waiting for user confirmation.`，任务为 `confirmation_cloud_db_write_struct_9906885f-69f2-450a-aa7c-a805162abf78`。依微信开发者工具技能暂停当前云端写入，不自行确认、不轮询、不重发。其余四集合、全部业务索引与权限、三个函数均未实施。
+- 新增 `deployment/product/manifest.json`、5 份 CreateIndexes 输入和执行说明：6 个集合、15 个业务索引（含 5 个唯一）、3 个函数。没有 DropIndexes、TTL、测试业务数据或真实密钥。AI、照片、维护目标配置保持关闭，维护无触发器。索引参数形状依据腾讯云 UpdateTable 官方文档核对，尚未向平台提交索引请求。
+- 新增 3 项部署清单测试，覆盖目标身份、资源范围、每个索引的字段/方向/唯一性、禁用删除/TTL 输入及函数安全配置。`npm test` **359/359**；`npm run check` **217**（含共享副本一致性）；OpenSpec strict **7/7**；`git diff --check` 通过。本轮没有修改业务代码或生成副本，无需重新生成云函数代码。
+- 工具帮助核对：当前云结构写入仅支持集合和索引，函数部署仅支持目录与远端安装依赖；未提供安全规则、环境变量、超时配置入口。后续仍需支持这些能力的正常平台入口，不读取本机凭据或使用隐藏接口。
+
+本轮未部署函数、未上传或公开发布客户端，未进行真实共享调用、WXML/WXSS 渲染、两账户、AI、私有文件或真机验收。未修改其他项目资源、共用认证或全局存储规则，未执行清理。所有本地新增文件和修改尚未提交、未推送。
+
 ## 2026-09-22 · 工程初始化
 
 范围：仅创建工程骨架与 OpenSpec 提案 `add-inspiration-mvp`。未实现任何业务功能，未部署云函数，未创建云端集合，未启用 AI。
@@ -959,3 +1027,164 @@ Node 24 取自官方 `node-v24.21.0-win-x64.zip`。`E:\nodejs\` 原目录的 ACL
 | `git diff --check` | 通过，仅 Git LF/CRLF 提示 |
 
 本轮只更新本地源码及文档，未修改线上环境变量或部署云函数。云端是否已配置密钥、集合、索引和权限尚未核实，不能写成已配置或确定缺失；线上若显式配置 `false`，新代码默认值不会覆盖它。真实分享、海报、审核云调用及真机仍待验收。未提交、未推送、未发布。
+
+## 2026-09-27 · 剩余产品工作流本地实现与收尾
+
+### 交付范围
+
+1. 按用户“先提交到 dev”的授权，前一批 112 个文件提交为本地 `ebb243a`（文字出口、分享反馈与账户同步整改）。未推送。下述新开发全部保留工作区，尚未再次提交；未纳入 `.claude/settings.local.json`。
+2. 分享/反馈原子配额、所有公开动作限流、撤销释放额度、默认演练的保留期清理。新增 `linggan_maintenance` 无自动触发器，未部署或执行真实清理。
+3. 正文/有效补充/标签搜索、阶段与已合并筛选、每日固定回顾、五种用途模板与重新生成保护、标签阶段编辑、自愿设备统计。统计默认关闭，不含正文或搜索词，不自动上传。
+4. 照片压缩、确定对象路径、持久化暂存、跨实例重试、放弃清理、私有预览、单张/整条分步删除以及照片冲突恢复。文件部分删除后保留进度，不承诺物理回滚；真实权限未验收前不开放能力。
+5. CloudBase AI SDK 适配器、账户日/分钟额度、输入输出审核及契约校验、草案逐条采纳/编辑/放弃、补充/多灵感汇总、覆盖目标确认、来源追溯与恢复、一次批量保存。仍关闭 AI，未产生真实模型调用或费用。
+6. 新记录结构校验与合并无环、原历史不可改写；会话草稿按账户隔离。旧实例在会话失效后不能继续发队列或确认迟到结果，照片上传切换时留原任务。
+
+### 自动验证
+
+| 项目 | 本轮结果 | 证明范围 |
+| --- | --- | --- |
+| `npm test` | 334/334 通过，0 失败 | 纯函数、注入式数据库/平台适配器、页面协议与一致性闸门 |
+| `node scripts/build-cloud.cjs` | 同步 36 个共享源码文件到本地函数目录 | 已核验目标均位于本仓库 cloudfunctions 下；无云上传 |
+| `npm run check` | 195 项通过 | 语法、JSON、页面文件与副本一致性；不是原生渲染验收 |
+| `npm run openspec -- validate --all --strict` | 5 项变更通过 | 规范格式与变更结构 |
+| `git diff --check` | 通过 | 差异空白检查 |
+
+新增重点用例在 `production-readiness.test.cjs`、`discovery.test.cjs`、`ai-workflows.test.cjs`、`photo-workflows.test.cjs`、`usage-metrics.test.cjs`、`record-validation.test.cjs`。账户切换与迟到回执另见 `store.test.cjs`、`app-account.test.cjs`。公开分享逐块审核见 `sharing-config.test.cjs`。
+
+### 开发者工具编译与截图
+
+生成独立工程 `qa/local/inspiration-workflows`，入口替换为 `tests/fixtures/devtools-app.js` 的内存样例，不初始化云服务，不读取或重放正式账户队列。`scripts/prepare-devtools-fixture.cjs` 可重新生成；这是测试工程，不是生产配置。
+
+- 真实 WXML 编译最初发现分享列表/海报条件表达式把 `&&` 写成 HTML 实体，已修复两处并增加回归检查。最终 `compile_wxml` 成功，返回 codeLength=160772。
+- 详情、整理与 AI 页面路径的 `compile_wxss` 调用均成功，各返回 comm/page 两项、totalCodeLength=16710。只按工具返回记录，不据此宣称所有设备样式已验收。
+- 已保存并查看：`docs/evidence-development-20260927/01-list.png`、`02-detail.png`、`03-output.png`、`04-output-draft.png`、`06-ai-preview.png`、`07-photo-viewer.png`。列表筛选、详情操作、模板选项及主按钮的原生默认宽度问题已修正。截图尺寸 289×625，是模拟器输出，不是真机截图；04 是修正全宽按钮前的编辑稿状态。
+- AI 预览明确标注“离线样例”，由运行时注入合成文字，只核验布局；没有模型生成。照片查看使用包内品牌图片，不是用户图片或云存储访问证明。
+- 一次 AI 截图因热更新回到记录首页而超时；重新导航并核对 route 后取成功截图，失败结果未计入验收。`05-ai-disabled.png` 未作为有效关闭态证据；关闭行为由自动测试与配置核对，真机另验。
+
+### 尚未完成的外部步骤
+
+未部署函数或创建集合/索引；未核验正式存储权限、双账户/多设备隔离、旧客户端发布兼容、真实审核和小程序码、相册授权、朋友圈手动发布、真实 AI 输出/超时退款、真实图片删除、iOS/Android 键盘/大字号/读屏/弱网。清单和回退边界见 `DEPLOYMENT.md`、`PENDING-INPUT.md`。这些步骤须取得独立授权或外部条件，不能用本地通过结果替代。
+
+会员、支付与通用撤回仍待权益/计费/恢复期限规则确认；热度排名继续暂缓，不计入本次已确认交付。没有归档 OpenSpec、合并 main 或发布。
+
+## 2026-09-27 · 跨灵感手动选材整理补齐
+
+### 实现与边界
+
+复核优化方案发现 P2 手动跨记录选材仍缺少入口，本轮新增 `add-material-output` 提案、规范与详设 §16 后实施。列表进入“选材整理”，可从多条灵感分别选择正文及有效补充，支持搜索、只看已选及选择顺序号；取消后重选放到末尾。五类模板只套结构，不扩写、不调用 AI、不自动分享、不改动来源。
+
+每次最多 40 段、20 条来源、合计 12000 字（含段间换行），生成时核对当前来源。删除、合并、收起或内容变化后拒绝生成，保留旧稿，可明确刷新再选。编辑后重新生成须确认。复制失败、保存失败或超出另存 2000 字上限时保留全文；保存成功后的同稿不重复写入。新增记录沿用既有普通记录结构，无新数据库字段、集合或迁移。
+
+页面隐藏清空选材与草稿；返回重新读取。账户会话变化后清除旧内容、丢弃迟到确认/复制/保存回执。私人选材、AI 工作页与照片页补齐索引限制，其余未声明页面默认禁止索引，仅 welcome 公共入口允许；该配置不替代云端访问控制。
+
+### 自动验证
+
+| 项目 | 结果 | 证明范围 |
+| --- | --- | --- |
+| `npm test` | 345/345 通过，0 失败 | 本轮增加 material-output 的 11 项测试，包含字段白名单、边界、源变化、搜索保留选择、稿件保护、失败重试、会话隔离及索引 |
+| `npm run check` | 202 项通过 | 语法、配置、页面完整性及既有云函数副本一致性 |
+| OpenSpec strict | 6 项变更通过 | 提案及规范格式，六条新增场景与覆盖表对齐 |
+
+本轮没有改动根 `server/` 或 `miniprogram/core/`，无需重新生成云函数副本；既有未提交文件原样保留。
+
+### 开发者工具验证
+
+继续使用 `qa/local/inspiration-workflows` 合成样例工程，不初始化云服务，不访问正式账户队列。微信工具版本与技能版本均为 0.3.9。
+
+- 最终选材页 `compile_wxml` 成功，返回 codeLength=173044；`compile_wxss` 成功，返回 comm/page 两项、totalCodeLength=25453。局部编译结果不外推为真机或全功能验收。
+- 从列表点击选材入口，默认 0 段；选择第一段后搜索第二条并选择，选中数为 2；点击生成后两段按选择顺序完整显示。
+- 使用原生 textarea 输入合成稿，点击另存得到成功提示，点击查看进入新记录详情。保存目标为内存样例，不能据此证明真实云备份。
+- 选材滚动位置为 422 时点击生成，稿件渲染后 `scrollTop` 回到 0；返回选材/当前稿件同样回页顶，避免长列表滚动位置遮住稿件操作。
+- 临时令离线 store 读取抛错，页面独立显示错误和“重新读取”，不呈现正常空列表；恢复读取函数并点击重试后恢复 4 段素材。
+- 核查截图并修正素材按钮默认粗体、返回选材对齐及读取失败展示。最终查看 `08-material-select.png`、`10-material-draft-final.png`、`11-material-error.png`；`09-material-draft.png` 记录两段合成稿的中间状态。图片均在 `docs/evidence-development-20260927/`，尺寸 289×625，保持 Git 忽略。
+- `get_simulator_console` 的 `grep -i error` 返回空字符串，只说明无匹配错误日志。
+- 首次运行时查询缺少 action 参数、两次带属性选择器点击返回 `no such element`，随后稿件截图等待超时；这些尝试不算通过。按帮助补齐参数、查询真实元素后，使用搜索及 `.option` 点击完成验证，未盲目延长等待。
+
+### 仍未完成
+
+真机剪贴板、键盘与大字号、后台返回/双账户、真实云保存及多设备并发仍待独立验收。整个项目的云资源核验、部署、真实照片和分享闭环、模型选择/预算/启用仍见 `PENDING-INPUT.md`；本轮没有执行这些动作。
+
+已抓取 `origin/dev`，本地 dev 比远端领先原有 `ebb243a` 一个提交，远端无新增提交；本轮改动尚未提交、未推送、未部署、未合并 main。
+
+## 2026-09-27 · 云资源只读核验
+
+按用户同意的第一步，仅通过 wechatide 0.3.9 云资源工具查询元信息；没有启动生产页面、调用业务云函数、读取用户文档/照片或写云数据。详情见 `CLOUD-READINESS-20260927.md`。
+
+- AppID 对应环境列表只有 `cloud1-d6g4hu8txdd86e48c`，与本地配置一致。
+- 完整集合列表共四个，本项目只有 `linggan_accounts`；另外三个非本项目集合不继续查询或修改。`linggan_shares`、`linggan_feedback`、`linggan_usage`、`linggan_rate_limits`、`linggan_ai_usage` 缺失。
+- 账户集合的 `accountKey_unique` 为 accountKey 升序、Unique=true、Sparse=false、无部分过滤，满足设计的业务唯一索引要求；权限没有返回，不能标为通过。
+- 函数列表只有 API 与 AI，两者 Active、Nodejs16.13、timeout=3；维护函数缺失。AI 超时不满足本项目至少 60 秒的设计；Active 不证明线上代码与本地一致。
+- 当前工具不提供规则读写动作，函数详情也没有环境变量、部署时间/版本、云调用权限；这些项目保持“未知”，不写成已配置或确定缺失。
+- 结合本地源码确认先补资源再部署的必要性：新版 API 删除前撤销来源分享，分享集合缺失会阻断该流程；未在生产执行删除来验证。
+
+本轮只新增核验文档并更新部署手册及待办，没有修改业务代码、创建资源、调整权限、执行清理、提交或推送。后续第一批建议仅补分享/反馈所需四集合与索引，并完成控制台权限核验；创建资源需要用户另行授权。
+
+文档更新后回归：`npm test` 345/345 通过；`npm run check` 202 项通过；OpenSpec 严格校验 6 项通过；`git diff --check` 通过。上述结果不替代本节仍未知的云端权限或真实业务验收。
+
+## 2026-09-27 · product 部署授权与本地准备
+
+用户随后要求部署已有代码到正式环境 product，新增 `deploy-product-release` 提案、三条操作验收场景及覆盖表。环境查询首次因工具审批额度限制未执行；继续后只读查询成功，仅返回 `cloud1-d6g4hu8txdd86e48c`，没有名称，已请求用户确认与 product 的对应关系。没有待确认的云端写任务，也没有已启动的部署。
+
+本轮 `git fetch origin dev` 成功，`origin/dev...HEAD` 为 0/1，保留全部未提交修改。校验四个生成目录都位于本仓库且路径及内容无重解析点后，运行 `node scripts/build-cloud.cjs`，重新生成 36 个副本；没有删除源文件或业务数据。
+
+发布前本地结果：`npm test` 345/345，`npm run check` 202 项，OpenSpec 严格校验 7 项全部通过；`git diff --check` 通过。本轮不重复计入以前的模拟器截图，未进行真实云端或真机联调。
+
+### 本地代码摘要（非线上版本证明）
+
+算法：每个目录递归枚举普通文件，排除 node_modules，按相对路径排序；依次将相对路径（分隔符为 `/`）、NUL、文件原始字节、NUL 输入 SHA-256。不包含仓库根本机配置或 Git 状态；上传前如代码、环境配置或依赖发生变化，必须重算。
+
+| 目录 | 文件数 | SHA-256 |
+| --- | --- | --- |
+| miniprogram | 93 | `95561d84a98b3eac2040b13471136ed20266a63f170fa085e482e7fb8b5dd7be` |
+| cloudfunctions/linggan_api | 13 | `73ac3a5d5098527f7a490ed59fa299c7528f3140b018999ed0bc91c8ab4ab95c` |
+| cloudfunctions/linggan_ai | 20 | `800fa4126447adf4930ff6172f45f9e869910a6ba37da0f22e6370f7e3af8eb7` |
+| cloudfunctions/linggan_maintenance | 12 | `4eb9635a606d4f54ac509322cfde73a29dec41ac53ef0320434e23b40b3602e4` |
+
+尚未创建集合/索引、调整权限/环境变量、部署云函数、上传小程序或公开发布；AI 与真实清理保持未启用。本地代码摘要不能代替线上恢复点，也不证明微信平台实际打包内容。修改尚未提交，未推送、未合并 main。
+
+## 2026-09-27 · 正式共享环境更正与适配阻断
+
+用户明确正式环境为 `product-d2g59zty74d7d1ec1`，资源方 AppID 为 `wx7ad85943fe81e095`；本小程序仍为 `wxed8fdc5d559d973d`。抓取 origin/dev 后仍为落后 0、领先 1；保留原有未提交开发。
+
+- 用本小程序 AppID 查函数返回 `ResourceNotFound.Namespace`。数据库 listCollections/listIndexes 虽报告 success，却没有列表明细，checkCollection 对三个集合返回 exists=true；后续资源方完整列表与这些返回不一致，不能将其作为资源存在的依据。
+- 用用户提供的资源方 AppID 查环境，明确包含 product。完整函数列表为 9 项（含共用 cloudbase_auth），无 linggan_api/linggan_ai/linggan_maintenance；完整集合列表 Total=5，无本项目六集合。只读取元信息，未查其他应用的记录或密钥。
+- 本地仍用默认 wx.cloud 和旧环境，账户派生仅处理 APPID/OPENID，缓存未按环境分区。部署前需要共享连接、来源身份拒绝策略、环境缓存隔离和云调用 AppID 适配。设计、规范及待实现覆盖行已补齐，不代表实现完成。
+- 检查官方 wx-server-sdk 2.6.3 包的公开源码，确认 openapi 代理支持 appid 配置，getWXContext 从平台上下文键读取；包只下载到已忽略的 qa/local/sdk-inspection，未安装、升级或执行包脚本。官方源码入口：https://github.com/wechat-miniprogram/wx-server-sdk 。此核验不替代实际共享权限和审核调用验收。
+- 共享适配补丁被自动安全审查拦截：既有部署授权未明确包含认证和数据边界改造。工具拦截前已写入部分客户端文件，随后只撤回本轮新增文件和相关改动；server/wx-identity 未写入，云函数未改动。已明确告知用户此部分写入与撤回事实，未绕过拦截重试。
+- 撤回后 345/345 测试、202 项结构检查、7 项规范校验通过，云函数副本校验及 git diff --check 通过。三个云函数代码摘要与前一节一致。客户端原始字节摘要为 `42ff3f47c44377fb288c784a0c3b9b9a701cad29512805adfd9e51409b2f7b6e`（93 文件）；补丁往返改变了部分文件换行格式，发布前应以重新计算的摘要为准。
+
+本轮最终只保留文档与规范的更新；共享适配仍待明确授权。没有云端写入、函数部署、客户端上传、AI 调用、实际清理、Git 提交、推送或 main 合并。
+
+## 2026-09-27 · 授权后的共享适配与首个创建确认
+
+用户对四项适配及继续部署明确回复“是”。本轮在 dev 保留既有修改，抓取 origin/dev 后仍为落后 0、领先原有 1 个提交；未提交、推送或合并。
+
+### 实现和本地验证
+
+- 新增独立 Cloud 连接：资源方 `wx7ad85943fe81e095`，环境 `product-d2g59zty74d7d1ec1`；等待 init、并发复用、失败可重试、无默认/旧环境回退。项目 AppID 不变。
+- API、AI 入口共用可信来源解析，完整 FROM_APPID/FROM_OPENID 仅接受本项目；不完整来源或其他项目拒绝，不能回退资源方身份。账户哈希公式不变。内容审核和小程序码显式绑定本项目 AppID。
+- 本地快照、队列、照片暂存、回顾偏好和指标都经环境命名空间隔离；旧键保留，不自动读取、重放或迁移。
+- 照片上传/删除/下载统一使用共享实例；详情和查看页仅下载当前环境当前账户路径，不生成公开 URL 或把临时路径写回记录。页面隐藏、重复加载或账户变化后不回填迟到结果。
+- 新增 11 项共享测试（含实际入口注入测试），全套 `npm test` **356/356**；`npm run check` **210**；OpenSpec strict **7**；git diff --check 通过。验证生成目录范围/无重解析点后同步 **39** 个副本，一致性通过。
+- 本轮修改了两处照片 WXML，真实编译/渲染尚未执行；旧离线截图不作为本轮证明。真实共享授权、审核、小程序码、两账户、私有文件读写和真机验收仍未完成。
+
+### 云端查询和待确认任务
+
+创建前重新以资源方身份读取：集合 Total=5、函数 Total=9，均无 linggan_ 资源。没有读取其他应用业务文档、修改共用认证或存储规则。
+
+已发起唯一一笔云写请求：在 product 新建空集合 `linggan_accounts`。工具返回 success=true、status=pending、message=`Waiting for user confirmation.`；success 仅表示确认任务已建立，不代表集合已创建。任务 ID：`confirmation_cloud_db_write_struct_5e0105b9-6089-41b6-9faa-a52ede9a632c`。按 wechatide 技能暂停后续云操作，不主动轮询、不重发。用户确认并继续后先查询此 ID。
+
+其余五集合、全部索引/权限、三个函数部署、客户端上传和公开发布均未发起；AI、照片平台启用和维护清理均未执行。代码与文档尚未提交。
+
+## 2026-09-27 · 正式共享环境更正与适配阻断
+
+用户明确正式环境为 `product-d2g59zty74d7d1ec1`，资源方 AppID 为 `wx7ad85943fe81e095`；本小程序仍为 `wxed8fdc5d559d973d`。抓取 origin/dev 后仍为落后 0、领先 1；保留原有未提交开发。
+
+- 用本小程序 AppID 查函数返回 `ResourceNotFound.Namespace`。数据库 listCollections/listIndexes 虽报告 success，却没有列表明细，checkCollection 对三个集合返回 exists=true；后续资源方完整列表与这些返回不一致，不能将其作为资源存在的依据。
+- 用用户提供的资源方 AppID 查环境，明确包含 product。完整函数列表为 9 项（含共用 cloudbase_auth），无 linggan_api/linggan_ai/linggan_maintenance；完整集合列表 Total=5，无本项目六集合。只读取元信息，未查其他应用的记录或密钥。
+- 本地仍用默认 wx.cloud 和旧环境，账户派生仅处理 APPID/OPENID，缓存未按环境分区。部署前需要共享连接、来源身份拒绝策略、环境缓存隔离和云调用 AppID 适配。设计、规范及待实现覆盖行已补齐，不代表实现完成。
+- 检查官方 wx-server-sdk 2.6.3 包的公开源码，确认 openapi 代理支持 appid 配置，getWXContext 从平台上下文键读取；包只下载到已忽略的 qa/local/sdk-inspection，未安装、升级或执行包脚本。官方源码入口：https://github.com/wechat-miniprogram/wx-server-sdk 。此核验不替代实际共享权限和审核调用验收。
+- 共享适配补丁被自动安全审查拦截：既有部署授权未明确包含认证和数据边界改造。工具拦截前已写入部分客户端文件，随后只撤回本轮新增文件和相关改动；server/wx-identity 未写入，云函数未改动。已明确告知用户此部分写入与撤回事实，未绕过拦截重试。
+- 撤回后 345/345 测试、202 项结构检查、7 项规范校验通过，云函数副本校验及 git diff --check 通过。三个云函数代码摘要与前一节一致。客户端原始字节摘要为 `42ff3f47c44377fb288c784a0c3b9b9a701cad29512805adfd9e51409b2f7b6e`（93 文件）；补丁往返改变了部分文件换行格式，发布前应以重新计算的摘要为准。
+
+本轮最终只保留文档与规范的更新；共享适配仍待明确授权。没有云端写入、函数部署、客户端上传、AI 调用、实际清理、Git 提交、推送或 main 合并。

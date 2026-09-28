@@ -12,7 +12,7 @@ const { createRepository, CODE } = require('./repository');
 const crypto = require('node:crypto');
 
 const ACTIONS = [
-  'snapshot.pull', 'snapshot.push', 'inspiration.delete',
+  'snapshot.pull', 'snapshot.push', 'inspiration.delete', 'photo.delete',
   'share.create', 'share.get', 'share.listMine', 'share.revoke', 'share.qr',
   'feedback.create', 'feedback.listMine', 'feedback.reportShare'
 ];
@@ -115,6 +115,8 @@ function createProtocol(options) {
           response = await repository.push(accountKey, request.payload);
         } else if (request.action === 'inspiration.delete') {
           response = await repository.remove(accountKey, request.payload);
+        } else if (request.action === 'photo.delete') {
+          response = await repository.removePhoto(accountKey, request.payload);
         } else if (!sharing) {
           response = fail('SERVICE_UNAVAILABLE', '这项服务暂时不可用');
         } else if (request.action === 'share.create') {

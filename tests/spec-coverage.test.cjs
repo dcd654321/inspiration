@@ -19,7 +19,11 @@ const IN_SCOPE = [
     .map((name) => ['add-inspiration-mvp', name]),
   ['add-content-output', 'content-output'],
   ['repair-cloud-sync', 'backup-recovery'],
-  ['add-sharing-feedback', 'sharing-feedback']
+  ['add-sharing-feedback', 'sharing-feedback'],
+  ['complete-product-workflows', 'production-readiness'],
+  ['complete-product-workflows', 'find-and-use'],
+  ['add-material-output', 'material-output'],
+  ['deploy-product-release', 'product-deployment']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */

@@ -158,6 +158,10 @@ function createInspiration(input) {
     updatedAt: now,
     supplements: [],
     photos: [],
+    tags: [],
+    stage: 'seed',
+    source: 'user',
+    summarySources: [],
     mergedInto: null,
     deletedAt: null
   });
@@ -214,7 +218,7 @@ function appendSupplement(inspiration, input) {
   const errors = [];
 
   const contentError = checkText(
-    source.content, 'supplements[].content', LIMITS.supplementMaxLength,
+    source.content, 'supplements[].content', source.source === 'ai' && Array.isArray(source.sourceIds) && source.sourceIds.length >= 2 ? LIMITS.summaryMaxLength : LIMITS.supplementMaxLength,
     ERROR_CODES.EMPTY_SUPPLEMENT, ERROR_CODES.SUPPLEMENT_TOO_LONG
   );
   if (contentError) errors.push(contentError);
@@ -238,6 +242,7 @@ function appendSupplement(inspiration, input) {
     createdAt: source.now,
     // 来源默认 user；AI 产出必须显式传 'ai'，界面据此标注，不得把本地结果说成 AI 生成。
     source: source.source === undefined ? 'user' : source.source,
+    sourceIds: Array.isArray(source.sourceIds) ? source.sourceIds.slice() : [],
     mergedInto: null,     // 被 AI 汇总时指向汇总结果
     foldedAt: null        // 被合并进灵感的时刻（界面标签「合并进灵感」）
   };
@@ -343,8 +348,9 @@ function editSupplement(inspiration, input) {
   const idError = checkId(source.supplementId, 'supplementId');
   if (idError) errors.push(idError);
 
+  const editedItem = supplementsOf(inspiration).find((item) => item.id === source.supplementId);
   const contentError = checkText(
-    source.content, 'supplements[].content', LIMITS.supplementMaxLength,
+    source.content, 'supplements[].content', editedItem && editedItem.source === 'ai' && (editedItem.sourceIds || []).length >= 2 ? LIMITS.summaryMaxLength : LIMITS.supplementMaxLength,
     ERROR_CODES.EMPTY_SUPPLEMENT, ERROR_CODES.SUPPLEMENT_TOO_LONG
   );
   if (contentError) errors.push(contentError);
@@ -542,18 +548,18 @@ function mergeSupplements(inspiration, input) {
   if (!sourceIds) {
     errors.push({ field: 'sourceIds', code: ERROR_CODES.MISSING_FIELD });
   } else {
-    if (sourceIds.length < LIMITS.mergeMinItems) {
+    if (sourceIds.length < LIMITS.mergeMinItems || sourceIds.length > LIMITS.summaryMaxSourceItems || new Set(sourceIds).size !== sourceIds.length) {
       // 少于两条没有汇总的意义。界面应当在调用前就拦住，这里是服务端的兜底。
       errors.push({ field: 'sourceIds', code: ERROR_CODES.LIMIT_EXCEEDED });
     }
-    if (summaryIdError === null && sourceIds.indexOf(summary.id) !== -1) {
+    if (summaryIdError === null && supplementsOf(inspiration).some((item) => item.id === summary.id)) {
       errors.push({ field: 'sourceIds', code: ERROR_CODES.MERGE_SELF });
     }
     sourceIds.forEach((id) => {
       const target = supplementsOf(inspiration).find((item) => item.id === id);
       if (!target) {
         errors.push({ field: 'sourceIds', code: ERROR_CODES.SUPPLEMENT_NOT_FOUND });
-      } else if (target.mergedInto) {
+      } else if (target.mergedInto || target.foldedAt) {
         errors.push({ field: 'sourceIds', code: ERROR_CODES.ALREADY_MERGED });
       }
     });
@@ -572,6 +578,7 @@ function mergeSupplements(inspiration, input) {
     content: summary.content,
     id: summary.id,
     source: 'ai',
+    sourceIds,
     now: source.now
   });
 

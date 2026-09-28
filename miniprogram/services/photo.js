@@ -93,11 +93,14 @@ function createPhotoService(options) {
 
     for (let i = 0; i < candidates.length; i += 1) {
       const item = candidates[i];
+      if (!item || typeof item.tempFilePath !== 'string' || !item.tempFilePath || !Number.isFinite(item.size) || item.size <= 0) {
+        rejected.push({ tempFilePath: item && item.tempFilePath || '', size: 0 }); continue;
+      }
 
       // 先按原图判一次：原图就超的话压了也白压，省掉一次压缩开销
       if (item.size > limit.maxBytes) {
         const compressed = await tryCompress(compressImage, item.tempFilePath);
-        if (!compressed || compressed.size > limit.maxBytes) {
+        if (!compressed || !Number.isFinite(compressed.size) || compressed.size <= 0 || compressed.size > limit.maxBytes) {
           rejected.push({ tempFilePath: item.tempFilePath, size: (compressed && compressed.size) || item.size });
           continue;
         }

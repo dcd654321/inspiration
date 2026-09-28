@@ -26,6 +26,13 @@ Page({
     lastSavedId: ''
   },
 
+  async onShow() {
+    const app = getApp(); await app.ensureReady();
+    const scope = app.globalData.cacheScope;
+    if (this.scope && scope && scope !== this.scope) this.setData({ draft: '', canSave: false, nearLimit: false, saving: false, lastSavedId: '', success: '', error: '' });
+    if (scope) this.scope = scope;
+  },
+
   onInput(event) {
     const value = event.detail.value;
     this.setData({
@@ -71,10 +78,14 @@ Page({
       return;
     }
     this.setData({ saving: false });
+    if (app.globalData.store !== store) return;
+    const metrics = app.globalData.store === store && app.globalData.metrics;
+    if (metrics) metrics.track(result && result.ok ? 'record_saved' : 'save_failed');
+    if (metrics && result && result.ok && !result.synced) metrics.track('backup_pending');
 
     if (!result || !result.ok) {
       // 本机都没存下来。**必须保留输入**——清掉就等于把用户刚写的东西弄丢了。
-      this.setData({ error: result.code === 'CONFLICT' || result.code === 'STALE_GENERATION'
+      this.setData({ error: result && (result.code === 'CONFLICT' || result.code === 'STALE_GENERATION')
         ? '备份出现冲突，内容仍在输入框中。请到「我的」查看备份状态。'
         : '这条暂时没能存下来，内容仍在输入框中。' });
       return;

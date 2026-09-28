@@ -5,11 +5,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { renderPosters } = require('../miniprogram/services/share-poster');
+const sharedCloud = require('./helpers/shared-cloud.cjs');
 
 const root = path.resolve(__dirname, '..');
 function read(relative) { return fs.readFileSync(path.join(root, relative), 'utf8'); }
 
 function withPage(relative, app, wxMock, callback) {
+  if (wxMock.cloud) wxMock.cloud = sharedCloud(wxMock.cloud);
   const file = require.resolve(path.join(root, 'miniprogram/pages', relative, 'index.js'));
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;

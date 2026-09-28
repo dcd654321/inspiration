@@ -106,7 +106,7 @@ page {
 
 .btn::after { border: none; }  /* 去掉小程序 button 默认的边框 */
 
-.btn-block {
+.page .btn-block {
   display: flex;
   width: 100%;
 }

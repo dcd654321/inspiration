@@ -2,6 +2,11 @@
 
 const { activeSupplements } = require('../core/inspiration');
 const { formatAbsolute } = require('../core/format');
+const USE_TEMPLATES = Object.freeze([
+  { id: 'free', name: '自由稿' }, { id: 'social', name: '社交内容' },
+  { id: 'video', name: '短视频脚本' }, { id: 'work', name: '工作提纲' },
+  { id: 'action', name: '行动清单' }
+]);
 
 function byCreatedAt(a, b) {
   return a.createdAt - b.createdAt || String(a.id).localeCompare(String(b.id));
@@ -22,6 +27,21 @@ function buildUseText(item, selectedIds) {
     if (!selected || selected.has(supplement.id)) parts.push(supplement.content);
   });
   return parts.join('\n\n');
+}
+
+/** 模板只提供结构和空项，不推断用户意图、不补写事实。 */
+function buildTemplateText(item, selectedIds, templateId) {
+  if (templateId === 'free' || !templateId) return buildUseText(item, selectedIds);
+  if (!USE_TEMPLATES.some((template) => template.id === templateId)) throw Error('UNKNOWN_TEMPLATE');
+  const text = buildUseText(item, selectedIds);
+  if (!text) return '';
+  const layouts = {
+    social: ['【内容素材】', '\n\n【标题】\n\n【开头】\n\n【结尾】'],
+    video: ['【内容素材】', '\n\n【开场】\n画面：\n旁白：\n\n【展开】\n画面：\n旁白：\n\n【收尾】\n画面：\n旁白：'],
+    work: ['【背景与材料】', '\n\n【目标】\n\n【讨论要点】\n\n【下一步】'],
+    action: ['【想法与依据】', '\n\n【行动清单】\n□ 任务：\n  完成标准：\n  计划时间：']
+  };
+  return layouts[templateId][0] + '\n' + text + layouts[templateId][1];
 }
 
 function historyLines(entries) {
@@ -67,4 +87,4 @@ function buildArchiveText(item, generatedAt) {
   return lines.join('\n');
 }
 
-module.exports = { currentSupplements, buildUseText, buildArchiveText };
+module.exports = { currentSupplements, buildUseText, buildArchiveText, USE_TEMPLATES, buildTemplateText };
