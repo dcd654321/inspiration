@@ -1,254 +1,315 @@
 'use strict';
-// 本机状态与持久化。
-//
-// 两条约束：
-//   1. **不直接依赖 wx。** 存储与网络都从外面注入（`storage` / `transport`）。
-//      离线、配额耗尽、同步失败这些降级路径，靠这一条才能在 Node 里直接测——
-//      真机上很难稳定复现，而它们恰恰是规范里占了一半的场景。
-//   2. **时间由调用方注入**，与 core/ 同样。内部不调用 Date.now()。
-//
-// 本机不是数据来源，只是缓存（见 docs/detailed-design.md §3.6）。它存在的理由是：
-// 让用户刚写下的内容在网络中断时也不丢，并让浏览不必等网络。
+// 账户分区的本机快照和待备份操作。一次写入同时保存正文与操作，不留下半条队列。
+const { byUpdatedAtDesc, isDeleted, isMerged } = require('../core/inspiration');
+const { createRequestId } = require('./wx-transport');
 
-const { byUpdatedAtDesc, isDeleted, isMerged, markDeleted } = require('../core/inspiration');
-
-// key 带版本号：将来必须改布局时，靠它识别并做一次性迁移，而不是去猜旧格式。
-const STORAGE_KEYS = {
+const LEGACY_STORAGE_KEYS = Object.freeze({
   snapshot: 'linggan:v1:snapshot',
   queue: 'linggan:v1:queue'
-};
+});
+const SCOPE_PATTERN = /^[a-f0-9]{32}$/;
+const MAX_RETRY_PER_PASS = 3;
 
-const OP_KIND = {
-  upsert: 'inspiration.upsert'
-};
-
-/** 完全没存过东西时的初始快照。读不出来也退回这个，不让应用因为一条坏数据起不来。 */
 function emptySnapshot() {
   return { generation: 1, version: 0, syncedAt: 0, inspirations: [] };
 }
 
-function readJSON(storage, key, fallback) {
-  let raw;
-  try {
-    raw = storage.get(key);
-  } catch (err) {
-    return fallback;
-  }
-  if (raw === undefined || raw === null) return fallback;
-  // 注入的 storage 若已经反序列化过（测试替身），直接用；否则按字符串解析。
-  if (typeof raw !== 'string') return raw;
-  try {
-    return JSON.parse(raw);
-  } catch (err) {
-    return fallback;
-  }
+function validRemote(remote, scope) {
+  return remote && remote.cacheScope === scope &&
+    Number.isSafeInteger(remote.generation) && remote.generation > 0 &&
+    Number.isSafeInteger(remote.version) && remote.version >= 0 &&
+    Array.isArray(remote.inspirations);
 }
 
 function createStore(options) {
   const opts = options || {};
-  const storage = opts.storage;
-  const transport = opts.transport || null;
-  const now = opts.now;
+  const { storage, transport, now, cacheScope, remoteSnapshot } = opts;
+  const photosEnabled = remoteSnapshot && remoteSnapshot.photosEnabled === true;
+  const isCurrent = typeof opts.isCurrent === 'function' ? opts.isCurrent : () => true;
+  const newRequestId = typeof opts.newRequestId === 'function' ? opts.newRequestId : createRequestId;
+  if (!storage || typeof now !== 'function') throw new Error('createStore 需要 storage 与 now()');
+  if (typeof cacheScope !== 'string' || !SCOPE_PATTERN.test(cacheScope)) throw new Error('无效的账户缓存作用域');
+  if (!validRemote(remoteSnapshot, cacheScope)) throw new Error('缺少当前账户的可信云端快照');
 
-  if (!storage) throw new Error('createStore 需要一个 storage');
-  if (typeof now !== 'function') throw new Error('createStore 需要一个 now() 函数——时间必须由调用方注入');
+  const key = 'linggan:v2:' + cacheScope + ':state';
+  let retryPromise = null;
+
+  function readState() {
+    let raw;
+    try { raw = storage.get(key); } catch (err) { throw new Error('ACCOUNT_CACHE_DAMAGED'); }
+    if (raw === undefined || raw === null) return null;
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch (err) { throw new Error('ACCOUNT_CACHE_DAMAGED'); }
+    }
+    if (!raw || typeof raw !== 'object' || !Array.isArray(raw.inspirations) ||
+        !Array.isArray(raw.queue) || !Number.isSafeInteger(raw.version) ||
+        !Number.isSafeInteger(raw.generation) || raw.generation < 1 ||
+        !Number.isSafeInteger(raw.nextSequence) ||
+        (raw.recoveries !== undefined && (!Array.isArray(raw.recoveries) ||
+          raw.recoveries.some((entry) => !entry || !entry.snapshot ||
+            !Array.isArray(entry.snapshot.inspirations) || !Array.isArray(entry.pendingOps))))) {
+      throw new Error('ACCOUNT_CACHE_DAMAGED');
+    }
+    return raw;
+  }
+
+  function writeState(state) {
+    storage.set(key, state);
+    return state;
+  }
+
+  // 不读取、不迁移 v1 全局键；用户确认无须保留的真实记录，测试缓存仍原样保留。
+  const previous = readState();
+  if (previous && previous.conflict) {
+    writeState(Object.assign({}, previous, {
+      conflict: Object.assign({}, previous.conflict, { remote: remoteSnapshot })
+    }));
+  } else if (!previous || previous.queue.length === 0) {
+    writeState({
+      generation: remoteSnapshot.generation,
+      version: remoteSnapshot.version,
+      syncedAt: now(),
+      inspirations: remoteSnapshot.inspirations,
+      queue: [],
+      conflict: null,
+      nextSequence: previous ? previous.nextSequence : 0,
+      recoveries: previous && previous.recoveries || []
+    });
+  }
 
   function readSnapshot() {
-    const snapshot = readJSON(storage, STORAGE_KEYS.snapshot, null);
-    if (!snapshot || !Array.isArray(snapshot.inspirations)) return emptySnapshot();
-    return snapshot;
-  }
-
-  /** 写快照。存储写失败（配额耗尽）时**抛出**，由调用方决定怎么向用户交代。 */
-  function writeSnapshot(snapshot) {
-    storage.set(STORAGE_KEYS.snapshot, snapshot);
-    return snapshot;
-  }
-
-  function readQueue() {
-    const queue = readJSON(storage, STORAGE_KEYS.queue, null);
-    return Array.isArray(queue) ? queue : [];
-  }
-
-  function writeQueue(queue) {
-    storage.set(STORAGE_KEYS.queue, queue);
-    return queue;
-  }
-
-  /**
-   * 入队一个待同步操作。
-   *
-   * **按 id 幂等**：同一个 id 重复入队只保留一条，内容以最后一次为准。
-   * 这是「同一次保存因重试被提交多次，只产生一条业务记录」在本机的落点——
-   * 失败后反复重试不会把队列撑成一串重复项。
-   */
-  function enqueue(op) {
-    const queue = readQueue();
-    const enqueuedAt = now();
-    const entry = {
-      id: op.id,
-      kind: op.kind,
-      payload: op.payload,
-      enqueuedAt,
-      // 请求标识在**入队时**定下来并随队列持久化。将来的重试循环再发同一条队列项时，
-      // 用的是同一个 requestId，服务端的传输层幂等才成立。
-      requestId: 'req_' + op.id + '_' + enqueuedAt
+    const state = readState();
+    return {
+      generation: state.generation,
+      version: state.version,
+      syncedAt: state.syncedAt,
+      inspirations: state.inspirations
     };
-    const index = queue.findIndex((item) => item.id === op.id);
-    const next = index === -1
-      ? queue.concat([entry])
-      : queue.map((item, i) => (i === index ? entry : item));
-
-    return { queue: writeQueue(next), requestId: entry.requestId, enqueuedAt };
   }
 
-  function dequeue(opId) {
-    return writeQueue(readQueue().filter((item) => item.id !== opId));
-  }
+  function readQueue() { return readState().queue; }
 
-  function clearQueue() {
-    return writeQueue([]);
-  }
+  function getConflict() { return readState().conflict || null; }
 
-  /**
-   * 保存一条灵感。这是**唯一**的保存入口——保存与同步是一个动作，不是两步。
-   *
-   * 执行顺序是刻意的：
-   *   1. 先落本机。网络断了也不丢用户刚写下的内容。
-   *   2. 再入队。**入队必须早于发起同步**——否则同步途中崩溃，这条意图就丢了，
-   *      用户会以为已经保存，而云端和队列里都没有它。
-   *   3. 发起同步。成功才出队。
-   *
-   * 返回值的三种形态，分别对应界面上的三种呈现（见 docs/ui-design.md 第 2 节）：
-   *   { ok: true,  synced: true }              —— 已保存
-   *   { ok: true,  synced: false, code }       —— 已保存，还没同步到云端，会自动重试
-   *   { ok: false, code: 'LOCAL_WRITE_FAILED' }—— 没存下来，界面必须保留用户输入
-   */
-  async function saveInspiration(inspiration) {
-    const snapshot = readSnapshot();
-    const index = snapshot.inspirations.findIndex((item) => item.id === inspiration.id);
-    const inspirations = index === -1
-      ? snapshot.inspirations.concat([inspiration])
-      : snapshot.inspirations.map((item, i) => (i === index ? inspiration : item));
+  function getRecoveries() { return readState().recoveries || []; }
 
-    try {
-      writeSnapshot(Object.assign({}, snapshot, { inspirations }));
-    } catch (err) {
-      // 本机都写不进去，就不要去打扰云端——下游没有任何东西可同步。
-      return { ok: false, code: 'LOCAL_WRITE_FAILED', cause: err };
-    }
-
-    // 云未启用：跳过同步。这不是「降级」，是同一个动作在没有云端时的自然结果，
-    // 界面看到的仍然是「已保存」，不需要任何差别处理。
-    if (!transport) {
-      return { ok: true, synced: true };
-    }
-
-    const op = {
-      id: 'op_' + inspiration.id,
-      kind: OP_KIND.upsert,
-      payload: { inspiration }
+  function getBackupStatus() {
+    const state = readState();
+    return {
+      state: state.conflict ? state.conflict.code : state.queue.length > 0 ? 'pending' : 'synced',
+      pendingCount: state.queue.length,
+      syncedAt: state.syncedAt
     };
+  }
 
-    let queued;
-    try {
-      queued = enqueue(op);
-    } catch (err) {
-      // 队列写不进去不影响这次保存本身：内容已经在本机快照里了。
-      return { ok: true, synced: false, code: 'QUEUE_WRITE_FAILED', cause: err };
+  async function performRetry() {
+    if (!transport) return { ok: false, code: 'NETWORK' };
+    let last = { ok: true, synced: true };
+    for (let attempt = 0; attempt < MAX_RETRY_PER_PASS; attempt += 1) {
+      if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+      const state = readState();
+      if (state.conflict) return { ok: false, code: state.conflict.code };
+      if (state.queue.length === 0) return last;
+
+      let operation = state.queue[0];
+      if (operation.baseVersion === null) {
+        operation = Object.assign({}, operation, { baseVersion: state.version });
+        writeState(Object.assign({}, state, { queue: [operation].concat(state.queue.slice(1)) }));
+      }
+      const action = operation.kind === 'delete' ? 'inspiration.delete' : operation.kind === 'photoDelete' ? 'photo.delete' : 'snapshot.push';
+      const payload = operation.kind === 'delete' || operation.kind === 'photoDelete'
+        ? Object.assign({ inspirationId: operation.inspirationId, baseVersion: operation.baseVersion, generation: state.generation }, operation.kind === 'photoDelete' ? { photoId: operation.photoId } : {})
+        : { upserts: operation.kind === 'batch' ? operation.inspirations : [operation.inspiration], baseVersion: operation.baseVersion, generation: state.generation };
+      let response;
+      try {
+        response = await transport.send(action, payload, { requestId: operation.requestId });
+      } catch (err) {
+        return { ok: false, code: 'NETWORK' };
+      }
+      if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+      if (!response || !response.ok) {
+        const code = response && response.code || 'INTERNAL';
+        if (code === 'CONFLICT' || code === 'STALE_GENERATION' || code === 'PHOTO_DELETE_UNAVAILABLE' ||
+            code === 'REQUEST_ID_REUSED') {
+          let remote = null;
+          try {
+            const pulled = await transport.send('snapshot.pull', {});
+            if (pulled && pulled.ok && validRemote(pulled.data, cacheScope)) remote = pulled.data;
+          } catch (err) { /* 冲突先保留，稍后仍可重新获取远端快照。 */ }
+          if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+          const latest = readState();
+          writeState(Object.assign({}, latest, { conflict: { code, remote } }));
+        }
+        return { ok: false, code };
+      }
+      const version = response.data && response.data.version;
+      if (!Number.isSafeInteger(version) || version < 0) return { ok: false, code: 'INTERNAL' };
+      const latest = readState();
+      if (!latest.queue.length || latest.queue[0].requestId !== operation.requestId) {
+        return { ok: false, code: 'LOCAL_STATE_CHANGED' };
+      }
+      writeState(Object.assign({}, latest, {
+        version,
+        syncedAt: now(),
+        queue: latest.queue.slice(1),
+        inspirations: operation.kind === 'delete'
+          ? latest.inspirations.filter((item) => item.id !== operation.inspirationId)
+            .map((item) => item.mergedInto === operation.inspirationId ? Object.assign({}, item, { mergedInto: null }) : item)
+          : operation.kind === 'photoDelete' ? latest.inspirations.map((item) => item.id === operation.inspirationId
+            ? Object.assign({}, item, { photos: (item.photos || []).filter((photo) => photo.id !== operation.photoId) }) : item) : latest.inspirations
+      }));
+      last = { ok: true, synced: true };
     }
+    return readQueue().length ? { ok: true, synced: false, code: 'PENDING' } : last;
+  }
 
-    let response;
-    try {
-      response = await transport.send('snapshot.push', {
-        generation: snapshot.generation,
-        upserts: [inspiration]
-      }, { requestId: queued.requestId });
-    } catch (err) {
-      return { ok: true, synced: false, code: 'NETWORK', cause: err };
+  function retryPending() {
+    if (!retryPromise) {
+      retryPromise = performRetry().finally(() => { retryPromise = null; });
     }
+    return retryPromise;
+  }
 
-    if (!response || response.ok !== true) {
-      return { ok: true, synced: false, code: (response && response.code) || 'INTERNAL' };
+  /** 用户明确选择云端版本后，先保留本机完整副本，再原子切换活动快照。 */
+  async function resolveUseRemote() {
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+    if (retryPromise) {
+      try { await retryPromise; } catch (err) { /* 原队列仍在；以下重新核对状态。 */ }
     }
-
-    dequeue(op.id);
-
-    const latest = readSnapshot();
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+    const state = readState();
+    if (!state.conflict) return { ok: false, code: 'NO_CONFLICT' };
+    if (!transport) return { ok: false, code: 'NETWORK' };
+    let pulled;
+    try { pulled = await transport.send('snapshot.pull', {}); }
+    catch (err) { return { ok: false, code: 'NETWORK' }; }
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+    if (!pulled || !pulled.ok || !validRemote(pulled.data, cacheScope)) {
+      return { ok: false, code: 'PULL_FAILED' };
+    }
+    const latest = readState();
+    if (!latest.conflict) return { ok: false, code: 'NO_CONFLICT' };
+    if (!photosEnabled && latest.inspirations.some((item) => Array.isArray(item.photos) &&
+        item.photos.some((photo) => photo.fileId))) {
+      return { ok: false, code: 'PHOTO_RECOVERY_UNAVAILABLE' };
+    }
+    const recovery = {
+      savedAt: now(),
+      reason: latest.conflict.code,
+      snapshot: {
+        generation: latest.generation,
+        version: latest.version,
+        syncedAt: latest.syncedAt,
+        inspirations: latest.inspirations
+      },
+      pendingOps: latest.queue
+    };
+    const recoveries = (latest.recoveries || []).concat([recovery]);
     try {
-      writeSnapshot(Object.assign({}, latest, {
-        version: (response.data && response.data.version) || latest.version,
-        syncedAt: now()
+      writeState(Object.assign({}, latest, {
+        generation: pulled.data.generation,
+        version: pulled.data.version,
+        syncedAt: now(),
+        inspirations: pulled.data.inspirations,
+        queue: [],
+        conflict: null,
+        recoveries
       }));
     } catch (err) {
-      // 版本号没写成不影响这次保存：内容已经在本机，下次同步会纠正。
+      return { ok: false, code: 'LOCAL_WRITE_FAILED' };
     }
-
-    return { ok: true, synced: true };
+    return { ok: true, recoveryCount: recoveries.length };
   }
 
-  /**
-   * 删除一条灵感。
-   *
-   * 顺序是**先软删、再确认、最后物理移除**（见 detailed-design §5.2）：
-   * 云端确认失败时保持本机数据不动，用户不会遇到「本机删了、云端还在」。
-   * 云未启用时没有确认这一步，直接完成——与保存是同一条取舍（§3.4）。
-   *
-   * 不改变 updatedAt：删除不是编辑，不该让条目在列表里重新排序。
-   */
+  function queueOperation(state, operation) {
+    const sequence = state.nextSequence + 1;
+    return {
+      sequence,
+      entry: Object.assign({}, operation, {
+        requestId: newRequestId() + '_' + sequence,
+        baseVersion: null
+      })
+    };
+  }
+
+  async function saveInspiration(item) {
+    return saveInspirations([item]);
+  }
+
+  async function saveInspirations(items) {
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+    const state = readState();
+    if (state.conflict) return { ok: false, code: state.conflict.code };
+    if (!Array.isArray(items) || !items.length || items.length > 21 || items.some((item) => !item || typeof item.id !== 'string' || item.deletedAt) ||
+        new Set(items.map((x) => x.id)).size !== items.length) return { ok: false, code: 'INVALID_PAYLOAD' };
+    if (state.queue.some((op) => ['delete', 'photoDelete'].includes(op.kind) && items.some((item) => item.id === op.inspirationId))) return { ok: false, code: 'PHOTO_CLEANUP_PENDING' };
+    const byId = new Map(state.inspirations.map((item) => [item.id, item]));
+    items.forEach((item) => byId.set(item.id, item));
+    const inspirations = Array.from(byId.values());
+    const operation = items.length === 1 ? { kind: 'upsert', inspiration: items[0] } : { kind: 'batch', inspirations: items };
+    const { sequence, entry } = queueOperation(state, operation);
+    try {
+      writeState(Object.assign({}, state, {
+        inspirations, nextSequence: sequence, queue: state.queue.concat([entry])
+      }));
+    } catch (err) { return { ok: false, code: 'LOCAL_WRITE_FAILED' }; }
+    let result;
+    try { result = await retryPending(); }
+    catch (err) { return { ok: true, synced: false, code: 'LOCAL_STATE_WRITE_FAILED' }; }
+    return { ok: true, synced: readQueue().length === 0, code: result.code };
+  }
+
   async function deleteInspiration(id) {
-    const found = readSnapshot().inspirations.find((item) => item.id === id);
-    if (!found) return { ok: false, code: 'NOT_FOUND' };
-
-    const marked = markDeleted(found, { now: now() });
-    const result = await saveInspiration(marked);
-
-    if (!result.ok) return result;
-    if (!result.synced) {
-      // 还没同步到云端：本机保留软删标记，等重试成功后由下一次删除收尾
-      return result;
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+    const state = readState();
+    if (state.conflict) return { ok: false, code: state.conflict.code };
+    const target = state.inspirations.find((item) => item.id === id);
+    if (!target) return { ok: false, code: 'NOT_FOUND' };
+    if (!photosEnabled && Array.isArray(target.photos) && target.photos.some((photo) => photo.fileId)) {
+      return { ok: false, code: 'PHOTO_DELETE_UNAVAILABLE' };
     }
-
-    const latest = readSnapshot();
+    const { sequence, entry } = queueOperation(state, { kind: 'delete', inspirationId: id });
+    if (state.queue.some((op) => ['delete', 'photoDelete'].includes(op.kind) && op.inspirationId === id)) {
+      const result = await retryPending();
+      return { ok: true, synced: !getInspiration(id), code: result.code };
+    }
     try {
-      writeSnapshot(Object.assign({}, latest, {
-        inspirations: latest.inspirations.filter((item) => item.id !== id)
-      }));
-    } catch (err) {
-      // 物理移除失败不影响「已删除」这个结论：软删标记还在，列表已经不会显示它了。
-    }
-
-    return { ok: true, synced: true };
+      writeState(Object.assign({}, state, { nextSequence: sequence, queue: state.queue.concat([entry]) }));
+    } catch (err) { return { ok: false, code: 'LOCAL_WRITE_FAILED' }; }
+    let result;
+    try { result = await retryPending(); }
+    catch (err) { return { ok: true, synced: false, code: 'LOCAL_STATE_WRITE_FAILED' }; }
+    return { ok: true, synced: !readState().inspirations.some((item) => item.id === id), code: result.code };
   }
 
-  /**
-   * 列表默认展示的内容：排除已删除与已合并的，按最近更新时间倒序。
-   * 已合并的灵感另有入口可见、可恢复——**默认隐藏 + 没有入口 = 删除**。
-   */
   function listInspirations() {
-    return readSnapshot().inspirations
-      .filter((item) => !isDeleted(item) && !isMerged(item))
-      .sort(byUpdatedAtDesc);
+    return readState().inspirations.filter((item) => !isDeleted(item) && !isMerged(item)).sort(byUpdatedAtDesc);
+  }
+
+  async function deletePhoto(inspirationId, photoId) {
+    if (!isCurrent()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+    const state = readState();
+    if (!photosEnabled) return { ok: false, code: 'PHOTO_DELETE_UNAVAILABLE' };
+    if (state.conflict) return { ok: false, code: state.conflict.code };
+    const item = getInspiration(inspirationId);
+    if (!item || !(item.photos || []).some((photo) => photo.id === photoId)) return { ok: false, code: 'NOT_FOUND' };
+    if (!state.queue.some((op) => ['delete', 'photoDelete'].includes(op.kind) && op.inspirationId === inspirationId)) {
+      const { sequence, entry } = queueOperation(state, { kind: 'photoDelete', inspirationId, photoId });
+      try { writeState(Object.assign({}, state, { nextSequence: sequence, queue: state.queue.concat([entry]) })); }
+      catch (err) { return { ok: false, code: 'LOCAL_WRITE_FAILED' }; }
+    }
+    let result;
+    try { result = await retryPending(); } catch (err) { result = { code: 'NETWORK' }; }
+    const latest = getInspiration(inspirationId);
+    return { ok: true, synced: !latest || !(latest.photos || []).some((photo) => photo.id === photoId), code: result.code };
   }
 
   function getInspiration(id) {
-    const found = readSnapshot().inspirations.find((item) => item.id === id);
-    return found || null;
+    return readState().inspirations.find((item) => item.id === id) || null;
   }
 
-  return {
-    readSnapshot,
-    writeSnapshot,
-    readQueue,
-    writeQueue,
-    enqueue,
-    dequeue,
-    clearQueue,
-    saveInspiration,
-    deleteInspiration,
-    listInspirations,
-    getInspiration
-  };
+  return { readSnapshot, readQueue, getConflict, getRecoveries, getBackupStatus, retryPending, resolveUseRemote,
+    saveInspiration, saveInspirations, deleteInspiration, deletePhoto, listInspirations, getInspiration };
 }
 
-module.exports = { createStore, STORAGE_KEYS, OP_KIND, emptySnapshot };
+module.exports = { createStore, LEGACY_STORAGE_KEYS, emptySnapshot };

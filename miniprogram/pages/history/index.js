@@ -8,8 +8,16 @@ Page({
     current: ''
   },
 
-  onLoad(query) {
+  async onLoad(query) {
     this.id = (query && query.id) || '';
+    await getApp().ensureReady();
+    this.load();
+  },
+
+  async onShow() {
+    if (!this.id) return;
+    this.setData({ ready: false, current: '', versions: [] });
+    await getApp().ensureReady();
     this.load();
   },
 

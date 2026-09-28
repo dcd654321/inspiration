@@ -26,6 +26,12 @@ function createFakeDb() {
     },
     async put(key, doc) {
       docs.set(key, JSON.parse(JSON.stringify(doc)));
+    },
+    async compareAndSwap(key, expectedVersion, doc) {
+      const current = docs.get(key);
+      if ((current && current.version !== expectedVersion) || (!current && expectedVersion !== 0)) return false;
+      docs.set(key, JSON.parse(JSON.stringify(doc)));
+      return true;
     }
   };
 }
@@ -60,6 +66,20 @@ function setup(options) {
     },
     now: () => NOW
   });
+  // 旧业务测试关注内容规则，默认使用当前版本；新协议强制字段由下面的专门用例断言。
+  const handle = protocol.handle;
+  protocol.handle = async (context, event) => {
+    if (event && (event.action === 'snapshot.push' || event.action === 'inspiration.delete') &&
+        context && context.accountKey && event.payload) {
+      const baseline = await repository.pull(context.accountKey);
+      const payload = Object.assign({
+        baseVersion: baseline.data.version,
+        generation: baseline.data.generation
+      }, event.payload);
+      return handle(context, Object.assign({}, event, { payload }));
+    }
+    return handle(context, event);
+  };
   return { db, storage, repository, protocol, requestCache };
 }
 
@@ -248,34 +268,13 @@ test('标识含越权字符的提交被拒绝', async () => {
 
 // ---------------------------------------------------------------- 删除
 
-test('删除：清理云存储后物理移除', async () => {
-  const { protocol, storage } = setup();
-  await protocol.handle(CONTEXT, {
-    action: 'snapshot.push',
-    payload: {
-      upserts: [anInspiration({
+test('含照片的删除在安全清理协议完成前被拒绝，不会部分删文件', async () => {
+  const { protocol, storage, db } = setup();
+  // 模拟升级前的旧照片；未启用能力时新增照片也不允许绕过路径校验。
+  await db.put(CONTEXT.accountKey, { accountKey: CONTEXT.accountKey, generation: 1, version: 1, updatedAt: NOW,
+      inspirations: [anInspiration({
         photos: [{ id: 'pho_1', fileId: 'cloud://p1', createdAt: NOW }, { id: 'pho_2', fileId: 'cloud://p2', createdAt: NOW }]
       })]
-    }
-  });
-
-  const result = await protocol.handle(CONTEXT, {
-    action: 'inspiration.delete', payload: { inspirationId: 'insp_lz9k_4f2a' }
-  });
-
-  assert.strictEqual(result.ok, true);
-  assert.strictEqual(result.data.deletedPhotos, 2);
-  assert.deepStrictEqual(storage.removed, ['cloud://p1', 'cloud://p2']);
-
-  const pulled = await protocol.handle(CONTEXT, { action: 'snapshot.pull' });
-  assert.strictEqual(pulled.data.inspirations.length, 0);
-});
-
-test('删除时清理失败则回滚，灵感与照片全部保留', async () => {
-  const { protocol, db } = setup({ failRemoval: true });
-  await protocol.handle(CONTEXT, {
-    action: 'snapshot.push',
-    payload: { upserts: [anInspiration({ photos: [{ id: 'pho_1', fileId: 'cloud://p1', createdAt: NOW }] })] }
   });
 
   const result = await protocol.handle(CONTEXT, {
@@ -283,35 +282,143 @@ test('删除时清理失败则回滚，灵感与照片全部保留', async () =>
   });
 
   assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.code, CODE.photoDeleteUnavailable);
+  assert.deepStrictEqual(storage.removed, []);
 
   const pulled = await protocol.handle(CONTEXT, { action: 'snapshot.pull' });
-  assert.strictEqual(pulled.data.inspirations.length, 1, '删除确认失败时灵感必须保留');
-  assert.strictEqual(pulled.data.inspirations[0].deletedAt, null, '软删标记应被回滚');
-  assert.strictEqual(pulled.data.inspirations[0].photos.length, 1, '照片记录也必须保留');
+  assert.strictEqual(pulled.data.inspirations.length, 1);
+});
+
+test('无照片删除按版本确认后物理移除', async () => {
+  const { protocol } = setup();
+  await protocol.handle(CONTEXT, {
+    action: 'snapshot.push',
+    payload: { upserts: [anInspiration()] }
+  });
+
+  const result = await protocol.handle(CONTEXT, {
+    action: 'inspiration.delete', payload: { inspirationId: 'insp_lz9k_4f2a' }
+  });
+
+  assert.strictEqual(result.ok, true);
+
+  const pulled = await protocol.handle(CONTEXT, { action: 'snapshot.pull' });
+  assert.strictEqual(pulled.data.inspirations.length, 0);
 });
 
 test('删除不存在的灵感返回 NOT_FOUND', async () => {
   const { protocol } = setup();
   const result = await protocol.handle(CONTEXT, { action: 'inspiration.delete', payload: { inspirationId: 'insp_nope' } });
 
-  assert.strictEqual(result.code, CODE.notFound);
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.data.alreadyAbsent, true);
 });
 
 // ---------------------------------------------------------------- 传输层幂等
 
 test('同一 requestId 重试直接返回上次结果，不重复执行', async () => {
-  const { protocol, storage } = setup();
+  const { protocol } = setup();
   await protocol.handle(CONTEXT, {
     action: 'snapshot.push',
-    payload: { upserts: [anInspiration({ photos: [{ id: 'pho_1', fileId: 'cloud://p1', createdAt: NOW }] })] }
+    payload: { upserts: [anInspiration()] }
   });
 
-  const request = { action: 'inspiration.delete', payload: { inspirationId: 'insp_lz9k_4f2a' }, requestId: 'req_1' };
+  const request = { action: 'inspiration.delete',
+    payload: { inspirationId: 'insp_lz9k_4f2a', baseVersion: 1, generation: 1 }, requestId: 'req_1' };
   const first = await protocol.handle(CONTEXT, request);
   const second = await protocol.handle(CONTEXT, request);
 
   assert.deepStrictEqual(first, second, '重试应返回同一结果');
-  assert.strictEqual(storage.removed.length, 1, '重试不该真的再删一次');
+  const pulled = await protocol.handle(CONTEXT, { action: 'snapshot.pull' });
+  assert.strictEqual(pulled.data.version, first.data.version, '重试不该再次增加版本');
+});
+
+test('相同请求标识不能确认另一项操作', async () => {
+  const { protocol, db } = setup();
+  const first = await protocol.handle(CONTEXT, {
+    action: 'snapshot.push',
+    payload: { baseVersion: 0, generation: 1, upserts: [anInspiration({ id: 'insp_a' })] },
+    requestId: 'req_collision'
+  });
+  const second = await protocol.handle(CONTEXT, {
+    action: 'snapshot.push',
+    payload: { baseVersion: 0, generation: 1, upserts: [anInspiration({ id: 'insp_b' })] },
+    requestId: 'req_collision'
+  });
+  assert.strictEqual(first.ok, true);
+  assert.strictEqual(second.code, PROTOCOL_CODE.requestIdReused);
+  assert.deepStrictEqual(db.docs.get('acct_dcd').inspirations.map((entry) => entry.id), ['insp_a']);
+});
+
+test('同一请求标识和相同内容可并发复用一次执行结果', async () => {
+  let calls = 0;
+  const cache = new Map();
+  const protocol = createProtocol({
+    repository: {
+      async push() { calls += 1; await new Promise((resolve) => setImmediate(resolve)); return { ok: true, data: { version: 1 } }; }
+    },
+    requestCache: { get: (key) => cache.get(key), set: (key, value) => cache.set(key, value) },
+    now: () => NOW
+  });
+  const event = { action: 'snapshot.push', payload: { generation: 1, baseVersion: 0, upserts: [] }, requestId: 'req_parallel' };
+  const results = await Promise.all([protocol.handle(CONTEXT, event), protocol.handle(CONTEXT, event)]);
+  assert.strictEqual(calls, 1);
+  assert.deepStrictEqual(results[0], results[1]);
+});
+
+test('暂时性失败不缓存，同一请求标识可重试成功', async () => {
+  let calls = 0;
+  const cache = new Map();
+  const protocol = createProtocol({
+    repository: {
+      async push() {
+        calls += 1;
+        if (calls === 1) throw new Error('temporary');
+        return { ok: true, data: { version: 1 } };
+      }
+    },
+    requestCache: { get: (key) => cache.get(key), set: (key, value) => cache.set(key, value) },
+    now: () => NOW
+  });
+  const event = { action: 'snapshot.push', payload: { generation: 1, baseVersion: 0, upserts: [] }, requestId: 'req_retry' };
+  const first = await protocol.handle(CONTEXT, event);
+  const second = await protocol.handle(CONTEXT, event);
+  assert.strictEqual(first.code, PROTOCOL_CODE.internal);
+  assert.strictEqual(second.ok, true);
+  assert.strictEqual(calls, 2);
+});
+
+test('缺少版本或代际字段的推送和删除都被拒绝且不写入', async () => {
+  const { repository, db } = setup();
+  const badPush = await repository.push('acct_dcd', { upserts: [anInspiration()] });
+  const badDelete = await repository.remove('acct_dcd', { inspirationId: 'insp_lz9k_4f2a' });
+  assert.strictEqual(badPush.code, CODE.invalidPayload);
+  assert.strictEqual(badDelete.code, CODE.invalidPayload);
+  assert.strictEqual(db.docs.size, 0);
+});
+
+test('相同内容在确认丢失后重试不增加版本，真正的并发改写返回冲突', async () => {
+  const { repository } = setup();
+  const item = anInspiration();
+  const first = await repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [item] });
+  assert.strictEqual(first.ok, true);
+  const duplicate = await repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [item] });
+  assert.strictEqual(duplicate.data.version, 1);
+  const conflict = await repository.push('acct_dcd', {
+    generation: 1, baseVersion: 0, upserts: [anInspiration({ text: '另一设备改写' })]
+  });
+  assert.strictEqual(conflict.code, CODE.conflict);
+});
+
+test('并发写入同一账户只有一条能通过版本条件更新', async () => {
+  const { repository, db } = setup();
+  const responses = await Promise.all([
+    repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [anInspiration({ id: 'insp_a' })] }),
+    repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [anInspiration({ id: 'insp_b' })] })
+  ]);
+  assert.deepStrictEqual(responses.map((result) => result.ok).sort(), [false, true]);
+  assert.strictEqual(db.docs.get('acct_dcd').version, 1);
+  assert.strictEqual(db.docs.get('acct_dcd').inspirations.length, 1);
 });
 
 // ---------------------------------------------------------------- 协议

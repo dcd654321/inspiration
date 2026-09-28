@@ -1,0 +1,8 @@
+.shared-page { min-height: 100vh; }
+.shared-eyebrow { margin-bottom: 18rpx; color: var(--brand); font-size: 25rpx; font-weight: 600; }
+.shared-date { margin: 16rpx 0 32rpx; font-size: 25rpx; color: var(--ink-3); }
+.shared-content { background: var(--surface); padding: 36rpx; border-radius: 22rpx; font-size: 31rpx; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+.shared-note, .shared-state { margin: 32rpx 0; color: var(--ink-2); font-size: 27rpx; line-height: 1.7; }
+.shared-report { margin: 36rpx auto 0; background: transparent; border: none; color: var(--ink-3); font-size: 25rpx; }
+.shared-report::after { border: 0; }
+.shared-page .btn { margin-top: 18rpx; }

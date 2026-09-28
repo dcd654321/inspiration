@@ -1,0 +1,52 @@
+{
+  "CreateIndexes": [
+    {
+      "IndexName": "tokenHash_unique",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "tokenHash", "Direction": "1" }],
+        "MgoIsUnique": true,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "owner_request_unique",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "ownerAccountKey", "Direction": "1" }, { "Name": "requestId", "Direction": "1" }],
+        "MgoIsUnique": true,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "owner_id_desc",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "ownerAccountKey", "Direction": "1" }, { "Name": "_id", "Direction": "-1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "owner_source_revoked",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "ownerAccountKey", "Direction": "1" }, { "Name": "sourceInspirationId", "Direction": "1" }, { "Name": "revokedAt", "Direction": "1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "purged_expires_id",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "payloadPurgedAt", "Direction": "1" }, { "Name": "expiresAt", "Direction": "1" }, { "Name": "_id", "Direction": "1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "purged_revoked_id",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "payloadPurgedAt", "Direction": "1" }, { "Name": "revokedAt", "Direction": "1" }, { "Name": "_id", "Direction": "1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    }
+  ]
+}

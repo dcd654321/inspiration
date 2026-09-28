@@ -4,7 +4,7 @@
 // 与 `cloudfunctions/` 分离，是为了**能脱离云环境单测**——放在云函数目录里的话，
 // 测试要先把 wx-server-sdk 整套桩起来，实际没人会那么干。
 //
-// 数据库与云存储都从外面注入（`db` / `removeFiles`），理由与前几层一致。
+// 数据库从外面注入，便于并发与失败路径测试。照片能力仅在安全协议与环境配置齐全时开放。
 //
 // 这一层要守住的是**数据库不替我们守的那几条**（见 docs/database-design.md §7）：
 // 文档数据库不校验字段类型、没有外键、不管引用完整性。把它们当成数据库的事，
@@ -17,10 +17,13 @@ const CODE = {
   invalidPayload: 'INVALID_PAYLOAD',
   immutableViolation: 'HISTORY_TRUNCATED',
   mergeTargetInvalid: 'MERGE_TARGET_INVALID',
+  photoDeleteUnavailable: 'PHOTO_DELETE_UNAVAILABLE',
   internal: 'INTERNAL'
 };
 
 const SAFE_SEGMENT = /^[A-Za-z0-9_]{1,64}$/;
+const { createPhotoLifecycle } = require('./photo-lifecycle');
+const { validRecord } = require('./record-validation');
 
 function ok(data) {
   return { ok: true, data };
@@ -36,7 +39,8 @@ function emptyAccount(accountKey, now) {
     generation: 1,
     version: 0,
     updatedAt: now,
-    inspirations: []
+    inspirations: [],
+    photoCleanup: []
   };
 }
 
@@ -51,11 +55,22 @@ function findIdentityField(payload) {
   return null;
 }
 
+function validRevision(data) {
+  return Number.isSafeInteger(data.generation) && data.generation > 0 &&
+    Number.isSafeInteger(data.baseVersion) && data.baseVersion >= 0;
+}
+
+function sameContent(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 function createRepository(options) {
   const opts = options || {};
   const db = opts.db;
-  const removeFiles = opts.removeFiles;
   const now = opts.now;
+  const beforeRemove = opts.beforeRemove;
+  const photosEnabled = opts.photosEnabled === true && typeof opts.validatePhoto === 'function' && typeof opts.removeFiles === 'function';
+  const photoLifecycle = photosEnabled ? createPhotoLifecycle(opts) : null;
 
   if (!db) throw new Error('createRepository 需要 db');
   if (typeof now !== 'function') throw new Error('createRepository 需要 now()');
@@ -65,18 +80,16 @@ function createRepository(options) {
     return doc && Array.isArray(doc.inspirations) ? doc : emptyAccount(accountKey, now());
   }
 
-  async function save(doc) {
-    await db.put(doc.accountKey, doc);
-    return doc;
-  }
-
   /** 拉取全量快照。 */
   async function pull(accountKey) {
     const doc = await load(accountKey);
     return ok({
+      cacheScope: accountKey,
       generation: doc.generation,
       version: doc.version,
       inspirations: doc.inspirations,
+      photosEnabled,
+      storagePrefix: photosEnabled ? opts.storagePrefix || '' : '',
       serverTime: now()
     });
   }
@@ -99,17 +112,14 @@ function createRepository(options) {
     }
 
     const data = payload || {};
-    if (!Array.isArray(data.upserts)) {
-      return err(CODE.invalidPayload, 'upserts 必须是数组');
+    if (!Array.isArray(data.upserts) || data.upserts.length > 21 || new Set(data.upserts.map((x) => x && x.id)).size !== data.upserts.length || !validRevision(data)) {
+      return err(CODE.invalidPayload, '缺少有效的版本、代际或灵感列表');
     }
 
     const doc = await load(accountKey);
 
-    if (typeof data.generation === 'number' && data.generation < doc.generation) {
+    if (data.generation !== doc.generation) {
       return err(CODE.staleGeneration);
-    }
-    if (typeof data.baseVersion === 'number' && data.baseVersion !== doc.version) {
-      return err(CODE.conflict);
     }
 
     const byId = new Map(doc.inspirations.map((item) => [item.id, item]));
@@ -119,13 +129,28 @@ function createRepository(options) {
       if (!incoming || typeof incoming.id !== 'string' || !SAFE_SEGMENT.test(incoming.id)) {
         return err(CODE.invalidPayload, '灵感标识不合法');
       }
+      if (incoming.deletedAt !== null && incoming.deletedAt !== undefined) {
+        return err(CODE.invalidPayload, '删除须使用独立动作');
+      }
+      if (!validRecord(incoming)) return err(CODE.invalidPayload);
 
       const existing = byId.get(incoming.id);
+      if ((doc.photoCleanup || []).some((task) => task.inspirationId === incoming.id)) return err('PHOTO_CLEANUP_PENDING');
+      const photos = incoming.photos || [];
+      const oldPhotos = existing && existing.photos || [];
+      if (!Array.isArray(photos) || photos.length > 9 || new Set(photos.map((x) => x && x.id)).size !== photos.length) return err(CODE.invalidPayload);
+      if (oldPhotos.some((old) => !photos.some((photo) => sameContent(photo, old)))) return err('PHOTO_REMOVE_REQUIRES_ACTION');
+      const addedPhotos = photos.filter((photo) => !oldPhotos.some((old) => sameContent(photo, old)));
+      if (addedPhotos.length && (!photosEnabled || addedPhotos.some((photo) => !opts.validatePhoto(accountKey, incoming.id, photo)))) return err('PHOTO_PATH_INVALID');
       if (existing) {
+        if (incoming.createdAt !== existing.createdAt) return err(CODE.immutableViolation);
+        for (const supplement of existing.supplements || []) {
+          const retained = (incoming.supplements || []).find((entry) => entry.id === supplement.id);
+          if (retained && (supplement.contentHistory || []).some((version) => !(retained.contentHistory || []).some((entry) => sameContent(version, entry)))) return err(CODE.immutableViolation);
+        }
         // 历史只增不减：把已有的每一条都在提交里找一遍，缺一条就拒绝整批
-        const incomingIds = new Set((incoming.textHistory || []).map((v) => v.id));
         for (const version of existing.textHistory || []) {
-          if (!incomingIds.has(version.id)) {
+          if (!(incoming.textHistory || []).some((entry) => sameContent(entry, version))) {
             return err(CODE.immutableViolation, '提交中删除了已有的原文历史版本');
           }
         }
@@ -135,19 +160,37 @@ function createRepository(options) {
       applied.push(incoming.id);
     }
 
-    doc.inspirations = Array.from(byId.values());
-    doc.version += 1;
-    doc.updatedAt = now();
-    await save(doc);
+    // 所有改动先组装再核对引用，一次 CAS 不留下半合并；旧非法引用只能被修复。
+    for (const item of byId.values()) {
+      const seen = new Set([item.id]);
+      let target = item.mergedInto;
+      while (target) {
+        if (seen.has(target) || !byId.has(target) || byId.get(target).deletedAt) return err(CODE.mergeTargetInvalid);
+        seen.add(target); target = byId.get(target).mergedInto;
+      }
+    }
 
-    return ok({ version: doc.version, applied });
+    // 传输层缓存可能已过期；相同内容的重试仍应按已完成处理，不再增加版本。
+    if (data.upserts.length === 0 || data.upserts.every((item) => sameContent(doc.inspirations.find((old) => old.id === item.id), item))) {
+      return ok({ version: doc.version, applied });
+    }
+
+    if (data.baseVersion !== doc.version) return err(CODE.conflict);
+
+    const next = Object.assign({}, doc, {
+      inspirations: Array.from(byId.values()),
+      version: doc.version + 1,
+      updatedAt: now()
+    });
+    const written = await db.compareAndSwap(accountKey, doc.version, next);
+    if (!written) return err(CODE.conflict);
+
+    return ok({ version: next.version, applied });
   }
 
   /**
-   * 删除一条灵感：**全成功或全保留**。
-   *
-   * 顺序是刻意的：先软删 → 删云存储文件 → 物理移除。第 2 步失败即回滚软删并返回失败，
-   * 客户端**不得**移除本地数据。这样「图片已删但灵感还在」的中间状态在服务端就不可能产生。
+   * 删除一条灵感。无照片时按版本条件移除；含照片时拒绝，
+   * 避免云文件批量删除部分成功后谎称能够物理回滚。
    */
   async function remove(accountKey, payload) {
     const data = payload || {};
@@ -155,52 +198,48 @@ function createRepository(options) {
     if (identityField) {
       return err('IDENTITY_FIELD_REJECTED', '请求体不得包含身份字段');
     }
-    if (typeof data.inspirationId !== 'string' || !SAFE_SEGMENT.test(data.inspirationId)) {
-      return err(CODE.invalidPayload, '灵感标识不合法');
+    if (typeof data.inspirationId !== 'string' || !SAFE_SEGMENT.test(data.inspirationId) || !validRevision(data)) {
+      return err(CODE.invalidPayload, '缺少有效的灵感标识、版本或代际');
     }
 
     const doc = await load(accountKey);
+    if (data.generation !== doc.generation) return err(CODE.staleGeneration);
     const index = doc.inspirations.findIndex((item) => item.id === data.inspirationId);
-    if (index === -1) return err(CODE.notFound);
+    if (index === -1) return ok({ deletedPhotos: 0, version: doc.version, alreadyAbsent: true });
 
     const target = doc.inspirations[index];
     const fileIds = (target.photos || []).map((photo) => photo.fileId).filter(Boolean);
-    const deletedAt = now();
-
-    // 1. 软删
-    doc.inspirations = doc.inspirations.map((item, i) => (
-      i === index ? Object.assign({}, item, { deletedAt }) : item
-    ));
-    await save(doc);
-
-    // 2. 删云存储
-    if (fileIds.length > 0) {
-      let removal;
-      try {
-        removal = await removeFiles(fileIds);
-      } catch (err2) {
-        removal = { ok: false };
-      }
-      if (!removal || removal.ok !== true) {
-        // 回滚：灵感与照片全部保留
-        doc.inspirations = doc.inspirations.map((item, i) => (
-          i === index ? target : item
-        ));
-        await save(doc);
-        return err(CODE.internal, '照片未能全部清理，删除已取消');
-      }
+    if (photosEnabled && (fileIds.length || (doc.photoCleanup || []).some((task) => task.inspirationId === target.id))) {
+      return photoLifecycle.remove(accountKey, data, null);
     }
+    // 云文件批量删除可能部分成功，无法与数据库写入组成原子事务。
+    // 在可恢复的清理协议完成前，拒绝带照片的删除，不制造“照片已删一部分”的假回滚。
+    if (fileIds.length > 0) return err(CODE.photoDeleteUnavailable, '这条含照片，暂时无法安全删除');
+    if (data.baseVersion !== doc.version) return err(CODE.conflict);
 
-    // 3. 物理移除
-    doc.inspirations = doc.inspirations.filter((item) => item.id !== data.inspirationId);
-    doc.version += 1;
-    doc.updatedAt = now();
-    await save(doc);
+    // 撤销相关分享先于删除；若撤销失败，源记录保持原样。
+    // 并发导致后面的 CAS 失败时分享可能已撤销，属于保守的失败关闭。
+    if (typeof beforeRemove === 'function') await beforeRemove(accountKey, data.inspirationId);
 
-    return ok({ deletedPhotos: fileIds.length, version: doc.version });
+    const next = Object.assign({}, doc, {
+      inspirations: doc.inspirations.filter((item) => item.id !== data.inspirationId)
+        .map((item) => item.mergedInto === data.inspirationId ? Object.assign({}, item, { mergedInto: null }) : item),
+      version: doc.version + 1,
+      updatedAt: now()
+    });
+    const written = await db.compareAndSwap(accountKey, doc.version, next);
+    if (!written) return err(CODE.conflict);
+    return ok({ deletedPhotos: 0, version: next.version });
   }
 
-  return { pull, push, remove };
+  async function removePhoto(accountKey, payload) {
+    const data = payload || {};
+    if (findIdentityField(data)) return err('IDENTITY_FIELD_REJECTED');
+    if (!validRevision(data) || typeof data.inspirationId !== 'string' || !SAFE_SEGMENT.test(data.inspirationId) || typeof data.photoId !== 'string' || !SAFE_SEGMENT.test(data.photoId)) return err(CODE.invalidPayload);
+    if (!photoLifecycle) return err(CODE.photoDeleteUnavailable);
+    return photoLifecycle.remove(accountKey, data, data.photoId);
+  }
+  return { pull, push, remove, removePhoto };
 }
 
 module.exports = { createRepository, CODE, IDENTITY_FIELDS, emptyAccount };

@@ -31,6 +31,7 @@ const CLOUD_ROOT = path.join(root, 'cloudfunctions');
 
 const TARGETS = [
   { fn: 'linggan_api', copies: [{ from: 'server', to: 'server' }] },
+  { fn: 'linggan_maintenance', copies: [{ from: 'server', to: 'server' }] },
   { fn: 'linggan_ai', copies: [{ from: 'server', to: 'server' }, { from: 'miniprogram/core', to: 'core' }] }
 ];
 

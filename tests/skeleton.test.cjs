@@ -8,23 +8,21 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 
-test('云与 AI 开关仍保持关闭', () => {
+test('AI 开关保持关闭，云开关打开时环境 ID 必须已填', () => {
   const cloud = require('../miniprogram/config/cloud');
   const ai = require('../miniprogram/config/ai');
 
+  // AI 还没接入真实模型，也没有额度与内容安全，不能开
   assert.strictEqual(ai.enabled, false, 'AI 开关须为 false：未接入真实模型，且缺少额度与内容安全');
-  assert.strictEqual(
-    cloud.enabled, false,
-    '云开关须为 false：资源尚未创建、函数尚未部署。翻开关前先按 docs/DEPLOYMENT.md 走完清单'
-  );
-});
 
-test('云开关一旦打开，环境 ID 就不能是空的', () => {
-  // 反方向的守卫。它不检查「资源是不是真的建好了」——那只能靠部署清单和验收，闸门管不到。
-  // 它守的是另一件事：**别在 envId 还空着的时候翻开关**，
-  // 那会让应用去调一个不存在的环境，而错误被降级提示盖住，很难查出真正原因。
-  const cloud = require('../miniprogram/config/cloud');
-
+  // 云开关**可以由用户打开**（2026-09-22 起，此前这里断言它必须为 false）。
+  //
+  // 保留的守卫只有一条：**别在 envId 还空着的时候翻开关**——那会让应用去调一个
+  // 不存在的环境，而失败被降级成「还没同步到云端」，很难反推出真正原因。
+  //
+  // 这条**挡不住**「函数没部署、集合没建就翻开关」。那两样在代码里看不出来，
+  // 只能靠部署清单和验收，闸门管不到。打开后如果每条保存都显示「还没同步到云端」，
+  // 先去云开发控制台确认函数与集合，而不是查客户端代码。
   if (cloud.enabled) {
     assert.ok(
       typeof cloud.envId === 'string' && cloud.envId.length > 0,

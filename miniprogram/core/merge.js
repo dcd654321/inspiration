@@ -47,7 +47,7 @@ function throwIfAny(errors) {
  * | | 汇总结果 | 被汇总的来源 |
  * | --- | --- | --- |
  * | overwrite | 成为目标的 text（旧原文进历史） | 写 mergedInto，默认收起 |
- * | append | 成为一条全新灵感 | 写 mergedInto，默认收起 |
+ * | append | 成为一条全新灵感 | 保持原样、独立可见 |
  */
 function mergeInspirations(inspirations, input) {
   const list = Array.isArray(inspirations) ? inspirations : [];
@@ -57,7 +57,7 @@ function mergeInspirations(inspirations, input) {
   const sourceIds = Array.isArray(source.sourceIds) ? source.sourceIds : null;
   if (!sourceIds) {
     errors.push({ field: 'sourceIds', code: ERROR_CODES.MISSING_FIELD });
-  } else if (sourceIds.length < LIMITS.mergeMinItems) {
+  } else if (sourceIds.length < LIMITS.mergeMinItems || sourceIds.length > LIMITS.summaryMaxSourceItems || new Set(sourceIds).size !== sourceIds.length) {
     // 少于两条没有汇总的意义。界面应当在调用前就拦住，这里是兜底。
     errors.push({ field: 'sourceIds', code: ERROR_CODES.LIMIT_EXCEEDED });
   }
@@ -80,7 +80,7 @@ function mergeInspirations(inspirations, input) {
     // 来源必须都存在、且都没被合并过
     sourceIds.forEach((id) => {
       const found = list.filter((item) => item.id === id)[0];
-      if (!found) {
+      if (!found || found.deletedAt) {
         errors.push({ field: 'sourceIds', code: ERROR_CODES.SUPPLEMENT_NOT_FOUND });
       } else if (found.mergedInto) {
         errors.push({ field: 'sourceIds', code: ERROR_CODES.ALREADY_MERGED });
@@ -102,7 +102,7 @@ function mergeInspirations(inspirations, input) {
     if (source.mode === 'append') {
       if (!isValidId(source.newId)) {
         errors.push({ field: 'newId', code: source.newId ? ERROR_CODES.INVALID_ID : ERROR_CODES.MISSING_FIELD });
-      } else if (sourceIds.indexOf(source.newId) !== -1) {
+      } else if (list.some((item) => item.id === source.newId)) {
         errors.push({ field: 'newId', code: ERROR_CODES.MERGE_SELF });
       }
     }
@@ -116,7 +116,7 @@ function mergeInspirations(inspirations, input) {
   if (source.mode === 'overwrite') {
     const target = next.filter((item) => item.id === source.targetId)[0];
     // 走 updateText 而不是直接改 text：旧原文必须进历史，而且 historyId 由它来强制
-    const updated = updateText(target, { text: source.summaryText, historyId: source.historyId, now });
+    const updated = Object.freeze(Object.assign({}, updateText(target, { text: source.summaryText, historyId: source.historyId, now }), { source: 'ai', summarySources: Object.freeze(sourceIds.slice()) }));
     next = next.map((item) => (item.id === source.targetId ? updated : item));
 
     // 目标自己不该被标为「已合并进自己」
@@ -128,14 +128,9 @@ function mergeInspirations(inspirations, input) {
         ));
       });
   } else {
-    const created = createInspiration({ text: source.summaryText, id: source.newId, now });
+    const created = Object.freeze(Object.assign({}, createInspiration({ text: source.summaryText, id: source.newId, now }), { source: 'ai', summarySources: Object.freeze(sourceIds.slice()) }));
     next = next.concat([created]);
 
-    sourceIds.forEach((id) => {
-      next = next.map((item) => (
-        item.id === id ? markMerged(item, { targetId: source.newId, now }) : item
-      ));
-    });
   }
 
   return next.slice().sort(byUpdatedAtDesc);

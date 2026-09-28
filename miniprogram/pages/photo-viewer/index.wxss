@@ -1,0 +1,3 @@
+page, .viewer { background: #20251f; color: #f5f6f1; min-height: 100vh; }
+swiper { height: 78vh; } swiper image { width: 100%; height: 100%; }
+.caption, .error { text-align: center; padding: 24rpx 40rpx; font-size: 28rpx; line-height: 1.8; }

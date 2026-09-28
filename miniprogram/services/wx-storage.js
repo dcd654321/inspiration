@@ -12,19 +12,21 @@
  *
  * 只在真机 / 开发者工具里可用；Node 里的测试一律注入内存替身，不走这里。
  */
-function createWxStorage() {
+function createWxStorage(options) {
+  const namespace = options && options.namespace !== undefined ? options.namespace : '';
+  if (typeof namespace !== 'string') throw Error('INVALID_STORAGE_NAMESPACE');
   return {
     get(key) {
-      return wx.getStorageSync(key);
+      return wx.getStorageSync(namespace + key);
     },
 
     /** 配额耗尽时 wx 会抛错，原样交给调用方。 */
     set(key, value) {
-      wx.setStorageSync(key, value);
+      wx.setStorageSync(namespace + key, value);
     },
 
     remove(key) {
-      wx.removeStorageSync(key);
+      wx.removeStorageSync(namespace + key);
     },
 
     /**
@@ -34,7 +36,8 @@ function createWxStorage() {
      * 调用方用 currentSize / limitSize 判断余量，而不是拿一个常数去比。
      */
     info() {
-      return wx.getStorageInfoSync();
+      const info = wx.getStorageInfoSync();
+      return Object.assign({}, info, { keys: (info.keys || []).filter((key) => key.startsWith(namespace)).map((key) => key.slice(namespace.length)) });
     }
   };
 }

@@ -9,10 +9,12 @@
 // （Node 里跑不了 wx），所以逻辑越少，出错的面越小。
 
 const REQUEST_ID_PREFIX = 'req_';
+const { getCloudClient } = require('./cloud-client');
 
 /** 生成一个请求标识。同一逻辑操作重试时必须复用同一个值，否则传输层幂等不成立。 */
 function createRequestId() {
-  return REQUEST_ID_PREFIX + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+  return REQUEST_ID_PREFIX + Date.now().toString(36) + '_' +
+    Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 }
 
 /**
@@ -29,7 +31,7 @@ function createWxTransport(options) {
   const newRequestId = typeof opts.newRequestId === 'function' ? opts.newRequestId : createRequestId;
   const callFunction = typeof opts.callFunction === 'function'
     ? opts.callFunction
-    : (input) => wx.cloud.callFunction(input);
+    : async (input) => (await getCloudClient()).callFunction(input);
 
   if (typeof functionName !== 'string' || functionName.length === 0) {
     throw new Error('createWxTransport 需要一个 functionName');

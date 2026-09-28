@@ -4,7 +4,13 @@
 
 原生微信小程序「灵感拾光簿」。用户随口记下灵感，后续可补充、拍照附图，由 AI 扩展成更完整的想法，并提炼出该灵感的热度信号。技术栈与 `yidian-miniprogram` 一致：JavaScript / WXML / WXSS + 微信云开发（云函数 + 云数据库 + 云存储 + 云开发 AI）。
 
-当前状态：**仅完成工程初始化骨架，业务功能尚未实现**。云环境和 AI 能力均默认关闭。
+当前状态（2026-09-28）：业务代码已完成——领域层、服务层、14 个页面、3 个云函数（`linggan_api` / `linggan_ai` / `linggan_maintenance`）、服务端协议层，360 项自动化测试通过。`docs/spec-coverage.md` 按能力记着每条规范场景落在哪一档；页面清单见 `docs/ui-design.md` 第 0 节。
+
+**云开关已打开**（`config/cloud.js` 的 `enabled: true`，环境 `product-d2g59zty74d7d1ec1`，资源方 `wx7ad85943fe81e095`）。但这只表示客户端会去调云端，**不表示云端资源已经建好**——六个 `linggan_` 集合已创建并回读确认为空，业务索引、集合权限、云函数和云存储规则仍未部署，代码看不出来。打开后若每条保存都显示「还没同步到云端」，先去控制台确认，不要查客户端代码。部署输入清单见 `deployment/product/`。
+
+AI 仍未启用（`config/ai.js` 的 `enabled: false`，服务端 `LINGGAN_AI_ENABLED` 也为关）：适配器已接云开发 AI，但模型标识、预算与审核权限未确认，见 `docs/PENDING-INPUT.md`。
+
+**真机与开发者工具未做完整验证**，`wx.*` 的绑定只有语法检查兜底。
 
 ## 分支与授权
 

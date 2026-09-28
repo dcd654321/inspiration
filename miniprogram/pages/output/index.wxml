@@ -1,0 +1,60 @@
+<view class="page" wx:if="{{ready}}">
+  <block wx:if="{{missing}}">
+    <view class="empty">
+      <view class="et">找不到这条灵感</view>
+      <view class="ed">它可能已经被删除，请返回列表。</view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="page-title">整理与留档</view>
+    <view class="page-sub">把记录变成可以使用的内容，原记录不会被改动。</view>
+
+    <view class="mode-tabs">
+      <button class="mode-tab {{mode === 'organize' ? 'mode-tab-active' : ''}}" data-mode="organize" bindtap="onModeChange">整理使用</button>
+      <button class="mode-tab {{mode === 'archive' ? 'mode-tab-active' : ''}}" data-mode="archive" bindtap="onModeChange">文字留档</button>
+    </view>
+
+    <block wx:if="{{mode === 'organize'}}">
+      <block wx:if="{{phase === 'select'}}">
+        <view class="section-label">选择使用方式</view>
+        <view class="template-options"><button wx:for="{{templates}}" wx:key="id" class="template-option {{templateId === item.id ? 'template-selected' : ''}}" data-template="{{item.id}}" bindtap="onTemplateChange">{{item.name}}</button></view>
+        <view class="selection-note">模板提供可编辑的结构，不改写原文，也不补充事实。</view>
+        <view class="section-label">选择要带入使用稿的补充</view>
+        <view class="selection-note">正文始终保留；已并入正文或已合并的补充不会重复加入。</view>
+        <view wx:if="{{options.length === 0}}" class="empty-options">还没有可选择的补充，可以直接整理正文。</view>
+        <button wx:for="{{options}}" wx:key="id" class="option" data-id="{{item.id}}" bindtap="onToggleSupplement" aria-label="{{item.selected ? '取消选择' : '选择'}}补充">
+          <text class="option-check {{item.selected ? 'option-checked' : ''}}">{{item.selected ? '✓' : ''}}</text>
+          <view class="option-body">
+            <text class="option-time">{{item.time}}</text>
+            <text class="option-content">{{item.content}}</text>
+          </view>
+        </button>
+        <button class="btn btn-block main-action" bindtap="onGenerate">生成使用稿{{selectedCount > 0 ? '（' + selectedCount + ' 条补充）' : ''}}</button>
+        <button wx:if="{{draft}}" class="btn btn-quiet btn-block secondary-action" bindtap="onResumeDraft">返回当前稿件</button>
+      </block>
+
+      <block wx:else>
+        <button class="back-select" bindtap="onBackToSelection" disabled="{{busy}}">重新选择补充</button>
+        <view class="selection-note">可以直接编辑；重新生成前会询问是否替换你修改过的内容。</view>
+        <textarea class="draft-editor" value="{{draft}}" maxlength="-1" bindinput="onDraftInput" />
+        <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">{{draft.length}} 字 · 另存上限 {{maxLength}} 字</view>
+        <button class="btn btn-block main-action" bindtap="onCopyDraft">复制使用稿</button>
+        <button class="btn btn-quiet btn-block secondary-action" bindtap="onSaveAsNew" disabled="{{busy}}">{{busy ? '正在另存…' : '另存为新灵感'}}</button>
+        <view wx:if="{{savedId}}" class="saved-link"><button class="btn btn-link" bindtap="onOpenSaved">查看新灵感</button></view>
+      </block>
+    </block>
+
+    <block wx:else>
+      <view class="section-label">文字留档预览</view>
+      <view class="selection-note">包含现存正文、补充和修改记录，不含照片。外部副本不会随原记录删除。</view>
+      <view class="archive-preview"><text selectable="true">{{archive}}</text></view>
+      <button class="btn btn-block main-action" bindtap="onCopyArchive">复制留档文字</button>
+      <button class="btn btn-quiet btn-block secondary-action" bindtap="onCreateTxt" disabled="{{busy}}">{{busy ? '正在处理…' : '生成 TXT 文件'}}</button>
+      <button wx:if="{{txtPath}}" class="btn btn-quiet btn-block secondary-action" bindtap="onShareTxt" disabled="{{busy}}">发送 TXT 文件</button>
+    </block>
+
+    <view wx:if="{{error}}" class="notice notice-err"><view class="mark"></view><text>{{error}}</text></view>
+    <view wx:if="{{notice}}" class="notice notice-success"><view class="mark"></view><text>{{notice}}</text></view>
+  </block>
+</view>

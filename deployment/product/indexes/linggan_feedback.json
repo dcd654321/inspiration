@@ -1,0 +1,52 @@
+{
+  "CreateIndexes": [
+    {
+      "IndexName": "account_request_unique",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "accountKey", "Direction": "1" }, { "Name": "requestId", "Direction": "1" }],
+        "MgoIsUnique": true,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "dedupeKey_unique",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "dedupeKey", "Direction": "1" }],
+        "MgoIsUnique": true,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "account_id_desc",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "accountKey", "Direction": "1" }, { "Name": "_id", "Direction": "-1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "status_created_desc",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "status", "Direction": "1" }, { "Name": "createdAt", "Direction": "-1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "status_closed_id",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "status", "Direction": "1" }, { "Name": "closedAt", "Direction": "1" }, { "Name": "_id", "Direction": "1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    },
+    {
+      "IndexName": "status_created_id",
+      "MgoKeySchema": {
+        "MgoIndexKeys": [{ "Name": "status", "Direction": "1" }, { "Name": "createdAt", "Direction": "1" }, { "Name": "_id", "Direction": "1" }],
+        "MgoIsUnique": false,
+        "MgoIsSparse": false
+      }
+    }
+  ]
+}

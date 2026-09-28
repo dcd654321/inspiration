@@ -1,3 +1,16 @@
+.capture-head {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.capture-mark {
+  flex: 0 0 auto;
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 26rpx;
+}
+
 .composer {
   background: var(--surface);
   border-radius: 24rpx;
@@ -21,7 +34,7 @@
 .foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-top: 28rpx;
 }
 
@@ -31,5 +44,31 @@
 }
 
 .count-near {
-  color: var(--danger);
+  color: var(--warn-ink);
+}
+
+.save-btn {
+  margin-top: 24rpx;
+}
+
+.save-result {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-link {
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
+  margin: 6rpx 0 -18rpx;
+  padding: 0;
+  color: var(--brand);
+  background: transparent;
+  font-size: 27rpx;
+  font-weight: 600;
+  text-align: left;
+}
+
+.result-link::after {
+  border: none;
 }

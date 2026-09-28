@@ -4,5 +4,10 @@ module.exports = {
   apiFunction: 'linggan_api',
   aiFunction: 'linggan_ai',
   accountCollection: 'linggan_accounts',
+  shareCollection: 'linggan_shares',
+  feedbackCollection: 'linggan_feedback',
+  usageCollection: 'linggan_usage',
+  rateLimitCollection: 'linggan_rate_limits',
+  maintenanceFunction: 'linggan_maintenance',
   storagePrefix: 'linggan/'
 };

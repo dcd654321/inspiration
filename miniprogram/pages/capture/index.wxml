@@ -1,6 +1,11 @@
 <view class="page">
-  <view class="page-title">记下这一句</view>
-  <view class="page-sub">半句话也可以。</view>
+  <view class="capture-head">
+    <image class="capture-mark" src="/assets/brand-mark.png" mode="aspectFit" />
+    <view>
+      <view class="page-title">记录想法，持续完善</view>
+      <view class="page-sub">点子、计划和问题，都可以在这里记录、补充并整理使用。</view>
+    </view>
+  </view>
 
   <view class="composer">
     <textarea
@@ -16,17 +21,29 @@
 
     <view class="foot">
       <text class="count {{nearLimit ? 'count-near' : ''}}">{{draft.length}} / {{maxLength}}</text>
-      <button
-        class="btn"
-        bindtap="onSave"
-        disabled="{{draft.length === 0 || saving}}"
-      >{{saving ? '保存中…' : '保存'}}</button>
     </view>
+
+    <button
+      class="btn btn-block save-btn"
+      bindtap="onSave"
+      disabled="{{!canSave || saving}}"
+    >{{saving ? '正在记下…' : '记下来'}}</button>
 
     <!-- 失败提示常驻页面，不用会自动消失的 toast：用户错过之后会以为已经保存 -->
     <view wx:if="{{error}}" class="notice notice-err">
       <view class="mark"></view>
-      <text>{{error}}</text>
+      <view class="save-result">
+        <text>{{error}}</text>
+        <button wx:if="{{lastSavedId}}" class="result-link" bindtap="onViewSaved">查看这条</button>
+      </view>
+    </view>
+
+    <view wx:if="{{success}}" class="notice notice-success">
+      <view class="mark"></view>
+      <view class="save-result">
+        <text>{{success}}</text>
+        <button wx:if="{{lastSavedId}}" class="result-link" bindtap="onViewSaved">查看这条</button>
+      </view>
     </view>
   </view>
 </view>

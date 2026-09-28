@@ -1,0 +1,8 @@
+.source-text { margin: 32rpx 0; white-space: pre-wrap; line-height: 1.8; }
+.hint { margin: 24rpx 0; color: #696e69; font-size: 26rpx; line-height: 1.7; }
+.choice { display: flex; align-items: flex-start; gap: 16rpx; min-height: 88rpx; padding: 24rpx 0; border-bottom: 1rpx solid #e5e7e1; }
+.choice text { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-all; }
+.draft-item { padding: 28rpx; margin: 24rpx 0; border: 1rpx solid #dce2d9; border-radius: 20rpx; background: #fff; }
+.draft-item textarea, .summary-editor { width: 100%; box-sizing: border-box; min-height: 120rpx; margin-top: 20rpx; font-size: 30rpx; line-height: 1.8; }
+.summary-editor { padding: 28rpx; background: #fff; border-radius: 20rpx; }
+.btn-block { margin-top: 24rpx; }

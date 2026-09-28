@@ -3,7 +3,8 @@
 ## 上下文
 
 - 项目：`inspiration-miniprogram`，原生微信小程序（JavaScript / WXML / WXSS）+ 微信云开发。
-- 现状：仅有工程骨架，无业务代码，无测试，云与 AI 均未启用（`config/cloud.js`、`config/ai.js` 的 `enabled` 为 `false`）。
+- 现状（写提案时）：仅有工程骨架，无业务代码，无测试，云与 AI 均未启用（`config/cloud.js`、`config/ai.js` 的 `enabled` 为 `false`）。**这一段是当时的起点，保留不动**——后面的设计目标正是从它推出来的。
+- 当前状态（2026-09-28 补）：本变更规划的能力本地代码均已完成——14 个页面、3 个云函数、12 个服务端 action，360 项自动化测试通过；`cloud.js` 的 `enabled` 已为 `true`，但只表示客户端会去调云端，六个集合已建而业务索引、权限与函数未配。**云端部署、照片与 AI 的平台启用、真机验收均未完成。** 以 `README.md`、`docs/spec-coverage.md` 与 `docs/VERIFICATION.md` 为准。
 - 参照：`yidian-miniprogram` 已验证的工程约定（OpenSpec 流程、`scripts/check.cjs` 结构检查、云函数产物与源码分离、账户级数据隔离）。
 
 ## 设计目标
@@ -36,11 +37,17 @@
 | `text` | 当前原文。**可直接改写**（2026-09-22 修订，初稿为「写入后不可变」） |
 | `textHistory[]` | 历次被替换掉的原文版本，每项含 `id`、`text`、`replacedAt`。按时间倒序展示，只增不删 |
 | `createdAt` / `updatedAt` | 创建与最近更新时间 |
-| `supplements[]` | 时间线，每项含 `id`、`content`、`createdAt`、`source`（`user` 或 `ai`），以及 `mergedInto`（被汇总时指向汇总结果，默认收起、可恢复） |
-| `photos[]` | 图片记录，每项含 `id`、`fileId`、`createdAt` |
+| `supplements[]` | 时间线，每项含 `id`、`content`、`contentHistory[]`（这条补充自己的历史，与 `textHistory` 同规则）、`createdAt`、`source`（`user` 或 `ai`）、`sourceIds[]`（汇总来源补充 id）、`mergedInto`（被汇总时指向汇总结果，默认收起、可恢复）、`foldedAt`（被合并进灵感原文的时刻） |
+| `photos[]` | 图片记录，每项含 `id`、`fileId`、`createdAt`。只有上传成功的照片才写入 |
+| `tags[]` | 至多 5 个，单个 12 字，不重复。旧记录缺省为空 |
+| `stage` | `seed` / `growing` / `ready`（想法 / 整理中 / 可使用）。旧记录缺省 `seed` |
+| `source` | 当前正文的来源：`user` 或 `ai`。AI 后续编辑仍保留标记 |
+| `summarySources[]` | 汇总追溯：来源灵感 id，最多 20 个；只存 id，不复制正文 |
 | `mergedInto` | 本灵感被汇总进哪一条时写入；默认不在列表中出现，可通过入口查看与恢复 |
 | `heat` | 最近一次热度计算结果缓存：`{ score, reasons[], computedAt }`。**本变更暂缓，字段保留但不写入**，见「热度设计」一节 |
 | `deletedAt` | 软删标记，等待云端确认后才清理存储 |
+
+`tags`、`stage`、`source`、`summarySources` 由后续变更（`complete-product-workflows`）加入，字段级定义见 `docs/database-design.md` §3.2。
 
 云存储路径：`linggan/{accountKey}/{inspirationId}/{photoId}`。`accountKey` 参与路径，使越权拼接路径也无法命中他人对象，但**访问控制仍依赖云存储权限规则，不以路径命名代替隔离**。
 
@@ -52,6 +59,8 @@
 | AI 云函数 | `linggan_ai` | 否，仅声明 |
 | 账户集合 | `linggan_accounts` | 否，仅声明 |
 | 云存储前缀 | `linggan/` | 否，仅声明 |
+
+> 上表只覆盖本提案声明的资源。后续变更又声明了 `linggan_shares`、`linggan_feedback`、`linggan_usage`、`linggan_rate_limits`、`linggan_ai_usage` 五个集合与 `linggan_maintenance` 云函数（合计六集合、三函数、15 个业务索引）。**当前完整清单与平台状态见 `docs/database-design.md` §2、`docs/DEPLOYMENT.md` 与 `deployment/product/`**；本表不随之更新，以免把后续变更的范围混进最初的提案。
 
 **部署授权**：创建集合、部署云函数、写入环境变量、开启 `cloud.js` 或 `ai.js` 的 `enabled`，均需在实施阶段单独取得用户明确授权。本设计不构成任何部署许可。
 
