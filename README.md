@@ -4,14 +4,16 @@
 
 工程目录为 `D:\codex\coding\inspiration-miniprogram`，与 `yidian-miniprogram` 采用同一套工程约定（原生小程序 + 微信云开发 + OpenSpec 规范驱动开发）。
 
-> **当前状态（2026-09-28）：本地代码完成，云端与真机未验收。**
+> **当前状态（2026-09-29）：本地代码完成，云端与真机未验收。**
 > 领域层、服务层、14 个页面、3 个云函数（`linggan_api` / `linggan_ai` / `linggan_maintenance`）、
 > 服务端协议层均有代码，360 项自动化测试通过。
 > `docs/spec-coverage.md` 按能力分别记录每条规范场景落在哪一档。
 >
-> **云开关已打开**（`product-d2g59zty74d7d1ec1`，资源方 `wx7ad85943fe81e095`），但这只表示客户端会去调云端——
-> 六个 `linggan_` 集合已创建并回读确认为空，业务索引、集合权限与三个函数**尚未部署**，
-> 不能凭代码或开关判断云端已就绪。
+> **环境按版本解析（2026-09-29 起）**：开发版/体验版连共享测试环境 `cloud1-d8gopnalv908bb47a`，
+> 正式版连共享正式环境 `product-d2g59zty74d7d1ec1`（资源方 `wx7ad85943fe81e095`）。
+> 六个 `linggan_` 集合已在正式环境创建并回读确认为空；函数部署走 `npm run deploy:cloud -- --env test|product`
+> （部署前强制核对云函数目录与源码一致）。共享初始化已在正式环境通过；测试环境的函数、集合与函数环境变量
+> 需按 `deployment/product/manifest.json` 同一清单部署后才能用于日常开发。
 > **AI 仍未启用**：客户端与服务端开关都为关，模型未选定，见 `docs/PENDING-INPUT.md`。
 >
 > **尚不能认定产品可公开使用或提交审核。** 真机与开发者工具未做完整验证，

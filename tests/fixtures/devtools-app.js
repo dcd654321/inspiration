@@ -12,8 +12,8 @@ let items = [first, core.createInspiration({ id: 'demo_2', text: '做一个方�
 const storage = { get: (key) => data.get(key), set: (key, value) => data.set(key, value) };
 const store = {
   listInspirations: () => items.filter((x) => !x.mergedInto), getInspiration: (id) => items.find((x) => x.id === id),
-  readSnapshot: () => ({ inspirations: items }), getQueue: () => [], getConflict: () => null, getRecoveries: () => [],
-  getBackupStatus: () => ({ state: 'synced', pendingCount: 0 }), retryPending: async () => ({ ok: true, synced: true }),
+  readSnapshot: () => ({ inspirations: items }), getConfirmedRevision: () => ({ baseVersion: 1, generation: 1 }),
+  refresh: async () => ({ ok: true, synced: true }),
   async saveInspirations(next) { next.forEach((item) => { items = items.filter((x) => x.id !== item.id).concat([item]); }); return { ok: true, synced: true }; },
   async saveInspiration(item) { return this.saveInspirations([item]); }
 };

@@ -25,6 +25,8 @@ Page({
   },
 
   async onLoad(query) {
+    this.pendingSave = null;
+    this.confirmedDraft = '';
     this.id = (query && query.id) || '';
     this.fileToken = createId('arc');
     this.disposed = false;
@@ -60,6 +62,7 @@ Page({
 
   onUnload() {
     this.disposed = true;
+    this.pendingSave = null;
     const filePath = this.data.txtPath;
     if (!filePath || typeof wx.getFileSystemManager !== 'function') return;
     try {
@@ -100,6 +103,7 @@ Page({
     const originalDraft = this.data.draft;
     const apply = () => {
       if (this.disposed || epoch !== this.loadedEpoch || epoch !== getApp().globalData.sessionEpoch || originalDraft !== this.data.draft) return;
+      if (generated !== originalDraft) this.pendingSave = null;
       this.setData({ phase: 'edit', draft: generated, draftEdited: false, error: '', notice: '', savedId: '' });
     };
     if (this.data.draftEdited && this.data.draft !== generated) {
@@ -120,6 +124,7 @@ Page({
   },
 
   onDraftInput(event) {
+    if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null;
     this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '', savedId: '' });
   },
 
@@ -153,6 +158,10 @@ Page({
     const app = getApp(), store = app.globalData.store, epoch = app.globalData.sessionEpoch;
     if (!store || this.disposed || this.loadedEpoch !== epoch) return;
     const draft = this.data.draft;
+    if (this.data.savedId && this.confirmedDraft === draft) {
+      this.setData({ notice: '这份使用稿已另存，可直接查看。' });
+      return;
+    }
     if (!draft.trim()) {
       this.setData({ error: '请先写下要保存的内容。', notice: '' });
       return;
@@ -164,7 +173,9 @@ Page({
 
     let next;
     try {
-      next = createInspiration({ id: createId('ins'), text: draft, now: Date.now() });
+      next = this.pendingSave && this.pendingSave.text === draft && this.pendingSave.store === store
+        ? this.pendingSave.item : createInspiration({ id: createId('ins'), text: draft, now: Date.now() });
+      this.pendingSave = { text: draft, store, item: next };
     } catch (err) {
       this.setData({ error: '暂时无法另存，请检查内容后重试。', notice: '' });
       return;
@@ -178,17 +189,17 @@ Page({
       result = null;
     }
     if (this.disposed || epoch !== app.globalData.sessionEpoch || app.globalData.store !== store) return;
-    if (!result || !result.ok) {
+    if (!result || !result.ok || result.synced !== true) {
       this.setData({ busy: false, error: '另存失败，使用稿还在，可稍后重试或先复制。' });
       return;
     }
     this.setData({
       busy: false,
       savedId: next.id,
-      notice: result.synced
-        ? '已另存为新灵感，原记录未改动。'
-        : '已另存，但备份未完成。请暂时不要清理小程序数据。'
+      notice: '已另存为新灵感，原记录未改动。'
     });
+    this.pendingSave = null;
+    this.confirmedDraft = draft;
     if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
   },
 

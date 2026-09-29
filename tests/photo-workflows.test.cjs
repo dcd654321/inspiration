@@ -3,8 +3,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createRepository } = require('../server/repository');
 const { createPhotoValidator } = require('../server/photo-lifecycle');
-const { createPhotoWorkflow } = require('../miniprogram/services/photo-workflow');
-const { createStore } = require('../miniprogram/services/store');
+const { createPhotoWorkflow } = require('../qa/legacy/photo-workflow');
+const { createStore } = require('../qa/legacy/store');
 const core = require('../miniprogram/core/inspiration');
 const scope = 'a'.repeat(32), prefix = 'cloud://test.bucket/';
 function item() { return core.createInspiration({ id: 'idea', text: '照片相关的记录', now: 1 }); }

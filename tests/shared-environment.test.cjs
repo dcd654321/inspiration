@@ -8,8 +8,8 @@ const crypto = require('node:crypto');
 const config = require('../miniprogram/config/cloud');
 const { createCloudConnection } = require('../miniprogram/services/cloud-client');
 const { createWxTransport } = require('../miniprogram/services/wx-transport');
-const { createWxStorage } = require('../miniprogram/services/wx-storage');
-const { createStore } = require('../miniprogram/services/store');
+const { createWxStorage } = require('../qa/legacy/wx-storage');
+const { createStore } = require('../qa/legacy/store');
 const { loadPrivatePhotos } = require('../miniprogram/services/private-photos');
 const { PROJECT_APPID, getCallerIdentity } = require('../server/wx-identity');
 const scope = 'a'.repeat(32);
@@ -45,6 +45,21 @@ test('共享初始化失败可重试，缺少共享配置不回退默认实例',
     await assert.rejects(createCloudConnection({ config: { ...config, ...changed }, getSdk: () => sdk })(), /CLOUD_SHARED_UNAVAILABLE/);
   }
   await assert.rejects(createCloudConnection({ config, getSdk: () => ({ init() { assert.fail(); } }) })(), /CLOUD_SHARED_UNAVAILABLE/);
+});
+
+test('共享 SDK 初始化返回错误码时不交付实例，重试后才发业务调用', async () => {
+  let attempts = 0, calls = 0;
+  const sdk = { Cloud: class {
+    async init() { return ++attempts === 1 ? { errCode: 403, errMsg: '共享权限未生效' } : { errCode: 0 }; }
+    async callFunction() { calls += 1; return { result: { ok: true } }; }
+  } };
+  const connect = createCloudConnection({ config, getSdk: () => sdk });
+  await assert.rejects(connect(), (error) => error.code === 403 && error.message === 'CLOUD_SHARED_INIT_FAILED');
+  assert.equal(calls, 0);
+  const client = await connect();
+  assert.equal((await client.callFunction()).result.ok, true);
+  assert.equal(attempts, 2);
+  assert.equal(calls, 1);
 });
 
 test('业务传输只走已初始化的共享实例并保留请求标识', async () => {

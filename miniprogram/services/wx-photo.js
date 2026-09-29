@@ -1,10 +1,10 @@
 'use strict';
 const { createPhotoService } = require('./photo');
 const { createUploader, photoCloudPath } = require('./upload');
-const { createPhotoWorkflow } = require('./photo-workflow');
+const { createCloudOnlyPhotoWorkflow } = require('./cloud-only-photo');
 const { getCloudClient } = require('./cloud-client');
 const call = (name, options) => new Promise((resolve, reject) => wx[name](Object.assign({}, options, { success: resolve, fail: reject })));
-function createWxPhotos({ storage, cacheScope, store, storagePrefix, isCurrent }) {
+function createWxPhotos({ cacheScope, store, storagePrefix, isCurrent }) {
   if (!/^cloud:\/\/[A-Za-z0-9_.-]+\/$/.test(storagePrefix || '')) throw Error('PHOTO_CONFIG_INVALID');
   const photo = createPhotoService({
     async ensurePermission(source) {
@@ -24,13 +24,8 @@ function createWxPhotos({ storage, cacheScope, store, storagePrefix, isCurrent }
     }
   });
   const uploader = createUploader({ uploadFile: async (input) => (await getCloudClient()).uploadFile(input) });
-  return createPhotoWorkflow({ storage, cacheScope, store, isCurrent, prepare: photo.prepare, upload: uploader.uploadPhoto,
+  return createCloudOnlyPhotoWorkflow({ cacheScope, store, isCurrent, prepare: photo.prepare, upload: uploader.uploadPhoto,
     expectedFileId: (inspirationId, photoId) => storagePrefix + photoCloudPath(cacheScope, inspirationId, photoId),
-    saveFile: async (tempFilePath) => (await call('saveFile', { tempFilePath })).savedFilePath,
-    async removeLocal(filePath) {
-      const files = await call('getSavedFileList', {});
-      if ((files.fileList || []).some((item) => item.filePath === filePath)) await call('removeSavedFile', { filePath });
-    },
     async removeRemote(fileID) {
       const result = await (await getCloudClient()).deleteFile({ fileList: [fileID] });
       const file = result && result.fileList && result.fileList[0];

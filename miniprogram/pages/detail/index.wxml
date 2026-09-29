@@ -94,7 +94,6 @@
     <view wx:if="{{photosEnabled || photos.length}}" class="photos-section">
       <view class="section-head"><text class="k">照片</text><text class="v">{{photos.length}} / 9</text></view>
       <view class="photo-grid"><view wx:for="{{photos}}" wx:key="id" class="photo-cell"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" bindtap="onPreviewPhoto" /><button wx:else class="btn-link" data-id="{{item.id}}" bindtap="onPreviewPhoto">{{item.failed ? '重新查看照片' : '照片加载中'}}</button><button wx:if="{{photosEnabled && !merged}}" class="btn-link" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy}}">删除照片</button></view></view>
-      <view wx:for="{{photoDrafts}}" wx:key="id" class="photo-pending"><image src="{{item.localPath}}" mode="aspectFill" show-menu-by-longpress="{{false}}" /><view><view>照片处理中</view><button class="btn-link" data-id="{{item.id}}" bindtap="onRetryPhoto" disabled="{{photoBusy}}">重试</button><button class="btn-link" data-id="{{item.id}}" bindtap="onDiscardPhoto" disabled="{{photoBusy}}">放弃照片</button></view></view>
       <button wx:if="{{photosEnabled && !merged}}" class="btn btn-plain btn-block" bindtap="onAddPhoto" disabled="{{photoBusy || pending}}" loading="{{photoBusy}}">添加照片</button>
       <view class="hint-line">照片仅用于这条灵感，不加入分享或 AI 整理。</view>
     </view>

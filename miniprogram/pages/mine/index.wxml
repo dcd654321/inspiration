@@ -7,32 +7,22 @@
     </view>
   </view>
 
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">备份状态</text></view>
-  <view class="panel privacy-panel">
-    <view class="use-copy">{{backupText}}</view>
-    <view wx:if="{{legacyNotice}}" class="use-copy">{{legacyNotice}}</view>
-    <button wx:if="{{backupPending}}" class="btn btn-quiet btn-block" bindtap="onRetryBackup" disabled="{{backupBusy}}">重新备份</button>
-    <button wx:if="{{backupConflict}}" class="btn btn-quiet btn-block" bindtap="onOpenList">查看并留存本机内容</button>
-    <button wx:if="{{backupConflict && remoteItems.length > 0}}" class="btn btn-plain btn-block" bindtap="onToggleRemote">{{remoteExpanded ? '收起云端内容' : '查看云端内容'}}</button>
-    <button wx:if="{{backupConflict}}" class="btn btn-plain btn-block" bindtap="onUseRemote" disabled="{{backupBusy}}">采用当前云端版本</button>
-    <view wx:if="{{remoteExpanded}}" class="remote-records">
-      <view wx:for="{{remoteItems}}" wx:key="id" class="remote-item">
-        <text class="remote-text" selectable="true">{{item.text}}</text>
-        <button class="btn btn-plain btn-block" data-id="{{item.id}}" bindtap="onCopyRemote">复制这条云端文字</button>
-        <button wx:if="{{item.photoCount}}" class="btn btn-plain btn-block" data-id="{{item.id}}" data-remote="true" bindtap="onRecoveryPhotos">查看照片（{{item.photoCount}}）</button>
-      </view>
-    </view>
-    <view wx:if="{{recoveryCount > 0}}" class="use-copy">另有 {{recoveryCount}} 份本机只读恢复副本。它们不会自动同步或删除。</view>
-    <button wx:if="{{recoveryCount > 0}}" class="btn btn-plain btn-block" bindtap="onToggleRecovery">{{recoveryExpanded ? '收起恢复副本' : '查看恢复副本'}}</button>
-    <view wx:if="{{recoveryExpanded}}" class="remote-records">
-      <view wx:for="{{recoveryItems}}" wx:key="key" class="remote-item">
-        <view class="use-copy">保留于 {{item.label}}</view>
-        <text class="remote-text" selectable="true">{{item.text}}</text>
-        <button class="btn btn-plain btn-block" data-key="{{item.key}}" bindtap="onCopyRecovery">复制这条恢复文字</button>
-        <button wx:if="{{item.photoCount}}" class="btn btn-plain btn-block" data-id="{{item.id}}" data-index="{{item.recoveryIndex}}" bindtap="onRecoveryPhotos">查看恢复照片（{{item.photoCount}}）</button>
-      </view>
-    </view>
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">从记录到使用</text></view>
+  <view class="panel use-panel">
+    <view class="use-copy">在灵感详情中继续补充；需要使用时，可以整理、复制文字，或生成 TXT 文件留存。</view>
+    <button class="btn btn-quiet btn-block" bindtap="onOpenList">查看我的灵感</button>
   </view>
+
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">分享</text></view>
+  <view class="panel use-panel">
+    <view class="use-copy">分享小程序不会带出你的记录。分享单条内容时，你会先看到对方能读到的文字。</view>
+    <button class="btn btn-quiet btn-block" open-type="share">分享小程序</button>
+    <button class="btn btn-plain btn-block" bindtap="onOpenMyShares">我的分享</button>
+  </view>
+
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">反馈</text></view>
+  <button class="btn btn-plain btn-block" bindtap="onOpenFeedback">给我们提建议</button>
+  <button class="btn btn-plain btn-block" open-type="feedback">向微信反馈</button>
 
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">数据与隐私</text></view>
   <view class="panel privacy-panel">
@@ -42,24 +32,10 @@
     </view>
   </view>
 
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">使用统计</text></view>
-  <view class="panel privacy-panel"><view class="use-copy">可选使用统计：仅在当前设备记录最近三十天的动作次数，不含内容或搜索词，不自动上传。关闭即清空统计。</view><switch checked="{{usageEnabled}}" bindchange="onUsageSetting" aria-label="开启本设备使用统计" color="#34377f" /><button wx:if="{{usageEnabled}}" class="btn btn-plain btn-block" bindtap="onViewUsage">查看使用统计</button><block wx:if="{{usageVisible}}"><text class="remote-text" selectable="true">{{usageReport}}</text><button class="btn btn-plain btn-block" bindtap="onCopyUsage">复制统计</button></block><view wx:if="{{usageError}}" class="notice notice-err">{{usageError}}</view></view>
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">从记录到使用</text></view>
-  <view class="panel use-panel">
-    <view class="use-copy">在灵感详情中继续补充；需要使用时，可以整理、复制文字，或生成 TXT 文件留存。</view>
-    <button class="btn btn-quiet btn-block" bindtap="onOpenList">查看我的灵感</button>
-  </view>
-
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">反馈</text></view>
-  <button class="btn btn-plain btn-block" bindtap="onOpenFeedback">给我们提建议</button>
-  <button class="btn btn-plain btn-block" open-type="feedback">向微信反馈</button>
-
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">分享</text></view>
-  <view class="panel use-panel">
-    <view class="use-copy">分享小程序不会带出你的记录。分享单条内容时，你会先看到对方能读到的文字。</view>
-    <button class="btn btn-quiet btn-block" bindtap="onOpenWelcome">分享小程序</button>
-    <button class="btn btn-plain btn-block" bindtap="onOpenMyShares">我的分享</button>
-  </view>
+  <block wx:if="{{usageAvailable}}">
+    <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">本次使用统计</text></view>
+    <view class="panel privacy-panel"><view class="use-copy">可选统计本次打开期间的动作次数，不含内容或搜索词；关闭或退出后清空，不会写入设备。</view><switch checked="{{usageEnabled}}" bindchange="onUsageSetting" aria-label="开启本次使用统计" color="#34377f" /><button wx:if="{{usageEnabled}}" class="btn btn-plain btn-block" bindtap="onViewUsage">查看使用统计</button><block wx:if="{{usageVisible}}"><text class="remote-text" selectable="true">{{usageReport}}</text><button class="btn btn-plain btn-block" bindtap="onCopyUsage">复制统计</button></block><view wx:if="{{usageError}}" class="notice notice-err">{{usageError}}</view></view>
+  </block>
 
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">关于</text></view>
   <view class="panel about-panel">

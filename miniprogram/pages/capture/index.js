@@ -29,12 +29,16 @@ Page({
   async onShow() {
     const app = getApp(); await app.ensureReady();
     const scope = app.globalData.cacheScope;
-    if (this.scope && scope && scope !== this.scope) this.setData({ draft: '', canSave: false, nearLimit: false, saving: false, lastSavedId: '', success: '', error: '' });
+    if (this.scope && scope && scope !== this.scope) {
+      this.pendingSave = null;
+      this.setData({ draft: '', canSave: false, nearLimit: false, saving: false, lastSavedId: '', success: '', error: '' });
+    }
     if (scope) this.scope = scope;
   },
 
   onInput(event) {
     const value = event.detail.value;
+    if (this.pendingSave && this.pendingSave.text !== value) this.pendingSave = null;
     this.setData({
       draft: value,
       canSave: value.trim().length > 0,
@@ -60,10 +64,12 @@ Page({
       return;
     }
 
-    // 标识由客户端生成：它同时是幂等键，重试不会产生第二条
+    // 当前会话内重试同一内容时复用记录标识；不会把待写内容持久化到设备。
     let inspiration;
     try {
-      inspiration = createInspiration({ text, id: createId('insp'), now: Date.now() });
+      inspiration = this.pendingSave && this.pendingSave.text === text && this.pendingSave.scope === app.globalData.cacheScope
+        ? this.pendingSave.item : createInspiration({ text, id: createId('insp'), now: Date.now() });
+      this.pendingSave = { text, scope: app.globalData.cacheScope, item: inspiration };
     } catch (err) {
       this.setData({ error: messageFor(err) });
       return;
@@ -80,31 +86,15 @@ Page({
     this.setData({ saving: false });
     if (app.globalData.store !== store) return;
     const metrics = app.globalData.store === store && app.globalData.metrics;
-    if (metrics) metrics.track(result && result.ok ? 'record_saved' : 'save_failed');
-    if (metrics && result && result.ok && !result.synced) metrics.track('backup_pending');
-
-    if (!result || !result.ok) {
-      // 本机都没存下来。**必须保留输入**——清掉就等于把用户刚写的东西弄丢了。
-      this.setData({ error: result && (result.code === 'CONFLICT' || result.code === 'STALE_GENERATION')
-        ? '备份出现冲突，内容仍在输入框中。请到「我的」查看备份状态。'
-        : '这条暂时没能存下来，内容仍在输入框中。' });
+    if (metrics) metrics.track(result && result.ok && result.synced === true ? 'record_saved' : 'save_failed');
+    if (!result || !result.ok || result.synced !== true) {
+      this.setData({ error: '保存未完成，内容仍在输入框中。请联网后重试。' });
       return;
     }
 
-    // 到这里内容一定已经落在本机了，所以输入框照常清空。
-    // 留着反而会让用户重复提交一遍。
+    this.pendingSave = null;
     this.setData({ draft: '', canSave: false, nearLimit: false, lastSavedId: inspiration.id });
-
-    if (result.synced) {
-      this.setData({ success: '已记下。可以继续记录，或查看刚才的想法。' });
-      return;
-    }
-
-    // 同步未成功：既不能只说「已保存」（用户会以为云端也有了），
-    // 也不能说「没保存成功」（内容确实已经在本机，谎报会让他重打一遍）。
-    this.setData({ error: result.code === 'CONFLICT' || result.code === 'STALE_GENERATION'
-      ? '已记下在当前设备，但备份发生冲突。请到「我的」查看处理提示，暂勿清理小程序数据。'
-      : '已记下，但备份未完成。请暂时不要清理小程序数据。' });
+    this.setData({ success: '已记下。可以继续记录，或查看刚才的想法。' });
   },
 
   onViewSaved() {

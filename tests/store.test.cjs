@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createStore, LEGACY_STORAGE_KEYS } = require('../miniprogram/services/store');
+const { createStore, LEGACY_STORAGE_KEYS } = require('../qa/legacy/store');
 const { createInspiration } = require('../miniprogram/core/inspiration');
 
 const NOW = 1758500000000;

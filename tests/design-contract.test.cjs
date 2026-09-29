@@ -20,9 +20,10 @@ const DETAILED = path.join(root, 'docs/detailed-design.md');
 const DATABASE = path.join(root, 'docs/database-design.md');
 
 const inspiration = require('../miniprogram/core/inspiration');
-const store = require('../miniprogram/services/store');
+const store = require('../qa/legacy/store');
+const { createCloudOnlyStore } = require('../miniprogram/services/cloud-only-store');
 const captureDrafts = require('../miniprogram/services/capture-drafts');
-const wxStorage = require('../miniprogram/services/wx-storage');
+const wxStorage = require('../qa/legacy/wx-storage');
 const wxTransport = require('../miniprogram/services/wx-transport');
 const format = require('../miniprogram/core/format');
 const merge = require('../miniprogram/core/merge');
@@ -136,7 +137,7 @@ test('core/limits.js 的键与详设 §7.3 的清单一致', () => {
 
 // ---------------------------------------------------------------- 详设 §7.5 服务层
 
-test('services/store.js 的导出与详设 §7.5 一致', () => {
+test('历史 store.js 的导出与详设 §7.5 一致', () => {
   const doc = section(
     fs.readFileSync(DETAILED, 'utf8'),
     '### 7.5 `services/store.js`',
@@ -180,7 +181,7 @@ test('services/capture-drafts.js 的导出与详设 §7.6 一致', () => {
   );
 });
 
-test('services/wx-storage.js 的导出与详设 §7.7 一致', () => {
+test('历史 wx-storage.js 的导出与详设 §7.7 一致', () => {
   const doc = section(
     fs.readFileSync(DETAILED, 'utf8'),
     '### 7.7 `services/wx-storage.js`',
@@ -194,6 +195,19 @@ test('services/wx-storage.js 的导出与详设 §7.7 一致', () => {
 
   assert.deepStrictEqual(missingInCode, [], `详设 §7.7 列了但代码没有：\n  ${missingInCode.join('\n  ')}`);
   assert.deepStrictEqual(missingInDoc, [], `代码导出了但详设 §7.7 没记：\n  ${missingInDoc.join('\n  ')}`);
+});
+
+test('当前云确认存储接口与详设 §17.1 一致', () => {
+  const doc = section(fs.readFileSync(DETAILED, 'utf8'), '### 17.1 当前客户端存储接口', '## 18.');
+  const documented = [...doc.matchAll(/^([a-zA-Z_][A-Za-z0-9_]*)\(\)$/gm)].map((match) => match[1]);
+  const scope = 'a'.repeat(32);
+  const current = createCloudOnlyStore({ cacheScope: scope,
+    remoteSnapshot: { cacheScope: scope, generation: 1, version: 0, inspirations: [] },
+    transport: { send: async () => ({ ok: false, code: 'NETWORK' }) } });
+  assert.deepStrictEqual(diff(Object.keys(current), documented), { missingInDoc: [], missingInCode: [] });
+  assert.equal(typeof current.readQueue, 'undefined');
+  assert.equal(typeof current.getBackupStatus, 'undefined');
+  assert.equal(typeof current.getRecoveries, 'undefined');
 });
 
 test('core/format.js 的导出与详设 §7.8 一致', () => {

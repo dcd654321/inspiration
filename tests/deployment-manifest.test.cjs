@@ -14,7 +14,7 @@ test('product deployment manifest only targets the confirmed shared environment 
   assert.equal(manifest.environmentId, 'product-d2g59zty74d7d1ec1');
   assert.equal(manifest.resourceAppid, 'wx7ad85943fe81e095');
   assert.equal(manifest.consumerAppid, 'wxed8fdc5d559d973d');
-  assert.equal(manifest.environmentId, cloudConfig.envId);
+  assert.equal(manifest.environmentId, cloudConfig.resolveCloudConfig('release').envId);
   assert.equal(manifest.resourceAppid, cloudConfig.resourceAppid);
   assert.equal(manifest.consumerAppid, project.appid);
   assert.equal(manifest.clientDatabaseAccess, 'deny-all');

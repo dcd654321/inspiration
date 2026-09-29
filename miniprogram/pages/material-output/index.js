@@ -18,11 +18,11 @@ Page({
   onUnload() { this.suspend(); },
   suspend() {
     this.active = false; this.session = (this.session || 0) + 1; this.store = null;
-    this.materials = []; this.selected = []; this.setData(initialData());
+    this.materials = []; this.selected = []; this.pendingSave = null; this.setData(initialData());
   },
   async load() {
     this.active = true; const session = this.session = (this.session || 0) + 1;
-    this.materials = []; this.selected = []; this.selectionVersion = 0; this.setData(initialData());
+    this.materials = []; this.selected = []; this.pendingSave = null; this.selectionVersion = 0; this.setData(initialData());
     const app = getApp();
     try {
       const store = await app.ensureReady();
@@ -87,6 +87,7 @@ Page({
       if (!this.current(session) || revision !== this.selectionVersion || oldDraft !== this.data.draft) return;
       try {
         const result = buildMaterialDraft(this.store.listInspirations(), this.selected, this.data.templateId);
+        if (this.pendingSave && this.pendingSave.text !== result.text) this.pendingSave = null;
         this.setData({ phase: 'edit', draft: result.text, draftEdited: false, error: '', notice: '' }, () => this.scrollTop(session));
       } catch (err) { this.setData({ error: err.message }); }
     };
@@ -106,7 +107,7 @@ Page({
     if (!this.current() || !this.data.draft) return;
     const session = this.session; this.setData({ phase: 'edit', error: '' }, () => this.scrollTop(session));
   },
-  onInput(event) { if (this.current() && !this.data.busy) this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '' }); },
+  onInput(event) { if (this.current() && !this.data.busy) { if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null; this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '' }); } },
   onCopy() {
     if (!this.current() || this.data.busy) return;
     const text = this.data.draft, session = this.session;
@@ -127,12 +128,15 @@ Page({
     if (!text.trim() || text.length > LIMITS.textMaxLength) { this.setData({ error: '另存需要 1 至 2000 字。超长稿件可完整复制，或缩短后另存。' }); return; }
     this.setData({ busy: true, error: '', notice: '' });
     try {
-      const item = createInspiration({ id: createId('ins'), text, now: Date.now() });
+      const item = this.pendingSave && this.pendingSave.text === text && this.pendingSave.store === store
+        ? this.pendingSave.item : createInspiration({ id: createId('ins'), text, now: Date.now() });
+      this.pendingSave = { text, store, item };
       const result = await store.saveInspiration(item);
       if (!this.current(session)) return;
-      if (!result || !result.ok) throw Error('SAVE_FAILED');
+      if (!result || !result.ok || result.synced !== true) throw Error('SAVE_FAILED');
       this.setData({ busy: false, savedId: item.id, savedDraft: text,
-        notice: result.synced ? '已另存为新灵感，来源记录未改动。' : '已另存，但备份未完成。请暂时不要清理小程序数据。' });
+        notice: '已另存为新灵感，来源记录未改动。' });
+      this.pendingSave = null;
       if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
     } catch (err) {
       if (this.current(session)) this.setData({ busy: false, error: '另存未完成，稿件仍保留，可重试或先复制。' });

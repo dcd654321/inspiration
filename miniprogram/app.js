@@ -1,8 +1,8 @@
 const cloudConfig = require('./config/cloud');
 const aiConfig = require('./config/ai');
-const { createStore, LEGACY_STORAGE_KEYS } = require('./services/store');
+const { createCloudOnlyStore } = require('./services/cloud-only-store');
 const { createCaptureDrafts } = require('./services/capture-drafts');
-const { createWxStorage } = require('./services/wx-storage');
+const { createMemoryStorage } = require('./services/memory-storage');
 const { createWxTransport } = require('./services/wx-transport');
 const { createReviewService } = require('./services/discovery');
 const { createWxPhotos } = require('./services/wx-photo');
@@ -14,7 +14,7 @@ App({
     cloudEnabled: cloudConfig.enabled,
     aiEnabled: aiConfig.enabled,
 
-    // 全应用共用一个本机状态与一个草稿区，页面通过 getApp().globalData 取用。
+    // 全应用只持有当前会话的内存视图；持久记录以云端确认结果为准。
     // 草稿只在内存里，进程结束即消失——规范没有承诺它跨会话存在（detailed-design §7.6）。
     store: null,
     review: null,
@@ -24,7 +24,6 @@ App({
     drafts: createCaptureDrafts(),
     readyPromise: null,
     accountError: '',
-    legacyCachePresent: false,
     sessionEpoch: 0,
     foreground: false
   },
@@ -42,7 +41,7 @@ App({
       wx.onNetworkStatusChange((status) => {
         if (!status.isConnected || !this.globalData.foreground) return;
         const store = this.globalData.store;
-        if (store) store.retryPending().catch(() => {});
+        if (store) store.refresh().catch(() => {});
         else this.refreshAccount().catch(() => {});
       });
     }
@@ -88,16 +87,12 @@ App({
       try {
         await getCloudClient();
         if (epoch !== this.globalData.sessionEpoch) return null;
-        const storage = createWxStorage({ namespace: 'linggan:env:' + cloudConfig.resourceAppid + ':' + cloudConfig.envId + ':' });
-        try {
-          const keys = wx.getStorageInfoSync().keys || [];
-          this.globalData.legacyCachePresent = keys.includes(LEGACY_STORAGE_KEYS.snapshot) || keys.includes(LEGACY_STORAGE_KEYS.queue);
-        } catch (err) { /* 不能枚举键时也绝不读取旧内容。 */ }
         const response = await transport.send('snapshot.pull', {});
         if (epoch !== this.globalData.sessionEpoch) return null;
         if (!response || !response.ok) throw new Error('PULL_FAILED');
-        const store = createStore({
-          storage, transport,
+        const storage = createMemoryStorage();
+        const store = createCloudOnlyStore({
+          transport,
           now: () => Date.now(),
           isCurrent: () => epoch === this.globalData.sessionEpoch,
           cacheScope: response.data && response.data.cacheScope,
@@ -110,17 +105,13 @@ App({
         this.globalData.drafts = this.accountDrafts.get(response.data.cacheScope);
         this.globalData.metrics = createUsageMetrics({ storage, cacheScope: response.data.cacheScope });
         this.globalData.review = createReviewService({ storage, cacheScope: response.data.cacheScope });
-        try { this.globalData.photos = response.data.photosEnabled === true ? createWxPhotos({ storage, cacheScope: response.data.cacheScope, store, storagePrefix: response.data.storagePrefix, isCurrent: () => epoch === this.globalData.sessionEpoch }) : null; }
+        try { this.globalData.photos = response.data.photosEnabled === true ? createWxPhotos({ cacheScope: response.data.cacheScope, store, storagePrefix: response.data.storagePrefix, isCurrent: () => epoch === this.globalData.sessionEpoch }) : null; }
         catch (err) { this.globalData.photos = null; /* 照片配置异常不阻断文字功能。 */ }
         this.globalData.accountError = '';
-        // 一次至多处理三条。失败保留队列，用户可在「我的」页再试。
-        store.retryPending().catch(() => {});
         return store;
       } catch (err) {
         if (epoch !== this.globalData.sessionEpoch) return null;
-        this.globalData.accountError = err && err.message === 'ACCOUNT_CACHE_DAMAGED'
-          ? '记录缓存无法读取，请勿清理小程序数据，先联系维护者。'
-          : '暂时无法确认账户，请联网后重试。';
+        this.globalData.accountError = '暂时无法确认账户，请联网后重试。';
         return null;
       }
     })();
