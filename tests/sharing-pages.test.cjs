@@ -37,8 +37,7 @@ function appFixture(state) {
     supplements: [{ id: 's1', content: '后来补充', createdAt: 1, mergedInto: null, foldedAt: null,
       source: 'user', contentHistory: [] }], photos: [{ fileId: 'private' }], textHistory: [{ text: 'old' }] };
   const store = { getInspiration: () => item,
-    getBackupStatus: () => state || { state: 'synced', pendingCount: 0 },
-    readSnapshot: () => ({ version: 2, generation: 1 }) };
+    getConfirmedRevision: () => state && state.state !== 'synced' ? null : { baseVersion: 2, generation: 1 } };
   return { globalData: { store, sessionEpoch: 1, accountError: '' }, ensureReady: async () => store };
 }
 
@@ -64,7 +63,7 @@ test('分享预览先确认才创建；聊天卡片只携令牌，不带私有�
   });
 });
 
-test('备份未完成时不能创建分享，选择变化会清除已备分享状态', async () => {
+test('内容状态未确认时不能创建分享，选择变化会清除已备分享状态', async () => {
   let calls = 0;
   const app = appFixture({ state: 'pending', pendingCount: 1 });
   const wxMock = { cloud: { callFunction: async () => { calls += 1; return {}; } } };
@@ -72,7 +71,7 @@ test('备份未完成时不能创建分享，选择变化会清除已备分享�
     await page.onLoad({ id: 'idea_1' });
     await page.onPrepareChat();
     assert.equal(calls, 0);
-    assert.match(page.data.error, /备份/);
+    assert.match(page.data.error, /无法确认内容状态/);
     page.setData({ chatPrepared: true });
     page.preparedToken = 'A'.repeat(28);
     page.onToggle({ currentTarget: { dataset: { id: 's1' } } });
@@ -156,4 +155,21 @@ test('公共入口与私人页面的索引、文案和入口分开', () => {
   assert.match(mine, /分享小程序/);
   assert.match(mine, /我的分享/);
   assert.match(mine, /给我们提建议/);
+});
+
+test('我的页直接分享公共入口，不把账户或记录放进聊天卡片与朋友圈', async () => {
+  const mine = read('miniprogram/pages/mine/index.wxml');
+  assert.match(mine, /open-type="share">分享小程序/);
+  assert.doesNotMatch(mine, /bindtap="onOpenWelcome"/);
+  await withPage('mine', appFixture(), {}, (page) => {
+    const chat = page.onShareAppMessage();
+    const timeline = page.onShareTimeline();
+    assert.equal(chat.path, '/pages/welcome/index');
+    assert.equal(timeline.query, '');
+    for (const payload of [chat, timeline]) {
+      assert.equal(payload.title, '灵感拾光簿｜让想法慢慢成形');
+      assert.equal(payload.imageUrl, '/assets/brand-mark.png');
+      assert.doesNotMatch(JSON.stringify(payload), /accountKey|openid|inspirationId|idea_1|一段想法/);
+    }
+  });
 });

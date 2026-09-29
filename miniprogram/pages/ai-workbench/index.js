@@ -90,8 +90,8 @@ Page({
     let result;
     try { result = await this.store.saveInspirations(items); } catch (err) { result = { ok: false }; }
     if (!this.current()) return;
-    if (!result.ok) { this.setData({ busy: false, error: '保存没有完成，预览仍保留。请检查备份状态后重试。' }); return; }
-    this.setData({ busy: false, completed: true, preview: false, entries: [], summary: '', notice: result.synced ? '已保存，可返回查看。' : '已保存，备份尚未完成。请暂时不要清理小程序数据。' });
+    if (!result.ok || result.synced !== true) { this.setData({ busy: false, error: '保存没有完成，预览仍保留。请联网后重试。' }); return; }
+    this.setData({ busy: false, completed: true, preview: false, entries: [], summary: '', notice: '已保存，可返回查看。' });
     this.snapshot = null;
   },
   onBack() { wx.navigateBack(); }

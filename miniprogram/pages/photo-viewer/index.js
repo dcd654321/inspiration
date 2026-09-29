@@ -7,13 +7,7 @@ Page({
     const app = getApp(), store = await app.ensureReady();
     if (!this.alive || this.readVersion !== version || !store) return;
     this.epoch = app.globalData.sessionEpoch;
-    let item;
-    if (/^\d+$/.test(this.query.recovery || '')) {
-      const recovery = store.getRecoveries()[Number(this.query.recovery)];
-      item = recovery && recovery.snapshot.inspirations.find((x) => x.id === this.query.id);
-    } else if (this.query.remote === '1') {
-      const conflict = store.getConflict(); item = conflict && conflict.remote && conflict.remote.inspirations.find((x) => x.id === this.query.id);
-    } else item = store.getInspiration(this.query.id);
+    const item = store.getInspiration(this.query.id);
     const source = item && item.photos || [];
     const epoch = this.epoch;
     const isCurrent = () => this.alive && this.readVersion === version && app.globalData.sessionEpoch === epoch && app.globalData.store === store;
@@ -25,6 +19,6 @@ Page({
   async onShow() { if (this.query && !this.alive) await this.onLoad(this.query); },
   onHide() { this.alive = false; this.readVersion = (this.readVersion || 0) + 1; this.setData({ photos: [] }); },
   onUnload() { this.onHide(); },
-  onImageError() { this.setData({ error: '照片暂时无法加载，文件可能已被删除或当前没有访问权限。恢复副本只保留原引用，不会重新生成照片。' }); },
+  onImageError() { this.setData({ error: '照片暂时无法加载，文件可能已被删除或当前没有访问权限。' }); },
   onChange(event) { this.setData({ current: event.detail.current }); }
 });

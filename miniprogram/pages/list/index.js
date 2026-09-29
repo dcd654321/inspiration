@@ -30,8 +30,7 @@ Page({
     total: 0,
     reviewItem: null,
     reviewEnabled: true,
-    reviewError: '',
-    backupNotice: ''
+    reviewError: ''
   },
 
   // 用 onShow 而不是 onLoad：从详情页返回时列表要跟着更新（改了原文、加了补充）
@@ -52,7 +51,6 @@ Page({
     try {
       const now = Date.now();
       const list = app.globalData.store.listInspirations();
-      const backup = app.globalData.store.getBackupStatus();
       let reviewItem = null;
       let reviewEnabled = true;
       let reviewError = '';
@@ -71,10 +69,7 @@ Page({
         aiEnabled: app.globalData.aiEnabled,
         reviewItem, reviewEnabled, reviewError,
         loading: false,
-        error: '',
-        backupNotice: backup.state === 'CONFLICT' || backup.state === 'STALE_GENERATION' || backup.state === 'PHOTO_DELETE_UNAVAILABLE'
-          ? '备份遇到冲突，内容仍保留在本机。请到「我的」查看。'
-          : backup.pendingCount > 0 ? '有内容尚未完成备份，可到「我的」重试。' : ''
+        error: ''
       });
     } catch (err) {
       // 读失败时**保留已经渲染出来的内容**，不因为刷新失败就把列表清空——

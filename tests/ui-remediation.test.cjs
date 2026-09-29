@@ -126,7 +126,6 @@ test('本轮整改：列表只统计当前可见补充，不把已收起内容�
   try {
     global.Page = (page) => { definition = page; };
     global.getApp = () => ({ globalData: { store: {
-      getBackupStatus: () => ({ state: 'synced', pendingCount: 0 }),
       listInspirations: () => [{
         id: 'ins_1', text: '一个想法', updatedAt: Date.now(), photos: [{ id: 'photo_1' }],
         supplements: [

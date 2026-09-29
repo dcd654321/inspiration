@@ -7,7 +7,7 @@ const { createAiHandler, createCloudModel } = require('../server/ai-service');
 const contract = require('../miniprogram/core/ai-contract');
 const core = require('../miniprogram/core/inspiration');
 const { acceptDraft, acceptSummary } = require('../miniprogram/services/ai-workflow');
-const { createStore } = require('../miniprogram/services/store');
+const { createStore } = require('../qa/legacy/store');
 const { organize } = require('../miniprogram/services/organization');
 const { searchInspirations } = require('../miniprogram/services/discovery');
 const accountKey = 'a'.repeat(32), NOW = 1790416800000;

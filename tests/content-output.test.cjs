@@ -99,12 +99,16 @@ test('使用稿超长或保存失败时不截断内容，也不报告另存成�
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;
   let attempts = 0;
+  let confirmed = false;
+  const attemptedIds = [];
   try {
     global.Page = (page) => { definition = page; };
-    global.getApp = () => ({ ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: {
+    const store = {
       getInspiration: sample,
-      async saveInspiration() { attempts += 1; return { ok: false }; }
-    } } });
+      async saveInspiration(value) { attempts += 1; attemptedIds.push(value.id); return confirmed ? { ok: true, synced: true } : { ok: false }; }
+    };
+    const app = { ensureReady: async () => store, globalData: { store } };
+    global.getApp = () => app;
     global.wx = {};
     delete require.cache[pagePath];
     require(pagePath);
@@ -123,6 +127,12 @@ test('使用稿超长或保存失败时不截断内容，也不报告另存成�
     assert.strictEqual(attempts, 1);
     assert.strictEqual(page.data.savedId, '');
     assert.strictEqual(page.data.draft, '短稿');
+    confirmed = true;
+    await page.onSaveAsNew();
+    assert.strictEqual(attemptedIds[0], attemptedIds[1], '同一稿件重试应复用会话内标识');
+    assert.strictEqual(page.data.savedId, attemptedIds[1]);
+    await page.onSaveAsNew();
+    assert.strictEqual(attempts, 2, '确认成功后不重复另存同一稿件');
   } finally {
     delete require.cache[pagePath];
     for (const [key, value] of Object.entries(previous)) {

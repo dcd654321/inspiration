@@ -1,7 +1,7 @@
 'use strict';
 // 账户分区的本机快照和待备份操作。一次写入同时保存正文与操作，不留下半条队列。
-const { byUpdatedAtDesc, isDeleted, isMerged } = require('../core/inspiration');
-const { createRequestId } = require('./wx-transport');
+const { byUpdatedAtDesc, isDeleted, isMerged } = require('../../miniprogram/core/inspiration');
+const { createRequestId } = require('../../miniprogram/services/wx-transport');
 
 const LEGACY_STORAGE_KEYS = Object.freeze({
   snapshot: 'linggan:v1:snapshot',

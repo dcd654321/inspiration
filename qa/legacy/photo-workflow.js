@@ -1,6 +1,6 @@
 'use strict';
-const core = require('../core/inspiration');
-const { createId } = require('../core/limits');
+const core = require('../../miniprogram/core/inspiration');
+const { createId } = require('../../miniprogram/core/limits');
 const locks = new Map();
 function createPhotoWorkflow({ storage, cacheScope, store, prepare, upload, expectedFileId, saveFile, removeLocal, removeRemote, newId = createId, now = Date.now, isCurrent = () => true }) {
   if (!/^[a-f0-9]{32}$/.test(cacheScope)) throw Error('INVALID_PHOTO_SCOPE');

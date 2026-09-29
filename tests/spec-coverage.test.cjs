@@ -23,7 +23,8 @@ const IN_SCOPE = [
   ['complete-product-workflows', 'production-readiness'],
   ['complete-product-workflows', 'find-and-use'],
   ['add-material-output', 'material-output'],
-  ['deploy-product-release', 'product-deployment']
+  ['deploy-product-release', 'product-deployment'],
+  ['cloud-confirmed-saves', 'cloud-confirmed-storage']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */

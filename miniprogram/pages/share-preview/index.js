@@ -57,7 +57,7 @@ Page({
     }));
     this.setData({ ready: true, missing: false, options, selectedCount: options.length,
       preview: selectedPreview(item, options.map((x) => x.id)),
-      error: shareRevision(store) ? '' : '请先完成备份或处理冲突，才能分享这条文字。' });
+      error: shareRevision(store) ? '' : '暂时无法确认内容状态，请返回后重试。' });
   },
 
   onToggle(event) {
@@ -89,7 +89,7 @@ Page({
     const item = store.getInspiration(this.id);
     const revision = shareRevision(store);
     if (!item || !revision) {
-      this.setData({ error: '请先完成备份或处理冲突，才能分享这条文字。' });
+      this.setData({ error: '暂时无法确认内容状态，请返回后重试。' });
       return null;
     }
     const ids = this.data.options.filter((x) => x.selected).map((x) => x.id);

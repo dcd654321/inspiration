@@ -22,11 +22,8 @@ function selectedPreview(item, ids) {
 }
 
 function shareRevision(store) {
-  if (!store || typeof store.getBackupStatus !== 'function') return null;
-  const status = store.getBackupStatus();
-  if (status.state !== 'synced' || status.pendingCount !== 0) return null;
-  const snapshot = store.readSnapshot();
-  return { baseVersion: snapshot.version, generation: snapshot.generation };
+  if (!store || typeof store.getConfirmedRevision !== 'function') return null;
+  return store.getConfirmedRevision();
 }
 
 module.exports = { createShareClient, selectedPreview, shareRevision };

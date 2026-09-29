@@ -11,7 +11,14 @@ function createCloudConnection({ config, getSdk }) {
           !/^wx[a-f0-9]{16}$/.test(config.resourceAppid || '') ||
           typeof config.envId !== 'string' || !config.envId) throw Error('CLOUD_SHARED_UNAVAILABLE');
       const client = new sdk.Cloud({ resourceAppid: config.resourceAppid, resourceEnv: config.envId });
-      await client.init();
+      const initialized = await client.init();
+      // 微信 SDK 也可能把共享授权失败作为返回值交付，而不是抛出异常。
+      const errorCode = initialized && (initialized.errCode !== undefined ? initialized.errCode : initialized.errcode);
+      if (errorCode !== undefined && errorCode !== 0) {
+        const error = new Error('CLOUD_SHARED_INIT_FAILED');
+        error.code = errorCode;
+        throw error;
+      }
       return client;
     }).catch((error) => {
       pending = null;

@@ -86,7 +86,7 @@ Page({
     historyCount: 0,
     aiEnabled: false, isAi: false, merged: false, provenance: [],
     tagsDraft: '', stageIndex: 0, stages: STAGES,
-    photosEnabled: false, photos: [], photoDrafts: [], photoError: '', photoBusy: false,
+    photosEnabled: false, photos: [], photoError: '', photoBusy: false,
     provenanceSupplementId: '', supplementEditMax: LIMITS.supplementMaxLength,
     error: '',
     pending: ''
@@ -108,7 +108,7 @@ Page({
   async onShow() {
     this.visible = true;
     const version = this.viewVersion = (this.viewVersion || 0) + 1;
-    this.setData({ ready: false, text: '', supplements: [], hidden: [], photos: [], photoDrafts: [], photoBusy: false });
+    this.setData({ ready: false, text: '', supplements: [], hidden: [], photos: [], photoBusy: false, photoError: '' });
     await getApp().ensureReady();
     if (!this.visible || this.viewVersion !== version) return;
     if (this.id) this.load();
@@ -132,13 +132,10 @@ Page({
     }
 
     const drafts = app.globalData.drafts;
-    let photoDrafts = [];
-    try { if (app.globalData.photos) photoDrafts = app.globalData.photos.list(this.id); }
-    catch (err) { this.setData({ photoError: '照片暂存记录无法读取，请勿清理小程序数据。' }); }
     const now = Date.now();
     const next = {
       ready: true,
-      photosEnabled: Boolean(app.globalData.photos), photos: (item.photos || []).map((photo) => ({ id: photo.id, src: '', failed: false })), photoDrafts,
+      photosEnabled: Boolean(app.globalData.photos), photos: (item.photos || []).map((photo) => ({ id: photo.id, src: '', failed: false })),
       missing: false,
       text: item.text,
       aiEnabled: app.globalData.aiEnabled,
@@ -179,7 +176,7 @@ Page({
     this.visible = false;
     this.viewVersion = (this.viewVersion || 0) + 1;
     this.photoReadVersion = (this.photoReadVersion || 0) + 1;
-    this.setData({ photos: [], photoDrafts: [] });
+    this.setData({ photos: [] });
   },
 
   onUnload() { this.onHide(); },
@@ -197,18 +194,14 @@ Page({
     }
 
     if (app.globalData.store !== store) return { ok: false, message: '账户状态已变化，请返回后重试。' };
-    if (!result.ok) {
+    if (!result.ok || result.synced !== true) {
       return { ok: false, message: result.code === 'CONFLICT' || result.code === 'STALE_GENERATION' ||
         result.code === 'REQUEST_ID_REUSED'
-        ? '备份出现冲突，本次修改未保存。请到「我的」查看备份状态。'
+        ? '内容已在其他设备更新，本次修改未保存。请重新打开后重试。'
         : failureMessage };
     }
-    if (!result.synced) {
-      this.setData({ error: '已保存，但备份未完成。请暂时不要清理小程序数据。' });
-    } else {
-      this.setData({ error: '' });
-    }
-    return { ok: true };
+    this.setData({ error: '' });
+    return { ok: true, synced: true };
   },
 
   onBackToList() {
@@ -256,8 +249,8 @@ Page({
     }
 
     this.setData({ pending: 'text', editError: '', error: '' });
-    const result = await this.persist(edited, '存储空间不足，暂时无法保存。内容还在，可清理空间后重试。');
-    if (!result.ok) {
+    const result = await this.persist(edited, '保存未完成，内容仍在，请联网后重试。');
+    if (!result.ok || result.synced !== true) {
       this.setData({ pending: '', editError: result.message });
       return;
     }
@@ -331,22 +324,23 @@ Page({
 
   onAddPhoto() {
     if (this.data.photoBusy || this.data.pending || !getApp().globalData.photos) return;
-    wx.showActionSheet({ itemList: ['拍照', '从相册选择'], success: (res) => this.runPhoto('add', res.tapIndex === 0 ? 'camera' : 'album') });
+    const store = getApp().globalData.store, version = this.viewVersion;
+    wx.showActionSheet({ itemList: ['拍照', '从相册选择'], success: (res) => {
+      if (this.visible === false || this.viewVersion !== version || getApp().globalData.store !== store) return;
+      this.addPhotos(res.tapIndex === 0 ? 'camera' : 'album');
+    } });
   },
-  async runPhoto(action, value) {
-    const app = getApp(), service = app.globalData.photos, scope = app.globalData.cacheScope;
-    if (!service || this.data.photoBusy) return;
+  async addPhotos(source) {
+    const app = getApp(), service = app.globalData.photos, store = app.globalData.store;
+    const version = this.viewVersion, epoch = app.globalData.sessionEpoch;
+    if (!service || this.data.photoBusy || this.data.pending || this.visible === false) return;
     this.setData({ photoBusy: true, photoError: '' });
     let result;
-    try { result = action === 'add' ? await service.add(this.id, value) : await service[action](value); }
-    catch (err) { result = { ok: false, message: '照片处理未完成，已保留，请稍后重试。' }; }
-    if (getApp().globalData.cacheScope !== scope) return;
+    try { result = await service.add(this.id, source); }
+    catch (err) { result = { ok: false, message: '照片未添加成功，请重新选择后重试。' }; }
+    if (this.visible === false || this.viewVersion !== version || app.globalData.sessionEpoch !== epoch ||
+        app.globalData.store !== store || app.globalData.photos !== service) return;
     this.setData({ photoBusy: false, photoError: result.message || '' }); this.load();
-  },
-  onRetryPhoto(event) { this.runPhoto('retry', event.currentTarget.dataset.id); },
-  onDiscardPhoto(event) {
-    const id = event.currentTarget.dataset.id;
-    wx.showModal({ title: '放弃这张照片', content: '将清理这张暂存照片及已上传的文件，不影响文字。', confirmText: '放弃照片', success: (res) => { if (res.confirm) this.runPhoto('discard', id); } });
   },
   onPreviewPhoto(event) {
     wx.navigateTo({ url: '/pages/photo-viewer/index?id=' + encodeURIComponent(this.id) + '&photo=' + encodeURIComponent(event.currentTarget.dataset.id) });
@@ -354,20 +348,16 @@ Page({
   onDeletePhoto(event) {
     if (this.data.photoBusy || this.data.pending) return;
     const photoId = event.currentTarget.dataset.id, app = getApp(), store = app.globalData.store;
+    const version = this.viewVersion;
     wx.showModal({ title: '删除照片', content: '照片将从灵感及存储中移除，无法撤销。清理失败时可重试。', confirmText: '删除', success: async (res) => {
-      if (!res.confirm || getApp().globalData.store !== store) return;
+      if (!res.confirm || this.visible === false || this.viewVersion !== version || getApp().globalData.store !== store) return;
       this.setData({ photoBusy: true, photoError: '' });
       let result;
       try {
-        const photos = app.globalData.photos;
-        if (photos && photos.list(this.id).some((entry) => entry.id === photoId)) {
-          await photos.retry(photoId);
-          if (photos.list(this.id).some((entry) => entry.id === photoId)) throw Error('PENDING_UPLOAD');
-        }
         result = await store.deletePhoto(this.id, photoId);
       } catch (err) { result = {}; }
-      if (getApp().globalData.store !== store) return;
-      this.setData({ photoBusy: false, photoError: result.synced ? '' : '照片清理尚未完成，记录仍保留，可稍后重试。' });
+      if (this.visible === false || this.viewVersion !== version || getApp().globalData.store !== store) return;
+      this.setData({ photoBusy: false, photoError: result.ok && result.synced === true ? '' : '照片清理尚未完成，记录仍保留，可稍后重试。' });
       this.load();
     } });
   },
@@ -407,9 +397,9 @@ Page({
     }
 
     this.setData({ pending: 'supplement', supplementError: '', error: '' });
-    const result = await this.persist(next, '存储空间不足，暂时无法保存。内容还在，可清理空间后重试。');
+    const result = await this.persist(next, '保存未完成，内容仍在，请联网后重试。');
     if (!result.ok) {
-      // 本机没存下来：**保留输入**，清掉就等于把用户刚写的补充弄丢了
+      // 云端未确认：保留当前输入，供用户在本次会话中重试。
       this.setData({ pending: '', supplementError: result.message });
       return;
     }
@@ -655,7 +645,7 @@ Page({
 
   onDelete() {
     if (this.data.pending) return;
-    if (this.data.photoBusy || this.data.photoDrafts.length) { this.setData({ photoError: '请先完成照片处理或放弃暂存照片，再删除灵感。' }); return; }
+    if (this.data.photoBusy) { this.setData({ photoError: '照片正在处理中，请稍后再删除灵感。' }); return; }
     wx.showModal({
       title: '删除灵感',
       content: '确定删除灵感吗？正文、补充和照片都会一并移除，此操作无法撤销。',
@@ -673,19 +663,10 @@ Page({
     this.setData({ pending: 'deleteInspiration', error: '' });
     const result = await getApp().globalData.store.deleteInspiration(this.id);
 
-    if (!result.ok) {
+    if (!result.ok || result.synced !== true) {
       this.setData({ pending: '', error: result.code === 'PHOTO_DELETE_UNAVAILABLE'
         ? '这条含有照片，暂时无法安全删除；记录仍在。'
         : '删除未完成，记录仍在，请稍后重试。' });
-      return;
-    }
-    if (!result.synced) {
-      this.setData({ pending: '', error: result.code === 'PHOTO_DELETE_UNAVAILABLE'
-        ? '这条含有照片，暂时无法安全删除；记录仍在。'
-        : result.code === 'CONFLICT' || result.code === 'STALE_GENERATION' ||
-          result.code === 'REQUEST_ID_REUSED'
-          ? '删除遇到备份冲突，记录仍在。请到「我的」查看。'
-          : '删除尚未完成，记录仍在；联网后可在「我的」重试备份。' });
       return;
     }
     this.setData({ pending: '' });

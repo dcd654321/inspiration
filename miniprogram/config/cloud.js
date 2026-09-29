@@ -1,19 +1,40 @@
-// 云环境开关。
-//
-// ⚠️ 翻成 true 之后，应用每次保存都会经 `linggan_api` 云函数同步到 `linggan_accounts`
-// 集合。**这两样必须在云开发控制台里先建出来**，否则保存会一律降级成
-// 「已保存。还没同步到云端，会自动重试」——界面不会坏，但那条提示会一直在。
-//
-// 所以：如果打开后每条都显示「还没同步」，第一件事是去控制台确认函数有没有部署、
-// 集合有没有创建（清单见 docs/DEPLOYMENT.md），而不是去查客户端代码。
-//
-// 回滚很简单：改回 false 重新编译即可，不影响云端数据。
+// 目标按运行版本解析：开发版/体验版连共享测试环境，正式版连共享正式环境（资源方 weddingTodo）。
+// 云是唯一数据源。函数、集合或网络不可用时保存失败并保留输入，不产生设备持久副本或离线队列。
+// enabled=false 会停止云连接及保存，不会切换为本机保存模式。
+// Node（测试）里没有 wx，按 develop 解析；release 目标与 deployment/product/manifest.json 一致，测试拦截漂移。
 const resources = require('./cloud-resources');
 
-module.exports = {
-  enabled: true,
-  envId: 'product-d2g59zty74d7d1ec1',
-  resourceAppid: 'wx7ad85943fe81e095',
-  apiFunction: resources.apiFunction,
-  timeoutMs: 10000
-};
+const TARGETS = Object.freeze({
+  test: Object.freeze({
+    enabled: true,
+    envId: 'cloud1-d8gopnalv908bb47a',
+    resourceAppid: 'wx7ad85943fe81e095',
+    apiFunction: resources.apiFunction,
+    timeoutMs: 10000
+  }),
+  product: Object.freeze({
+    enabled: true,
+    envId: 'product-d2g59zty74d7d1ec1',
+    resourceAppid: 'wx7ad85943fe81e095',
+    apiFunction: resources.apiFunction,
+    timeoutMs: 10000
+  })
+});
+
+function resolveCloudConfig(envVersion = 'develop') {
+  return envVersion === 'release' ? TARGETS.product : TARGETS.test;
+}
+
+function currentEnvVersion() {
+  try {
+    const info = typeof wx !== 'undefined' && typeof wx.getAccountInfoSync === 'function'
+      ? wx.getAccountInfoSync()
+      : null;
+    const version = info && info.miniProgram && info.miniProgram.envVersion;
+    return typeof version === 'string' && version ? version : 'develop';
+  } catch (_) {
+    return 'develop';
+  }
+}
+
+module.exports = { ...resolveCloudConfig(currentEnvVersion()), TARGETS, resolveCloudConfig };

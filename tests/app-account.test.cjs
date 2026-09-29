@@ -14,6 +14,7 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
   let definition;
   let networkListener;
   let retryCount = 0;
+  let localReads = 0;
   data.set('linggan:v1:snapshot', { inspirations: [{ id: 'old', text: '归属未明' }] });
   try {
     global.App = (value) => { definition = value; };
@@ -29,9 +30,9 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
         }
       },
       onNetworkStatusChange(listener) { networkListener = listener; },
-      getStorageSync(key) { return data.get(key); },
-      setStorageSync(key, value) { data.set(key, JSON.parse(JSON.stringify(value))); },
-      getStorageInfoSync() { return { keys: Array.from(data.keys()) }; }
+      getStorageSync(key) { localReads += 1; return data.get(key); },
+      setStorageSync() { throw Error('新会话不得写入微信持久存储'); },
+      getStorageInfoSync() { localReads += 1; return { keys: Array.from(data.keys()) }; }
     };
     global.wx.cloud = sharedCloud(global.wx.cloud);
     delete require.cache[appPath];
@@ -40,15 +41,15 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
     app.onLaunch();
     await app.ensureReady();
     assert.equal(app.globalData.store.listInspirations()[0].text, 'A 的内容');
-    assert.equal(app.globalData.legacyCachePresent, true);
+    assert.equal(localReads, 0, '新会话不扫描或读取旧测试缓存');
 
     app.onShow();
     await app.ensureReady();
     const activeStore = app.globalData.store;
     app.globalData.drafts.set('a', 'A 尚未提交的补充');
-    activeStore.retryPending = async () => { retryCount += 1; };
+    activeStore.refresh = async () => { retryCount += 1; };
     networkListener({ isConnected: true });
-    assert.equal(retryCount, 1, '前台网络恢复触发一次有界重试');
+    assert.equal(retryCount, 1, '前台网络恢复触发一次云端刷新');
 
     app.onHide();
     assert.equal(app.globalData.store, null);
@@ -65,6 +66,7 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
     app.onHide(); account = A; app.onShow(); await app.ensureReady();
     assert.equal(app.globalData.drafts.get('a'), 'A 尚未提交的补充', '同会话回到 A 保留自己的草稿');
     assert.equal(data.get('linggan:v1:snapshot').inspirations[0].text, '归属未明');
+    assert.equal(localReads, 0, '切换账户也不访问旧测试缓存');
   } finally {
     delete require.cache[appPath];
     for (const [key, value] of Object.entries(previous)) {

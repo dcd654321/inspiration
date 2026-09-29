@@ -276,9 +276,9 @@ test('海报分页不截断，超出可读页数拒绝；前端只允许已同�
   const f = fixture();
   const item = f.accounts.get('owner').inspirations[0];
   assert.equal(selectedPreview(item, ['a']), '原文\n第二行\n\n可见补充');
-  assert.equal(shareRevision({ getBackupStatus: () => ({ state: 'pending', pendingCount: 1 }) }), null);
-  assert.deepEqual(shareRevision({ getBackupStatus: () => ({ state: 'synced', pendingCount: 0 }),
-    readSnapshot: () => ({ version: 2, generation: 1 }) }), { baseVersion: 2, generation: 1 });
+  assert.equal(shareRevision({}), null);
+  assert.deepEqual(shareRevision({ getConfirmedRevision: () => ({ baseVersion: 2, generation: 1 }) }),
+    { baseVersion: 2, generation: 1 });
   assert.equal(makeSnapshot(item, ['b'], 'chat'), null);
   assert.equal(dayStart(Date.UTC(2026, 8, 24, 7)), Date.UTC(2026, 8, 23, 16));
 });

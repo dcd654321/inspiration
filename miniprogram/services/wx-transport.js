@@ -1,8 +1,7 @@
 'use strict';
 // `wx.cloud.callFunction` 的适配器。
 //
-// store 的 `transport` 一直传的是 null（云未启用），这是它的真实实现。
-// 与其他适配器一样，它只做三件事：拼信封、发出去、把结果原样带回来。
+// 当前存储服务通过共享环境客户端发送请求，只拼信封、发送并校验响应结构。
 //
 // **不做重试、不做降级、不解释错误码**——那些是 store 和页面的事。
 // 适配器只负责跨过 wx 这道边界，越薄越好：它是最不可能被测到的一层
@@ -53,7 +52,7 @@ function createWxTransport(options) {
       });
 
       // 云函数抛错时 result 里带的是 errMsg 而不是我们的信封。这种不属于业务失败，
-      // 当成一次网络错误交给 store 处理——它会保留内容并稍后重试。
+      // 交给 store 核对实际结果；未确认时页面保留输入，不自动建立重试队列。
       const result = response && response.result;
       if (!result || typeof result.ok !== 'boolean') {
         return { ok: false, code: 'INTERNAL', message: '服务返回了无法识别的内容' };
