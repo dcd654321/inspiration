@@ -1,0 +1,67 @@
+[
+  {
+    "width": "320",
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": []
+  },
+  {
+    "width": "375",
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": []
+  },
+  {
+    "width": "390",
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": []
+  },
+  {
+    "width": "430",
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": []
+  },
+  {
+    "state": "unknown/search",
+    "capture": "尚未确认保存\n内容还在输入框中。退出前请重试保存或复制内容。\n复制内容",
+    "hintHidden": true,
+    "list": "我的灵感\n记一条灵感\n不存在的关键词\n全部\n有补充\n筛选\n没有找到匹配的灵感\n\n试试其他关键词，或清空搜索和筛选。\n\n清空搜索和筛选"
+  },
+  {
+    "state": "empty",
+    "text": "我的灵感\n记一条灵感\n还没有记录\n\n从一个想法开始，之后再补充。\n\n记下第一个想法"
+  },
+  {
+    "state": "pending",
+    "button": "正在记下…",
+    "disabled": true,
+    "hint": "正在保存，请稍候。",
+    "notice": ""
+  },
+  {
+    "state": "read-error",
+    "text": "我的灵感\n记一条灵感\n暂时无法读取灵感\n\n请稍后重试。\n\n重新读取"
+  }
+]

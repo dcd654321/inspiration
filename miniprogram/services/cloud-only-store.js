@@ -58,7 +58,9 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
       const code = response && response.code || 'NETWORK';
       const refreshed = await pull();
       if (refreshed.ok && isConfirmed(snapshot.inspirations)) return { ok: true, synced: true };
-      return { ok: false, code };
+      // message 原样透传服务端的可展示说明；页面在「确认被拒绝」时用它给已知原因，
+      // 结果未知（NETWORK/INTERNAL）时不能拿它编造原因。
+      return { ok: false, code, message: response && typeof response.message === 'string' ? response.message : '' };
     }
     snapshot = { generation: snapshot.generation, version: response.data.version,
       syncedAt: now(), inspirations: applyConfirmed(snapshot.inspirations) };

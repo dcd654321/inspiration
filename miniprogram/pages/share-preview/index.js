@@ -6,7 +6,7 @@ Page({
   data: {
     ready: false, missing: false, options: [], preview: '', selectedCount: 0,
     error: '', notice: '', busy: false, chatPrepared: false, canRetryPoster: false,
-    posterFiles: [], posterReady: false, saving: false, allSaved: false
+    posterBusy: false, posterFiles: [], posterReady: false, saving: false, allSaved: false
   },
 
   async onLoad(query) {
@@ -140,19 +140,24 @@ Page({
     };
   },
 
-  async onPreparePoster() {
+  /**
+   * 制作海报：已准备过（含上次失败的）先复用同一份链接与预览，重试不重复创建；
+   * 否则按当前选择准备后再生成。
+   */
+  async onMakePoster() {
+    if (this.data.busy) return;
+    if (this.data.canRetryPoster && !this.data.posterReady && this.preparedToken && this.preparedPreview) {
+      await this.makePoster(this.preparedToken, this.preparedPreview);
+      return;
+    }
     const result = await this.prepare('timeline_poster');
     if (!result) return;
     this.setData({ chatPrepared: false, canRetryPoster: true });
     await this.makePoster(result.token, result.preview);
   },
 
-  async onRetryPoster() {
-    if (this.preparedToken && this.preparedPreview) await this.makePoster(this.preparedToken, this.preparedPreview);
-  },
-
   async makePoster(token, preview) {
-    this.setData({ busy: true, error: '', notice: '', posterReady: false });
+    this.setData({ busy: true, posterBusy: true, error: '', notice: '', posterReady: false });
     try {
       const code = await this.client.send('share.qr', { token });
       if (!code.ok) throw Error(code.message || '小程序码生成失败');
@@ -164,7 +169,7 @@ Page({
         notice: '海报已生成。保存图片后，请到朋友圈自行发布。已发出的图片无法远程收回。' });
     } catch (err) {
       this.setData({ error: '海报还没生成成功，请重试；也可以改发给微信好友。', posterReady: false });
-    } finally { this.setData({ busy: false }); }
+    } finally { this.setData({ busy: false, posterBusy: false }); }
   },
 
   async onSavePosters() {

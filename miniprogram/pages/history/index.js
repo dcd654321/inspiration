@@ -4,6 +4,8 @@ Page({
   data: {
     ready: false,
     missing: false,
+    // 读取失败（账户/网络）与「确认不存在」分开
+    readError: false,
     versions: [],
     current: ''
   },
@@ -24,10 +26,14 @@ Page({
   load() {
     const app = getApp();
     const store = app && app.globalData && app.globalData.store;
-    const item = store ? store.getInspiration(this.id) : null;
+    if (!store) {
+      this.setData({ ready: true, missing: false, readError: true, current: '', versions: [] });
+      return;
+    }
+    const item = store.getInspiration(this.id);
 
     if (!item) {
-      this.setData({ ready: true, missing: true });
+      this.setData({ ready: true, missing: true, readError: false });
       return;
     }
 
@@ -36,6 +42,7 @@ Page({
     this.setData({
       ready: true,
       missing: false,
+      readError: false,
       // 倒序：最近被替换掉的排在最上，往上翻就是更早的
       versions: history.slice().reverse().map((version) => ({
         id: version.id,
@@ -45,5 +52,20 @@ Page({
       })),
       current: item.text
     });
+  },
+
+  onRetryLoad() {
+    const app = getApp();
+    this.setData({ ready: false, readError: false });
+    app.refreshAccount().then(() => { this.load(); });
+  },
+
+  onBack() {
+    if (getCurrentPages().length > 1) wx.navigateBack();
+    else wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.id) });
+  },
+
+  onBackToList() {
+    wx.switchTab({ url: '/pages/list/index' });
   }
 });

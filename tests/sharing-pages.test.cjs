@@ -154,7 +154,7 @@ test('公共入口与私人页面的索引、文案和入口分开', () => {
   const mine = read('miniprogram/pages/mine/index.wxml');
   assert.match(mine, /分享小程序/);
   assert.match(mine, /我的分享/);
-  assert.match(mine, /给我们提建议/);
+  assert.match(mine, /提交反馈/);
 });
 
 test('我的页直接分享公共入口，不把账户或记录放进聊天卡片与朋友圈', async () => {

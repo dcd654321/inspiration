@@ -1,6 +1,9 @@
 <view class="page" wx:if="{{ready}}">
   <view class="page-title">{{title || '整理想法'}}</view>
-  <view wx:if="{{!enabled}}" class="notice">AI 整理尚未开放，记录和手动整理仍可使用。</view>
+  <block wx:if="{{!enabled}}">
+    <view class="notice">暂时无法使用此功能</view>
+    <button class="btn btn-quiet btn-block" bindtap="onBackToList">返回灵感列表</button>
+  </block>
   <block wx:elif="{{completed}}"><view class="hint">已完成本次整理。</view></block>
   <block wx:elif="{{!preview}}">
     <view wx:if="{{original}}" class="source-text">{{original}}</view>

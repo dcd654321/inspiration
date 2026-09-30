@@ -1,9 +1,19 @@
 <view class="page" wx:if="{{ready}}">
-  <block wx:if="{{missing}}">
+  <block wx:if="{{readError}}">
+    <view class="empty">
+      <view class="et">暂时无法读取灵感</view>
+      <view class="ed">请稍后重试。</view>
+    </view>
+    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onRetryLoad">重新读取</button>
+    <button class="btn btn-quiet btn-block" style="margin-top: 20rpx" bindtap="onBackToList">返回灵感列表</button>
+  </block>
+
+  <block wx:elif="{{missing}}">
     <view class="empty">
       <view class="et">找不到这条灵感</view>
-      <view class="ed">这条灵感不存在或已经删除。</view>
+      <view class="ed">它可能已被删除，可以返回列表查找其他记录。</view>
     </view>
+    <button class="btn btn-block" style="margin-top: 32rpx" bindtap="onBackToList">返回灵感列表</button>
   </block>
 
   <block wx:else>
@@ -12,14 +22,24 @@
       <view class="hv-now-t">{{current}}</view>
     </view>
 
-    <view class="history-head">共 {{versions.length}} 条修改记录</view>
-
-    <!-- 只读。没有编辑入口，也没有删除入口——这是「你说过的话不会被悄悄抹掉」的界面体现 -->
-    <view class="history-list">
-      <view wx:for="{{versions}}" wx:key="id" class="hv">
-        <view class="hv-m">修改于 {{item.time}}</view>
-        <view class="hv-t">{{item.text}}</view>
+    <block wx:if="{{versions.length === 0}}">
+      <view class="hv-empty">
+        <view class="et">还没有修改记录</view>
+        <view class="ed">正文还没有改过。修改后，旧内容会保留在这里。</view>
       </view>
-    </view>
+      <button class="btn btn-plain btn-block" bindtap="onBack">返回这条灵感</button>
+    </block>
+
+    <block wx:else>
+      <view class="history-head">共 {{versions.length}} 条修改记录</view>
+
+      <!-- 只读。没有编辑入口，也没有删除入口——这是「你说过的话不会被悄悄抹掉」的界面体现 -->
+      <view class="history-list">
+        <view wx:for="{{versions}}" wx:key="id" class="hv">
+          <view class="hv-m">修改于 {{item.time}}</view>
+          <view class="hv-t">{{item.text}}</view>
+        </view>
+      </view>
+    </block>
   </block>
 </view>

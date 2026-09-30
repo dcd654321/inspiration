@@ -20,7 +20,6 @@ page {
   --brand-soft: #eeeef8;
   --brand-line: #c9cae6;
   --spark: #e4a83a;
-  --spark-soft: #fff6df;
 
   --danger: #b43c32;
   --danger-soft: #fbeeec;
@@ -32,6 +31,7 @@ page {
   background: var(--paper);
   color: var(--ink);
   font-size: 30rpx;
+  font-size: max(30rpx, 16px);
   line-height: 1.6;
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
@@ -51,6 +51,7 @@ page {
 
 .page-sub {
   font-size: 28rpx;
+  font-size: max(28rpx, 14px);
   color: var(--ink-2);
   line-height: 1.7;
   margin-top: 10rpx;
@@ -83,6 +84,7 @@ page {
 
 .section-head .v {
   font-size: 26rpx;
+  font-size: max(26rpx, 13px);
   color: var(--ink-3);
 }
 
@@ -90,6 +92,7 @@ page {
 
 .btn {
   font-size: 30rpx;
+  font-size: max(30rpx, 16px);
   font-weight: 500;
   letter-spacing: 0.01em;
   border: none;
@@ -106,7 +109,27 @@ page {
 
 .btn::after { border: none; }  /* 去掉小程序 button 默认的边框 */
 
-.page .btn-block {
+/* 小程序 button 的默认样式带固定宽度和左右 auto 外边距，**只能被两层选择器盖住**，
+   单类选择器盖不住——文字会缩在一个 184px 的框里居中，看着像没对齐右边距。
+   这里统一复位宽度和左右外边距；上下外边距不动，页面按需自己设（如 `.save-btn`）。
+   需要通栏或特定宽度的按钮，用 `.page .btn-block`、`.sheet .sheet-item` 这类两层选择器覆盖。 */
+.page button,
+.welcome-page button,
+.viewer button,
+.launch button {
+  width: auto;
+  margin-left: 0;
+  margin-right: 0;
+  /* 44 逻辑像素热区兜底：320 宽时 88rpx 只有约 37.5px，手指点不中。
+     max() 不被支持时退到上一行的 rpx 值，不会放大到失控。 */
+  min-height: max(88rpx, 44px);
+  min-width: max(88rpx, 44px);
+}
+
+/* 整宽按钮。选择器写成两层有两个原因：
+   一是盖得住上面那条 button 复位，二是让不在 `.page` 里的页面（欢迎页）也能拿到整宽——
+   单类 `.btn-block` 会被 button 默认宽度顶掉，两个按钮就会挤成并排。 */
+.btn.btn-block {
   display: flex;
   width: 100%;
 }
@@ -138,6 +161,7 @@ page {
 .btn-sm {
   min-height: 88rpx;
   font-size: 28rpx;
+  font-size: max(28rpx, 14px);
   padding: 0 32rpx;
   border-radius: 14rpx;
 }
@@ -148,6 +172,7 @@ page {
   background: transparent;
   color: var(--brand);
   font-size: 27rpx;
+  font-size: max(27rpx, 14px);
 }
 
 .btn-link::after { border: none; }
@@ -162,6 +187,7 @@ page {
   padding: 22rpx 26rpx;
   border-radius: 16rpx;
   font-size: 26rpx;
+  font-size: max(26rpx, 13px);
   line-height: 1.6;
 }
 
@@ -174,7 +200,11 @@ page {
   position: relative;
 }
 
-.notice .mark::before {
+/* 状态图标用**形状**区分语义，颜色只是辅助——
+   灰度或色觉障碍下仍要能分辨成功、警示、失败，不能只靠底色。 */
+
+/* 警示：感叹号 */
+.notice-warn .mark::before {
   content: "";
   position: absolute;
   left: 13rpx;
@@ -185,7 +215,7 @@ page {
   border-radius: 2rpx;
 }
 
-.notice .mark::after {
+.notice-warn .mark::after {
   content: "";
   position: absolute;
   left: 13rpx;
@@ -194,6 +224,35 @@ page {
   height: 4rpx;
   background: #ffffff;
   border-radius: 50%;
+}
+
+/* 失败：叉 */
+.notice-err .mark::before,
+.notice-err .mark::after {
+  content: "";
+  position: absolute;
+  left: 13rpx;
+  top: 7rpx;
+  width: 4rpx;
+  height: 16rpx;
+  background: #ffffff;
+  border-radius: 2rpx;
+  transform: rotate(45deg);
+}
+
+.notice-err .mark::after { transform: rotate(-45deg); }
+
+/* 成功：对勾 */
+.notice-success .mark::after {
+  content: "";
+  position: absolute;
+  left: 8rpx;
+  top: 5rpx;
+  width: 7rpx;
+  height: 13rpx;
+  border: solid #ffffff;
+  border-width: 0 4rpx 4rpx 0;
+  transform: rotate(45deg);
 }
 
 .notice-err {
@@ -209,18 +268,252 @@ page {
 }
 .notice-warn .mark { background: var(--warn-ink); }
 
+/* 成功用主色系，不用点睛色。琥珀是品牌图形的专属信号；
+   成功提示染成琥珀色会读起来像警告，而「记下了」这一刻不该带不确定感。 */
 .notice-success {
-  background: var(--spark-soft);
-  border: 2rpx solid #eed8a8;
-  color: #725318;
+  background: var(--brand-soft);
+  border: 2rpx solid var(--brand-line);
+  color: var(--brand);
 }
 
-.notice-success .mark { background: var(--spark); }
+.notice-success .mark { background: var(--brand); }
+
+/* ---------------------------------------------------------------- 遮罩、面板与确认框 */
+
+/* 多个页面共用：详情页的补充操作与「更多」、列表页的筛选面板。
+   单页专属的规则留在各自页面的 wxss 里。 */
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(22, 22, 29, 0.42);
+  display: flex;
+  align-items: flex-end;
+  z-index: 100;
+}
+
+.mask-center {
+  align-items: center;
+  justify-content: center;
+  padding: 0 60rpx;
+}
+
+.sheet {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 12rpx 0 24rpx;
+}
+
+.sheet-title {
+  font-size: 24rpx;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 24rpx 40rpx 20rpx;
+  border-bottom: 2rpx solid var(--line);
+}
+
+/* 说明文字另起一行放在主标签下面。
+   之前是 flex + space-between，长说明会把主标签挤到逐字换行（「修」/「改」各占一行）。
+
+   选择器写成两层：小程序 button 的默认样式会盖掉单类选择器里的 width 和 margin，
+   只用 `.sheet-item` 的话条目会缩成 184px 居中，而不是通栏。 */
+.sheet .sheet-item {
+  display: block;
+  text-align: left;
+  padding: 26rpx 40rpx;
+  font-size: 32rpx;
+  line-height: 1.4;
+  width: 100%;
+  margin: 0;
+  background: var(--surface);
+  border-radius: 0;
+  letter-spacing: 0.01em;
+  border-bottom: 2rpx solid var(--line);
+}
+
+.sheet-item::after { border: none; }
+
+.sheet-item .sub {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: var(--ink-3);
+  margin-top: 6rpx;
+}
+
+/* 删除用危险色，并且和另外两项在视觉上分开 */
+.sheet-danger {
+  color: var(--danger);
+}
+
+.sheet-danger .sub {
+  color: #d29b95;
+}
+
+.sheet .sheet-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20rpx 28rpx 0;
+  min-height: 88rpx;
+  padding: 0;
+  width: calc(100% - 56rpx);
+  border: none;
+  text-align: center;
+  font-size: 32rpx;
+  line-height: 1;
+  color: var(--ink-2);
+  background: #f2f2f6;
+  border-radius: 16rpx;
+}
+
+.sheet-cancel::after { border: none; }
+
+/* 面板底部的动作行：等宽按钮（列表筛选、整理页应用等共用） */
+.panel-acts {
+  display: flex;
+  gap: 16rpx;
+  margin: 24rpx 28rpx 0;
+}
+
+.panel-acts .btn {
+  flex: 1 1 0;
+  width: auto;
+  margin: 0;
+}
+
+/* 删除确认 */
+.dialog {
+  width: 100%;
+  background: var(--surface);
+  border-radius: 28rpx;
+  overflow: hidden;
+  text-align: center;
+}
+
+.dialog-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  padding: 40rpx 40rpx 16rpx;
+  letter-spacing: -0.01em;
+}
+
+.dialog-body {
+  font-size: 26rpx;
+  color: var(--ink-2);
+  line-height: 1.7;
+  padding: 0 40rpx 28rpx;
+}
+
+.dialog-warn {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* 待删内容放进一个带时间的框——让「要删的就是这条」连起来，不是两句不相干的话 */
+.dialog-quote {
+  margin: 0 40rpx 36rpx;
+  padding: 22rpx 26rpx;
+  background: var(--paper);
+  border: 2rpx solid var(--line);
+  border-radius: 16rpx;
+  text-align: left;
+}
+
+.dialog-quote-t {
+  font-size: 27rpx;
+  line-height: 1.65;
+  color: var(--ink);
+  /* 摘录有最大展示行数：长正文放进确认框不能把它撑成一整页 */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.dialog-quote-m {
+  font-size: 23rpx;
+  color: var(--ink-3);
+  margin-top: 12rpx;
+}
+
+.dialog-acts {
+  display: flex;
+  border-top: 2rpx solid var(--line);
+}
+
+.dialog-act {
+  flex: 1;
+  min-height: 96rpx;
+  padding: 0;
+  font-size: 32rpx;
+  line-height: 1;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-act::after { border: none; }
+
+.dialog-act + .dialog-act {
+  border-left: 2rpx solid var(--line);
+}
+
+.dialog-act-danger {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.sheet-item[disabled],
+.sheet-cancel[disabled],
+.dialog-act[disabled],
+.tl-more[disabled] {
+  opacity: 0.55;
+}
+
+/* 面板与确认框共用的标题/说明/动作三段式（记录页、列表页的常驻提示） */
+.notice-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.notice-text {
+  font-size: 26rpx;
+  line-height: 1.6;
+  margin-top: 4rpx;
+}
+
+.notice-acts {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.notice-acts .btn {
+  width: auto;
+  margin: 0;
+}
 
 /* ---------------------------------------------------------------- 标签 */
 
 .tag {
   font-size: 24rpx;
+  font-size: max(24rpx, 13px);
   line-height: 1;
   padding: 8rpx 16rpx;
   border-radius: 40rpx;
@@ -239,16 +532,18 @@ page {
   text-align: center;
 }
 
+/* 品牌图形只有两档：页面头部 104rpx，首屏英雄位 144rpx。中间尺寸不再新增。 */
 .empty-mark {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 28rpx;
+  width: 144rpx;
+  height: 144rpx;
+  border-radius: 36rpx;
   margin: 0 auto 28rpx;
   display: block;
 }
 
 .empty .et {
   font-size: 30rpx;
+  font-size: max(30rpx, 16px);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink);
@@ -256,6 +551,7 @@ page {
 
 .empty .ed {
   font-size: 26rpx;
+  font-size: max(26rpx, 13px);
   color: var(--ink-2);
   line-height: 1.7;
   margin-top: 12rpx;
@@ -297,6 +593,7 @@ page {
 
 .row .body {
   font-size: 31rpx;
+  font-size: max(31rpx, 16px);
   line-height: 1.68;
   letter-spacing: 0.01em;
   display: -webkit-box;
@@ -311,6 +608,7 @@ page {
   flex-wrap: wrap;
   margin-top: 18rpx;
   font-size: 26rpx;
+  font-size: max(26rpx, 13px);
   color: var(--ink-3);
 }
 

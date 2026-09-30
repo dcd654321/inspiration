@@ -32,7 +32,7 @@ Page({
     const store = await app.ensureReady();
     this.loadedEpoch = app.globalData.sessionEpoch;
     if (!store) {
-      this.setData({ loading: false, error: '暂时无法查看，请联网后重试。', unavailable: false,
+      this.setData({ loading: false, error: '请检查网络后重试。', unavailable: false,
         title: '', body: '', date: '' });
       return;
     }
@@ -40,8 +40,11 @@ Page({
     try { result = await this.client.send('share.get', { token: this.token }); }
     catch (err) { result = { ok: false, code: 'INTERNAL' }; }
     if (!result.ok) {
-      this.setData({ loading: false, unavailable: result.code === 'SHARE_UNAVAILABLE',
-        error: result.code === 'SHARE_UNAVAILABLE' ? '这份分享已无法查看。' : '暂时无法查看，请稍后重试。',
+      // 失效与网络错误分开：失效不再给重试（重试也不会变好），网络错误给「重新读取」。
+      // 失效原因不推断是撤销还是到期——只说事实与下一步。
+      const unavailable = result.code === 'SHARE_UNAVAILABLE';
+      this.setData({ loading: false, unavailable,
+        error: unavailable ? '分享已失效，可请分享者重新发送。' : '请稍后重试。',
         title: '', body: '', date: '' });
       return;
     }

@@ -20,7 +20,7 @@
 
 .editor {
   width: 100%;
-  min-height: 216rpx;
+  min-height: 300rpx;
   font-size: 33rpx;
   line-height: 1.75;
   letter-spacing: 0.01em;
@@ -33,12 +33,30 @@
 
 .foot {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
   margin-top: 28rpx;
 }
 
+.foot-hints {
+  flex: 1;
+  min-width: 0;
+}
+
+.hint-draft {
+  font-size: 24rpx;
+  color: var(--ink-3);
+}
+
+/* 超限时说清差多少，并保持全文可见——不静默截断粘贴内容 */
+.hint-over {
+  font-size: 24rpx;
+  color: var(--danger);
+}
+
 .count {
+  flex: 0 0 auto;
   font-size: 24rpx;
   color: var(--ink-3);
 }
@@ -47,28 +65,30 @@
   color: var(--warn-ink);
 }
 
+.count-over {
+  color: var(--danger);
+}
+
 .save-btn {
   margin-top: 24rpx;
 }
 
-.save-result {
-  flex: 1;
-  min-width: 0;
-}
-
-.result-link {
-  display: flex;
-  align-items: center;
-  min-height: 88rpx;
-  margin: 6rpx 0 -18rpx;
-  padding: 0;
-  color: var(--brand);
-  background: transparent;
+/* 成功卡里的摘录：就是刚确认写入的那条文字，两行封顶 */
+.saved-quote {
   font-size: 27rpx;
-  font-weight: 600;
-  text-align: left;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin-top: 8rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
-.result-link::after {
-  border: none;
+.hint-copy {
+  font-size: 24rpx;
+  color: var(--ink-3);
+  margin-top: 16rpx;
 }

@@ -7,22 +7,12 @@
     </view>
   </view>
 
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">从记录到使用</text></view>
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">我的分享</text></view>
   <view class="panel use-panel">
-    <view class="use-copy">在灵感详情中继续补充；需要使用时，可以整理、复制文字，或生成 TXT 文件留存。</view>
-    <button class="btn btn-quiet btn-block" bindtap="onOpenList">查看我的灵感</button>
-  </view>
-
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">分享</text></view>
-  <view class="panel use-panel">
-    <view class="use-copy">分享小程序不会带出你的记录。分享单条内容时，你会先看到对方能读到的文字。</view>
+    <view class="use-copy">分享小程序不会带出你的记录。</view>
     <button class="btn btn-quiet btn-block" open-type="share">分享小程序</button>
     <button class="btn btn-plain btn-block" bindtap="onOpenMyShares">我的分享</button>
   </view>
-
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">反馈</text></view>
-  <button class="btn btn-plain btn-block" bindtap="onOpenFeedback">给我们提建议</button>
-  <button class="btn btn-plain btn-block" open-type="feedback">向微信反馈</button>
 
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">数据与隐私</text></view>
   <view class="panel privacy-panel">
@@ -32,14 +22,37 @@
     </view>
   </view>
 
-  <block wx:if="{{usageAvailable}}">
-    <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">本次使用统计</text></view>
-    <view class="panel privacy-panel"><view class="use-copy">可选统计本次打开期间的动作次数，不含内容或搜索词；关闭或退出后清空，不会写入设备。</view><switch checked="{{usageEnabled}}" bindchange="onUsageSetting" aria-label="开启本次使用统计" color="#34377f" /><button wx:if="{{usageEnabled}}" class="btn btn-plain btn-block" bindtap="onViewUsage">查看使用统计</button><block wx:if="{{usageVisible}}"><text class="remote-text" selectable="true">{{usageReport}}</text><button class="btn btn-plain btn-block" bindtap="onCopyUsage">复制统计</button></block><view wx:if="{{usageError}}" class="notice notice-err">{{usageError}}</view></view>
-  </block>
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">使用帮助</text></view>
+  <view class="panel privacy-panel">
+    <block wx:if="{{reviewAvailable}}">
+      <view class="panel-row">
+        <text class="use-copy">显示回顾入口</text>
+        <switch checked="{{reviewEnabled}}" bindchange="onReviewSetting" aria-label="显示回顾入口" color="#34377f" />
+      </view>
+      <view class="panel-note">在灵感列表里推荐一条继续补充。设置仅在本次使用期间有效，下次重新启动小程序后恢复默认。</view>
+      <view wx:if="{{reviewError}}" class="notice notice-err">{{reviewError}}</view>
+    </block>
+    <block wx:if="{{usageAvailable}}">
+      <view class="panel-row">
+        <text class="use-copy">诊断信息</text>
+        <switch checked="{{usageEnabled}}" bindchange="onUsageSetting" aria-label="开启本次使用统计" color="#34377f" />
+      </view>
+      <view class="panel-note">统计本次打开期间的动作次数，不含内容或搜索词；默认关闭，退出即清空，需要时由你自己复制。</view>
+      <block wx:if="{{usageEnabled}}">
+        <button class="btn btn-plain btn-block" bindtap="onViewUsage">查看使用统计</button>
+        <block wx:if="{{usageVisible}}"><text class="remote-text" selectable="true">{{usageReport}}</text><button class="btn btn-plain btn-block" bindtap="onCopyUsage">复制统计</button></block>
+      </block>
+      <view wx:if="{{usageError}}" class="notice notice-err">{{usageError}}</view>
+    </block>
+  </view>
+
+  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">意见反馈</text></view>
+  <button class="btn btn-plain btn-block" bindtap="onOpenFeedback">提交反馈</button>
+  <button class="btn btn-plain btn-block" open-type="feedback">向微信反馈</button>
 
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">关于</text></view>
   <view class="panel about-panel">
     <view class="about-title">灵感拾光簿</view>
-    <view class="about-copy">记下突然想到的事，之后补充、修改，回看想法怎样一步步成形。</view>
+    <view class="about-copy">记下一个想法，慢慢补充。需要时，整理成一份可以带走的文字。</view>
   </view>
 </view>

@@ -74,3 +74,25 @@
   letter-spacing: 0.01em;
   color: var(--ink);
 }
+
+/* 深链进入且没有历史时：说清为什么没有，并给一条回去的路 */
+.hv-empty {
+  background: var(--surface);
+  border-radius: 24rpx;
+  padding: 64rpx 40rpx;
+  text-align: center;
+  margin-top: 24rpx;
+}
+
+.hv-empty .et {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hv-empty .ed {
+  font-size: 26rpx;
+  color: var(--ink-2);
+  line-height: 1.7;
+  margin-top: 12rpx;
+}

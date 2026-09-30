@@ -2,10 +2,10 @@
 
 一个面向个人用户的想法记录工具：随手记下内容、持续补充，再复制或整理成可使用的文字。文字能力已可用；照片、AI 与分享本地代码已完成但未在平台开放，热度提炼已暂缓。
 
-工程目录为 `D:\codex\coding\inspiration-miniprogram`，与 `yidian-miniprogram` 采用同一套工程约定（原生小程序 + 微信云开发 + OpenSpec 规范驱动开发）。
+工程目录为 `D:\codex\coding\inspiration-miniprogram`，与 `jiancheng-miniprogram` 采用同一套工程约定（原生小程序 + 微信云开发 + OpenSpec 规范驱动开发）。
 
 > **当前状态（2026-09-29）：本地代码完成，云端与真机未验收。**
-> 领域层、服务层、14 个页面、3 个云函数（`linggan_api` / `linggan_ai` / `linggan_maintenance`）、
+> 领域层、服务层、15 个页面、3 个云函数（`linggan_api` / `linggan_ai` / `linggan_maintenance`）、
 > 服务端协议层均有代码，360 项自动化测试通过。
 > `docs/spec-coverage.md` 按能力分别记录每条规范场景落在哪一档。
 >
@@ -74,7 +74,7 @@ npm run openspec -- archive add-inspiration-mvp       # 用户验收后才归档
 | --- | --- |
 | `miniprogram/core` | 领域模型、校验与 AI 结果的契约校验（纯函数，零 `wx` 依赖） |
 | `miniprogram/services` | 会话、本机存储、照片编排、AI 调用、分享与协议适配 |
-| `miniprogram/pages` | 14 个页面：3 个 tab 页与 11 个二级页，清单见 `docs/ui-design.md` |
+| `miniprogram/pages` | 15 个页面：3 个 tab 页与 12 个二级页（含启动过渡页），清单见 `docs/ui-design.md` |
 | `miniprogram/config` | 云环境、资源名与 AI 开关（**云已打开**，AI 仍关闭） |
 | `cloudfunctions/` | 三个云函数入口；`server/`、`core/` 是 `scripts/build-cloud.cjs` 同步进去的副本 |
 | `server/` | 服务端业务逻辑的唯一来源，可脱离云环境单测 |

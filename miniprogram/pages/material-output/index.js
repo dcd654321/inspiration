@@ -92,7 +92,7 @@ Page({
       } catch (err) { this.setData({ error: err.message }); }
     };
     if (this.data.draftEdited) {
-      wx.showModal({ title: '替换当前使用稿？', content: '你编辑过当前稿件。重新生成将替换这些编辑，来源记录不会改变。', confirmText: '替换', cancelText: '保留',
+      wx.showModal({ title: '替换当前稿件？', content: '你修改过这份稿件。替换后，这些修改不会保留。', confirmText: '替换稿件', cancelText: '保留编辑',
         success: (result) => { if (result.confirm) apply(); } });
     } else apply();
   },
@@ -115,7 +115,7 @@ Page({
     this.setData({ busy: true, error: '', notice: '' });
     const finish = (success) => {
       if (!this.current(session)) return;
-      this.setData({ busy: false, error: success ? '' : '复制未完成，稿件仍保留，可重试。', notice: success ? '已复制，可粘贴到需要的地方。' : '' });
+      this.setData({ busy: false, error: success ? '' : '复制未完成，请重试。', notice: success ? '已复制，可粘贴到需要的地方。' : '' });
       if (success && getApp().globalData.metrics) getApp().globalData.metrics.track('output_copied');
     };
     try { wx.setClipboardData({ data: text, success: () => finish(true), fail: () => finish(false) }); }
@@ -125,7 +125,8 @@ Page({
     if (!this.current() || this.data.busy) return;
     const text = this.data.draft, session = this.session, store = this.store;
     if (this.data.savedId && this.data.savedDraft === text) { this.setData({ notice: '这份稿件已另存，可直接查看。' }); return; }
-    if (!text.trim() || text.length > LIMITS.textMaxLength) { this.setData({ error: '另存需要 1 至 2000 字。超长稿件可完整复制，或缩短后另存。' }); return; }
+    if (!text.trim()) { this.setData({ error: '没有可另存的内容，可先选择素材整理成稿。' }); return; }
+    if (text.length > LIMITS.textMaxLength) { this.setData({ error: '另存最多' + LIMITS.textMaxLength + '字符，当前超出' + (text.length - LIMITS.textMaxLength) + '字符。可先复制，或缩短后另存。' }); return; }
     this.setData({ busy: true, error: '', notice: '' });
     try {
       const item = this.pendingSave && this.pendingSave.text === text && this.pendingSave.store === store
@@ -135,7 +136,7 @@ Page({
       if (!this.current(session)) return;
       if (!result || !result.ok || result.synced !== true) throw Error('SAVE_FAILED');
       this.setData({ busy: false, savedId: item.id, savedDraft: text,
-        notice: '已另存为新灵感，来源记录未改动。' });
+        notice: '已另存为新灵感' });
       this.pendingSave = null;
       if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
     } catch (err) {

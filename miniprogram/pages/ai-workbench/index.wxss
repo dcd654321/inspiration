@@ -1,8 +1,9 @@
 .source-text { margin: 32rpx 0; white-space: pre-wrap; line-height: 1.8; }
-.hint { margin: 24rpx 0; color: #696e69; font-size: 26rpx; line-height: 1.7; }
-.choice { display: flex; align-items: flex-start; gap: 16rpx; min-height: 88rpx; padding: 24rpx 0; border-bottom: 1rpx solid #e5e7e1; }
+.hint { margin: 24rpx 0; color: var(--ink-2); font-size: 26rpx; line-height: 1.7; }
+.choice { display: flex; align-items: flex-start; gap: 16rpx; min-height: 88rpx; padding: 24rpx 0; border-bottom: 1rpx solid var(--line); }
 .choice text { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-all; }
-.draft-item { padding: 28rpx; margin: 24rpx 0; border: 1rpx solid #dce2d9; border-radius: 20rpx; background: #fff; }
+/* 虚线描边：草案还不是用户的数据。这条与 ui-design.md §1 视觉原则第 3 条对应 */
+.draft-item { padding: 28rpx; margin: 24rpx 0; border: 2rpx dashed var(--brand-line); border-radius: 20rpx; background: #fff; }
 .draft-item textarea, .summary-editor { width: 100%; box-sizing: border-box; min-height: 120rpx; margin-top: 20rpx; font-size: 30rpx; line-height: 1.8; }
 .summary-editor { padding: 28rpx; background: #fff; border-radius: 20rpx; }
 .btn-block { margin-top: 24rpx; }

@@ -1,0 +1,19 @@
+{
+  "empty": {
+    "left": 33,
+    "right": 357,
+    "top": 207.625,
+    "bottom": 273.625,
+    "width": 324,
+    "height": 66
+  },
+  "focused": {
+    "left": 33,
+    "right": 357,
+    "top": 207.625,
+    "bottom": 373.625,
+    "width": 324,
+    "height": 166
+  },
+  "note": "empty = 详情页初次加载测量；focused = 从记录页成功卡「继续补充」进入、由 focus 属性聚焦后的测量。自动化里点 textarea 不弹模拟器键盘、不触发聚焦，所以不以 tap 判定两档。64/160 设计值 + 边框。"
+}

@@ -40,10 +40,13 @@ const BANNED = [
   { term: '待同步', why: '一次保存动作的中间态，转瞬即逝，不该渲染成常驻标记' },
 
   // —— 已废弃的旧措辞（ui-design.md 6.2 / 6.3）
+  // 说明：以下两条用 pattern 而不是纯子串。约束的对象是**按钮、标题这类标签**——
+  // 它们必须写「删除灵感 / 删除补充」。确认句「确定删除这条灵感吗？」是文案定稿
+  // （UX-COPY-20260930 C38）要求把待删对象说清楚的句式，不在此列。
   { term: '汇入原文', why: '已改名为「合并进灵感」' },
-  { term: '去记一条', why: '太口语，已改为「新建灵感」' },
-  { term: '删除这条灵感', why: '已改为「删除灵感」' },
-  { term: '删除这条补充', why: '已改为「删除补充」' },
+  { term: '去记一条', why: '太口语；列表入口用「记一条灵感」，空态用「记下第一个想法」' },
+  { pattern: /删除这条灵感(?!吗)/, label: '删除这条灵感', why: '标签统一「删除灵感」；只有确认句「确定删除这条灵感吗？」允许出现' },
+  { pattern: /删除这条补充(?!吗)/, label: '删除这条补充', why: '标签统一「删除补充」；只有确认句「确定删除这条补充吗？」允许出现' },
   { term: '覆盖原来的', why: '指代不清，应按上下文写成「覆盖补充」/「覆盖灵感」' },
   { term: '存一个新的', why: '同上，应为「新增补充」/「一个新灵感」' },
   { term: '删除后无法恢复', why: '已改为「此操作无法撤销」' },
@@ -85,10 +88,12 @@ test('产品代码里不出现禁用措辞', () => {
     const lines = stripComments(fs.readFileSync(file, 'utf8')).split('\n');
     lines.forEach((line, index) => {
       for (const rule of BANNED) {
-        if (line.indexOf(rule.term) !== -1) {
+        const hit = rule.pattern ? rule.pattern.test(line) : line.indexOf(rule.term) !== -1;
+        if (hit) {
+          const term = rule.term || rule.label;
           hits.push({
             where: `${path.relative(root, file)}:${index + 1}`,
-            term: rule.term,
+            term,
             why: rule.why,
             line: line.trim().slice(0, 80)
           });
@@ -104,10 +109,25 @@ test('产品代码里不出现禁用措辞', () => {
   );
 });
 
+test('标签式禁用词只拦标签，不拦定稿的确认句', () => {
+  const labelRules = BANNED.filter((rule) => rule.pattern);
+  assert.ok(labelRules.length >= 2, '「删除这条X」的标签约束必须保留');
+  const inspirationRule = labelRules.find((rule) => rule.label === '删除这条灵感');
+  const supplementRule = labelRules.find((rule) => rule.label === '删除这条补充');
+  // 标签形态仍然命中
+  assert.ok(inspirationRule.pattern.test("<button>删除这条灵感</button>"));
+  assert.ok(supplementRule.pattern.test("'删除这条补充'"));
+  // 定稿的确认句不命中
+  assert.ok(!inspirationRule.pattern.test('确定删除这条灵感吗？正文、补充和照片会一并删除。'));
+  assert.ok(!supplementRule.pattern.test('确定删除这条补充吗？'));
+});
+
 test('禁用词清单自身是可审阅的', () => {
   assert.ok(BANNED.length > 0);
   for (const rule of BANNED) {
-    assert.strictEqual(typeof rule.term, 'string');
-    assert.ok(rule.why && rule.why.length > 4, `「${rule.term}」缺少理由——没有理由的禁用词迟早会被绕过`);
+    const isPattern = rule.pattern instanceof RegExp;
+    assert.ok(isPattern || typeof rule.term === 'string', '规则既没有 term 也没有 pattern');
+    if (isPattern) assert.ok(typeof rule.label === 'string' && rule.label.length > 0, 'pattern 规则要有可读的 label');
+    assert.ok(rule.why && rule.why.length > 4, `「${rule.term || rule.label}」缺少理由——没有理由的禁用词迟早会被绕过`);
   }
 });

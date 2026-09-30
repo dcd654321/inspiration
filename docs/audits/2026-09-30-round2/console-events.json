@@ -1,0 +1,20 @@
+[
+  {
+    "level": "warn",
+    "args": [
+      "wx.getSystemInfoSync is deprecated.Please use wx.getSystemSetting/wx.getAppAuthorizeSetting/wx.getDeviceInfo/wx.getWindowInfo/wx.getAppBaseInfo instead."
+    ]
+  },
+  {
+    "level": "info",
+    "args": [
+      "Lazy code loading is enabled. Only injecting required components."
+    ]
+  },
+  {
+    "level": "warn",
+    "args": [
+      "wx.getSystemInfoSync is deprecated.Please use wx.getSystemSetting/wx.getAppAuthorizeSetting/wx.getDeviceInfo/wx.getWindowInfo/wx.getAppBaseInfo instead."
+    ]
+  }
+]

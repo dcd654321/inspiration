@@ -1,5 +1,6 @@
 <view class="viewer">
   <swiper wx:if="{{photos.length}}" current="{{current}}" bindchange="onChange"><swiper-item wx:for="{{photos}}" wx:key="id"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFit" show-menu-by-longpress="{{false}}" binderror="onImageError" /></swiper-item></swiper>
-  <view class="caption" wx:if="{{photos.length}}">{{current + 1}} / {{photos.length}} · 左右滑动查看</view>
+  <view class="caption" wx:if="{{photos.length}}">{{current + 1}} / {{photos.length}}{{photos.length > 1 ? ' · 左右滑动查看' : ''}}</view>
   <view class="error" wx:if="{{error}}">{{error}}</view>
+  <button wx:if="{{error && error !== '没有可查看的照片。' && !loading}}" class="error-retry" bindtap="onReload">重新加载照片</button>
 </view>

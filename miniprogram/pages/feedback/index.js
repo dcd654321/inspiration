@@ -10,7 +10,8 @@ const STATUS = { submitted: '已提交', reviewing: '处理中', closed: '已关
 
 Page({
   data: { reporting: false, category: 'idea', categories: CATEGORIES,
-    body: '', busy: false, error: '', notice: '', items: [], loading: false, nextBefore: null },
+    body: '', trimmedLength: 0, canSubmit: false,
+    busy: false, error: '', notice: '', items: [], loading: false, nextBefore: null },
   onLoad(options) {
     this.reportToken = options && typeof options.t === 'string' ? options.t : '';
     this.client = createShareClient();
@@ -25,7 +26,10 @@ Page({
   },
   onInput(event) {
     this.submitRequestId = '';
-    this.setData({ body: event.detail.value, error: '', notice: '' });
+    const body = event.detail.value;
+    const trimmedLength = body.trim().length;
+    // 字数不够就置灰，并把还差多少写在计数处——不等到提交失败才说
+    this.setData({ body, trimmedLength, canSubmit: trimmedLength >= 10, error: '', notice: '' });
   },
   async onSubmit() {
     if (this.data.busy) return;
@@ -50,7 +54,8 @@ Page({
       this.setData({ error: result.message || '提交没有完成，请稍后重试。' }); return;
     }
     this.submitRequestId = '';
-    this.setData({ body: '', notice: this.data.reporting ? '举报已收到。' : '反馈已收到。' });
+    this.setData({ body: '', trimmedLength: 0, canSubmit: false,
+      notice: this.data.reporting ? '举报已收到。' : '反馈已收到。' });
     await this.load(true);
   },
   async load(replace) {

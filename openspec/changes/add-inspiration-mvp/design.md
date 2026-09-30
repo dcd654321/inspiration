@@ -5,7 +5,7 @@
 - 项目：`inspiration-miniprogram`，原生微信小程序（JavaScript / WXML / WXSS）+ 微信云开发。
 - 现状（写提案时）：仅有工程骨架，无业务代码，无测试，云与 AI 均未启用（`config/cloud.js`、`config/ai.js` 的 `enabled` 为 `false`）。**这一段是当时的起点，保留不动**——后面的设计目标正是从它推出来的。
 - 当前状态（2026-09-28 补）：本变更规划的能力本地代码均已完成——14 个页面、3 个云函数、12 个服务端 action，360 项自动化测试通过；`cloud.js` 的 `enabled` 已为 `true`，但只表示客户端会去调云端，六个集合已建而业务索引、权限与函数未配。**云端部署、照片与 AI 的平台启用、真机验收均未完成。** 以 `README.md`、`docs/spec-coverage.md` 与 `docs/VERIFICATION.md` 为准。
-- 参照：`yidian-miniprogram` 已验证的工程约定（OpenSpec 流程、`scripts/check.cjs` 结构检查、云函数产物与源码分离、账户级数据隔离）。
+- 参照：`jiancheng-miniprogram` 已验证的工程约定（OpenSpec 流程、`scripts/check.cjs` 结构检查、云函数产物与源码分离、账户级数据隔离）。
 
 ## 设计目标
 
@@ -16,7 +16,7 @@
 
 ## 数据形态
 
-沿用「一个账户一份文档」的形态，与 `yidian-miniprogram` 保持一致，减少跨项目认知成本。
+沿用「一个账户一份文档」的形态，与 `jiancheng-miniprogram` 保持一致，减少跨项目认知成本。
 
 > **完整字段定义、索引、权限规则、容量估算，以及「哪些约束数据库不替我们守」的清单，见 `docs/database-design.md`。** 本节只写形态与理由，不重复字段表。
 

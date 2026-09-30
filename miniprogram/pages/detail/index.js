@@ -7,9 +7,9 @@ const { loadPrivatePhotos } = require('../../services/private-photos');
 
 const DISPLAY_ERRORS = {
   EMPTY_TEXT: '写点内容再保存',
-  TEXT_TOO_LONG: '正文最多 ' + LIMITS.textMaxLength + ' 字',
+  TEXT_TOO_LONG: '正文最多 ' + LIMITS.textMaxLength + ' 字符',
   EMPTY_SUPPLEMENT: '写点补充再添加',
-  SUPPLEMENT_TOO_LONG: '补充最多 ' + LIMITS.supplementMaxLength + ' 字',
+  SUPPLEMENT_TOO_LONG: '补充最多 ' + LIMITS.supplementMaxLength + ' 字符',
   ALREADY_MERGED: '这条补充已经收起，可先恢复后再操作',
   ALREADY_FOLDED: '这条补充已经并入正文，可先恢复后再操作',
   SUPPLEMENT_NOT_FOUND: '这条补充已经不存在，请返回后重试',
@@ -21,6 +21,19 @@ function messageFor(err) {
     return DISPLAY_ERRORS[err.errors[0].code] || '操作没有完成，请返回后重试。';
   }
   return '操作没有完成，请稍后重试。';
+}
+
+/**
+ * 补到一半离开时提示一次。会话内的草稿区已经能保住「切走再回来」这种情况，
+ * 这条提示挡的是**整个小程序被退出**；不为此引入本机持久化。
+ * 模块级函数而非页面方法：测试会用一个假 page 对象直接调页面方法，挂在 this 上的辅助方法在那种调用下不存在。
+ */
+function guardDraft(hasDraft) {
+  try {
+    if (hasDraft) {
+      if (wx.enableAlertBeforeUnload) wx.enableAlertBeforeUnload({ message: '尚未保存的内容会丢失。' });
+    } else if (wx.disableAlertBeforeUnload) wx.disableAlertBeforeUnload();
+  } catch (err) { /* 基础库不支持时只是少一层提醒，不阻断输入 */ }
 }
 
 function decorateSupplement(supplement, now, all) {
@@ -43,6 +56,8 @@ Page({
   data: {
     ready: false,
     missing: false,
+    // 读取失败与「确认不存在」必须分开：网络问题不能说成灵感已被删除
+    loadError: false,
 
     // 原文可直接编辑（2026-09-22 修订，此前是只读的）
     text: '',
@@ -59,11 +74,19 @@ Page({
     supplementMax: LIMITS.supplementMaxLength,
     supplementError: '',
     canAddSupplement: false,
+    // 补充输入器：空且未聚焦 64px，聚焦或已有内容 160px；不依赖 auto-height
+    composeFocus: false,
+    // 长正文（超过约 6 行）滚离原文后，给一个可点的「继续补充」浮动按钮
+    longText: false,
+    floatVisible: false,
 
     // 因汇总或合并进灵感而收起的补充。**必须能展开、能恢复**——
     // 默认隐藏 + 没有入口 = 删除。
     hidden: [],
     hiddenExpanded: false,
+
+    // 页内「更多」面板：正文编辑、复制、分享、修改记录、删除都从这里进入
+    moreVisible: false,
 
     // 补充操作面板
     sheetVisible: false,
@@ -78,22 +101,28 @@ Page({
     supplementEditError: '',
     canSaveSupplementEdit: false,
 
-    // 删除确认弹窗
+    // 删除确认弹窗：灵感与补充共用一套，kind 决定标题与正文
     confirmVisible: false,
+    confirmKind: 'supplement',
+    confirmTitle: '',
+    confirmBody: '',
     confirmQuote: '',
     confirmQuoteTime: '',
 
     historyCount: 0,
     aiEnabled: false, isAi: false, merged: false, provenance: [],
     tagsDraft: '', stageIndex: 0, stages: STAGES,
+    /* 整理标记默认收起：它是整理期才关心的表单，每次都摊开会把补充时间线推得很远 */
+    orgOpen: false, orgSummary: '',
     photosEnabled: false, photos: [], photoError: '', photoBusy: false,
     provenanceSupplementId: '', supplementEditMax: LIMITS.supplementMaxLength,
-    error: '',
-    pending: ''
+    error: '', pending: ''
   },
 
   async onLoad(query) {
     this.id = (query && query.id) || '';
+    // 「继续补充」是从记录页成功卡跳进来的：定位并聚焦补充输入
+    this.focusSupplement = Boolean(query && query.focus === 'supplement');
     this.visible = true;
     const version = this.viewVersion = (this.viewVersion || 0) + 1;
     await getApp().ensureReady();
@@ -114,6 +143,15 @@ Page({
     if (this.id) this.load();
   },
 
+  onHide() {
+    this.visible = false;
+    this.viewVersion = (this.viewVersion || 0) + 1;
+    this.photoReadVersion = (this.photoReadVersion || 0) + 1;
+    this.setData({ photos: [] });
+  },
+
+  onUnload() { this.onHide(); },
+
   load(options) {
     if (this.visible === false) return;
     this.photoReadVersion = (this.photoReadVersion || 0) + 1;
@@ -124,24 +162,36 @@ Page({
     if (this.loadedEpoch !== app.globalData.sessionEpoch) opts.resetDraft = true;
     this.loadedEpoch = app.globalData.sessionEpoch;
     this.loadedStore = store;
-    const item = store ? store.getInspiration(this.id) : null;
 
+    if (!store) {
+      // 账户还没确认（多为网络）：绝不能把「读不到」说成「这条灵感没了」
+      this.setData({ ready: true, missing: false, loadError: true, error: app && app.globalData.accountError || '暂时无法读取灵感，请稍后重试。' });
+      return;
+    }
+    const item = store.getInspiration(this.id);
     if (!item) {
-      this.setData({ ready: true, missing: true, error: app && app.globalData.accountError || '' });
+      // 快照来自云端确认结果，里面没有它 = 已确认不存在（删除或本来就无）
+      this.setData({ ready: true, missing: true, loadError: false, error: '' });
       return;
     }
 
     const drafts = app.globalData.drafts;
     const now = Date.now();
+    const tags = item.tags || [];
+    const stageLabel = (STAGES[Math.max(0, STAGES.findIndex((x) => x.id === item.stage))] || STAGES[0]).label;
     const next = {
       ready: true,
       photosEnabled: Boolean(app.globalData.photos), photos: (item.photos || []).map((photo) => ({ id: photo.id, src: '', failed: false })),
       missing: false,
+      loadError: false,
       text: item.text,
       aiEnabled: app.globalData.aiEnabled,
       isAi: item.source === 'ai', merged: Boolean(item.mergedInto),
-      tagsDraft: (item.tags || []).join('，'),
+      tagsDraft: tags.join('，'),
       stageIndex: Math.max(0, STAGES.findIndex((x) => x.id === item.stage)),
+      // 收起后仍要看得见当前状态，否则折叠就等于把信息藏起来
+      orgSummary: stageLabel + (tags.length ? ' · ' + tags.join('、') : ' · 未加标签'),
+      orgOpen: this.data.orgOpen,
       provenance: (item.summarySources || []).map((id) => { const source = store.getInspiration(id); return { id, exists: Boolean(source), label: source ? (id === item.id ? '此条灵感的旧正文（见修改记录）' : source.text) : '来源已删除' }; }),
       time: formatRelative(item.updatedAt, now),
       supplements: inspiration.activeSupplements(item).map((s) => decorateSupplement(s, now, item.supplements)),
@@ -161,10 +211,16 @@ Page({
       next.canSaveEdit = false;
       next.supplementError = '';
       next.editingSupplementId = ''; next.supplementEditDraft = ''; next.supplementEditOriginal = '';
-      next.sheetVisible = false; next.confirmVisible = false; next.confirmQuote = ''; next.pending = '';
+      next.sheetVisible = false; next.moreVisible = false; next.confirmVisible = false; next.confirmQuote = ''; next.pending = '';
     }
 
-    this.setData(next);
+    this.setData(next, () => {
+      if (opts.resetDraft && this.focusSupplement && !next.merged) {
+        this.focusSupplement = false;
+        this.onLocateCompose();
+      }
+      if (opts.resetDraft) this.measureLongText();
+    });
     const epoch = app.globalData.sessionEpoch;
     const isCurrent = () => this.visible !== false && this.photoReadVersion === photoReadVersion && app.globalData.sessionEpoch === epoch && app.globalData.store === store;
     loadPrivatePhotos(item.photos || [], { cacheScope: app.globalData.cacheScope, isCurrent }).then((photos) => {
@@ -172,14 +228,45 @@ Page({
     });
   },
 
-  onHide() {
-    this.visible = false;
-    this.viewVersion = (this.viewVersion || 0) + 1;
-    this.photoReadVersion = (this.photoReadVersion || 0) + 1;
-    this.setData({ photos: [] });
+  /** 长正文才给浮动「继续补充」：量原文渲染高度，超过约 6 行算长。量不到就不显示，不阻断页面。 */
+  measureLongText() {
+    if (typeof wx.createSelectorQuery !== 'function') return;
+    try {
+      wx.createSelectorQuery().select('.origin-text').boundingClientRect((rect) => {
+        if (!rect || !this.visible) return;
+        const info = typeof wx.getWindowInfo === 'function' ? wx.getWindowInfo()
+          : (typeof wx.getSystemInfoSync === 'function' ? wx.getSystemInfoSync() : null);
+        const width = info && info.windowWidth || 375;
+        const lineHeight = 38 * (width / 750) * 1.78;
+        this.originBottom = rect.top + rect.height;
+        this.setData({ longText: rect.height > 6 * lineHeight + 1 });
+      }).exec();
+    } catch (err) { /* 量不到就不给浮动按钮 */ }
   },
 
-  onUnload() { this.onHide(); },
+  onPageScroll(event) {
+    if (!this.data.longText) {
+      if (this.data.floatVisible) this.setData({ floatVisible: false });
+      return;
+    }
+    const show = event.scrollTop > (this.originBottom || 0) && !this.data.composeFocus;
+    if (show !== this.data.floatVisible) this.setData({ floatVisible: show });
+  },
+
+  onLocateCompose() {
+    if (this.data.merged) return;
+    this.setData({ composeFocus: true, floatVisible: false });
+    // 键盘与滚动都交给系统上推/定位；这里只负责把输入框带进视野
+    if (typeof wx.pageScrollTo === 'function') {
+      try { wx.pageScrollTo({ selector: '.detail-next', duration: 200 }); } catch (err) { /* 老基础库没有 selector 形态，焦点已经到位 */ }
+    }
+  },
+
+  onRetryLoad() {
+    const app = getApp();
+    this.setData({ ready: false, loadError: false, error: '' });
+    app.refreshAccount().then(() => { if (this.visible !== false) this.load({ resetDraft: true }); });
+  },
 
   /** 保存并刷新。所有写操作共用这一段，避免每个动作各写一遍成功/失败处理。 */
   async persist(next, failureMessage) {
@@ -269,10 +356,10 @@ Page({
       wx.setClipboardData({
         data: text,
         success: () => wx.showToast({ title: '已复制', icon: 'none' }),
-        fail: () => wx.showModal({ title: '复制未完成', content: '请稍后重试。', showCancel: false })
+        fail: () => wx.showModal({ title: '复制未完成', content: '请重试。', showCancel: false })
       });
     } catch (err) {
-      wx.showModal({ title: '复制未完成', content: '请稍后重试。', showCancel: false });
+      wx.showModal({ title: '复制未完成', content: '请重试。', showCancel: false });
     }
   },
 
@@ -294,10 +381,70 @@ Page({
     wx.navigateTo({ url: '/pages/share-preview/index?id=' + encodeURIComponent(this.id) });
   },
 
+  // ------------------------------------------------------------ 页内「更多」
+
+  onOpenMore() {
+    if (this.data.pending) return;
+    this.setData({ moreVisible: true });
+  },
+
+  onCloseMore() {
+    if (this.data.pending) return;
+    this.setData({ moreVisible: false });
+  },
+
+  onMoreEditText() {
+    if (this.data.pending) return;
+    this.setData({ moreVisible: false });
+    this.onStartEdit();
+  },
+
+  onMoreCopy() {
+    this.setData({ moreVisible: false });
+    this.onCopyContent();
+  },
+
+  onMoreShare() {
+    this.setData({ moreVisible: false });
+    this.onOpenShare();
+  },
+
+  onMoreHistory() {
+    this.setData({ moreVisible: false });
+    this.onOpenHistory();
+  },
+
+  onMoreDelete() {
+    if (this.data.pending) return;
+    if (this.data.photoBusy) { this.setData({ moreVisible: false, photoError: '照片正在处理中，请稍后再删除灵感。' }); return; }
+    this.setData({
+      moreVisible: false,
+      confirmVisible: true,
+      confirmKind: 'inspiration',
+      confirmTitle: '删除灵感',
+      confirmBody: '确定删除这条灵感吗？正文、补充和照片会一并删除。',
+      confirmQuote: this.data.text,
+      confirmQuoteTime: this.data.time
+    });
+  },
+
   onAiExpand() { wx.navigateTo({ url: '/pages/ai-workbench/index?scope=expand&id=' + encodeURIComponent(this.id) }); },
   onAiSummarize() { wx.navigateTo({ url: '/pages/ai-workbench/index?scope=supplements&id=' + encodeURIComponent(this.id) }); },
+  onToggleOrganization() {
+    if (this.data.pending) return;
+    if (!this.data.orgOpen) {
+      // 取消时恢复到展开前的值；保存失败时保留输入（不重置记录）
+      this.orgOriginal = { tagsDraft: this.data.tagsDraft, stageIndex: this.data.stageIndex };
+    }
+    this.setData({ orgOpen: !this.data.orgOpen });
+  },
   onTagsInput(event) { this.setData({ tagsDraft: event.detail.value }); },
   onStageSelect(event) { this.setData({ stageIndex: Number(event.detail.value) }); },
+  onCancelOrganization() {
+    if (this.data.pending) return;
+    const original = this.orgOriginal || { tagsDraft: this.data.tagsDraft, stageIndex: this.data.stageIndex };
+    this.setData({ tagsDraft: original.tagsDraft, stageIndex: original.stageIndex, orgOpen: false, error: '' });
+  },
   async onSaveOrganization() {
     if (this.data.pending) return;
     let next;
@@ -305,7 +452,8 @@ Page({
     catch (err) { this.setData({ error: err.message }); return; }
     this.setData({ pending: 'organize' });
     const result = await this.persist(next, '整理信息未保存，请稍后重试。');
-    this.setData({ pending: '', error: result.ok ? this.data.error : result.message });
+    // 保存成功就收起：收起行里已经写着结果，表单没必要继续摊着
+    this.setData({ pending: '', error: result.ok ? this.data.error : result.message, orgOpen: result.ok ? false : this.data.orgOpen });
     if (result.ok) this.load();
   },
   async onRestoreInspiration() {
@@ -345,6 +493,7 @@ Page({
   onPreviewPhoto(event) {
     wx.navigateTo({ url: '/pages/photo-viewer/index?id=' + encodeURIComponent(this.id) + '&photo=' + encodeURIComponent(event.currentTarget.dataset.id) });
   },
+  onReloadPhoto() { this.load(); },
   onDeletePhoto(event) {
     if (this.data.photoBusy || this.data.pending) return;
     const photoId = event.currentTarget.dataset.id, app = getApp(), store = app.globalData.store;
@@ -364,12 +513,17 @@ Page({
 
   // ------------------------------------------------------------ 追加补充
 
+  onComposeFocus() { this.setData({ composeFocus: true, floatVisible: false }); },
+  onComposeBlur() { this.setData({ composeFocus: false }); },
+
   onSupplementInput(event) {
     const value = event.detail.value;
+    const canEdit = value.trim().length > 0 && value.length <= LIMITS.supplementMaxLength;
+    guardDraft(canEdit);
     this.setData({
       supplementDraft: value,
       supplementError: '',
-      canAddSupplement: value.trim().length > 0
+      canAddSupplement: canEdit
     });
 
     // 同步进会话草稿区：写到一半切走，回来时这半句话还在
@@ -408,8 +562,9 @@ Page({
     if (drafts) drafts.clear(this.id);
 
     this.setData({ pending: '', supplementDraft: '', canAddSupplement: false });
+    guardDraft(false);
     this.load({ resetDraft: true });
-    wx.showToast({ title: '已添加', icon: 'none' });
+    wx.showToast({ title: '已添加补充', icon: 'none' });
     if (getApp().globalData.metrics) getApp().globalData.metrics.track('supplement_saved');
   },
 
@@ -589,7 +744,7 @@ Page({
 
   // ------------------------------------------------------------ 删除补充
 
-  /** 点「删除」先落到确认弹窗，不直接删。这是整个产品里唯一不可恢复的操作。 */
+  /** 点「删除补充」先落到确认弹窗，不直接删。这是整个产品里唯一不可恢复的操作。 */
   onSheetDelete() {
     if (this.data.pending) return;
     const id = this.data.sheetTargetId;
@@ -599,6 +754,9 @@ Page({
     this.setData({
       sheetVisible: false,
       confirmVisible: true,
+      confirmKind: 'supplement',
+      confirmTitle: '删除补充',
+      confirmBody: '确定删除这条补充吗？',
       confirmQuote: target.content,
       confirmQuoteTime: target.label.replace('这条补充 · ', '')
     });
@@ -606,11 +764,13 @@ Page({
 
   onConfirmDismiss() {
     if (this.data.pending) return;
-    this.setData({ confirmVisible: false, confirmQuote: '', confirmQuoteTime: '' });
+    this.setData({ confirmVisible: false, confirmKind: 'supplement', confirmQuote: '', confirmQuoteTime: '' });
   },
 
   async onConfirmDelete() {
     if (this.data.pending) return;
+    if (this.data.confirmKind === 'inspiration') return this.performDelete();
+
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -643,33 +803,18 @@ Page({
 
   // ------------------------------------------------------------ 删除灵感
 
-  onDelete() {
-    if (this.data.pending) return;
-    if (this.data.photoBusy) { this.setData({ photoError: '照片正在处理中，请稍后再删除灵感。' }); return; }
-    wx.showModal({
-      title: '删除灵感',
-      content: '确定删除灵感吗？正文、补充和照片都会一并移除，此操作无法撤销。',
-      confirmText: '删除',
-      confirmColor: '#b43c32',
-      cancelText: '取消',
-      success: (res) => {
-        if (res.confirm) this.performDelete();
-      }
-    });
-  },
-
   async performDelete() {
     if (this.data.pending) return;
     this.setData({ pending: 'deleteInspiration', error: '' });
     const result = await getApp().globalData.store.deleteInspiration(this.id);
 
     if (!result.ok || result.synced !== true) {
-      this.setData({ pending: '', error: result.code === 'PHOTO_DELETE_UNAVAILABLE'
+      this.setData({ pending: '', confirmVisible: false, error: result.code === 'PHOTO_DELETE_UNAVAILABLE'
         ? '这条含有照片，暂时无法安全删除；记录仍在。'
         : '删除未完成，记录仍在，请稍后重试。' });
       return;
     }
-    this.setData({ pending: '' });
+    this.setData({ pending: '', confirmVisible: false });
     wx.navigateBack();
   }
 });

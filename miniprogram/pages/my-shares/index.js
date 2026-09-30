@@ -35,6 +35,7 @@ Page({
   },
   onMore() { this.load(false); },
   onRetry() { this.setData({ loading: true }); this.load(true); },
+  onOpenList() { wx.switchTab({ url: '/pages/list/index' }); },
   onReshare(event) {
     const id = event.currentTarget.dataset.source;
     if (!id) return;
@@ -44,9 +45,10 @@ Page({
     if (this.data.busy) return;
     const id = event.currentTarget.dataset.id;
     wx.showModal({
-      title: '撤销这份分享？',
-      content: '撤销后，分享链接将无法再次查看；已复制的文字和已发布的海报无法收回。',
-      confirmText: '撤销',
+      title: '撤销链接？',
+      content: '撤销后，其他人无法再通过这个链接查看内容。已复制的文字和已保存的海报不会被收回。',
+      confirmText: '撤销链接',
+      cancelText: '保留链接',
       success: async (choice) => {
         if (!choice.confirm) return;
         this.setData({ busy: true, error: '' });

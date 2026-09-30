@@ -1,0 +1,112 @@
+[
+  {
+    "file": "01-capture-empty.png",
+    "page": "pages/capture/index",
+    "note": "真实页面空输入；合成账户"
+  },
+  {
+    "file": "02-capture-typed.png",
+    "page": "pages/capture/index",
+    "note": "实际输入"
+  },
+  {
+    "file": "03-capture-saved.png",
+    "page": "pages/capture/index",
+    "note": "点击保存，离线内存服务确认；不证明云端保存"
+  },
+  {
+    "file": "04-detail-new.png",
+    "page": "pages/detail/index",
+    "note": "重采：实际点击查看这条后等待详情稳定；旧截图为过渡帧已替换"
+  },
+  {
+    "file": "05-list.png",
+    "page": "pages/list/index",
+    "note": "列表含合成数据与刚刚的样例记录"
+  },
+  {
+    "file": "06-no-match.png",
+    "page": "pages/list/index",
+    "note": "实际搜索无结果"
+  },
+  {
+    "file": "07-detail.png",
+    "page": "pages/detail/index",
+    "note": "含两条补充与一张样例图片的详情首屏"
+  },
+  {
+    "file": "08-detail-lower.png",
+    "page": "pages/detail/index",
+    "note": "实际滚动到补充时间线"
+  },
+  {
+    "file": "09-supplement-actions.png",
+    "page": "pages/detail/index",
+    "note": "实际点击补充操作；未执行删除"
+  },
+  {
+    "file": "10-delete-confirm.png",
+    "page": "pages/detail/index",
+    "note": "实际进入删除确认；不确认"
+  },
+  {
+    "file": "11-output-select.png",
+    "page": "pages/output/index",
+    "note": "单条整理选择首屏"
+  },
+  {
+    "file": "12-output-draft.png",
+    "page": "pages/output/index",
+    "note": "实际生成规则模板使用稿；未调用AI"
+  },
+  {
+    "file": "13-material.png",
+    "page": "pages/material-output/index",
+    "note": "跨条选材初始状态"
+  },
+  {
+    "file": "14-mine.png",
+    "page": "pages/mine/index",
+    "note": "我的首屏"
+  },
+  {
+    "file": "15-share-preview.png",
+    "page": "pages/share-preview/index",
+    "note": "分享前预览；不创建链接、不发送"
+  },
+  {
+    "file": "16-shared-failure.png",
+    "page": "pages/shared/index",
+    "note": "离线样例无法调用分享读取；只能证明不可用反馈"
+  },
+  {
+    "file": "17-save-failure-injected.png",
+    "page": "pages/capture/index",
+    "note": "通过setData注入失败呈现；不是网络故障实测"
+  },
+  {
+    "file": "18-list-empty-injected.png",
+    "page": "pages/list/index",
+    "note": "通过setData注入真正空数据呈现；未清空服务数据"
+  },
+  {
+    "file": "19-list-failure-injected.png",
+    "page": "pages/list/index",
+    "note": "通过setData注入读取失败呈现；不是网络故障实测"
+  },
+  {
+    "file": "20-detail-no-photo-injected.png",
+    "page": "pages/detail/index",
+    "note": "注入无照片形态，AI关闭；布局补充证据"
+  },
+  {
+    "file": "21-detail-long-injected.png",
+    "page": "pages/detail/index",
+    "note": "注入长正文呈现；未修改实际数据"
+  },
+  {
+    "file": "22-output-missing.png",
+    "page": "pages/output/index",
+    "note": "直接进入不存在的记录ID；本地缺失路径"
+  }
+]

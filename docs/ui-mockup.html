@@ -5,21 +5,23 @@
 <title>灵感拾光簿 · 页面原型</title>
 <style>
   :root {
-    /* 墨色由深到浅。比原稿偏中性、略暖，避免冷灰把主色衬得发白 */
-    --ink:        #16161d;
-    --ink-2:      #5f5f6e;
-    --ink-3:      #9b9baa;
+    /* 令牌与 miniprogram/app.wxss 保持一致（2026-09-30 对齐）。改这里之前先改 app.wxss，
+       否则原型和真实页面会再次分叉——上一次就是这样分叉的。 */
+    --ink:        #191a23;
+    --ink-2:      #5f6070;
+    --ink-3:      #6f6f7b;
 
-    --paper:      #f5f5f8;   /* 页面底 */
+    --paper:      #f7f6f2;   /* 页面底：轻微暖调，呼应纸页 */
     --surface:    #ffffff;   /* 承载面 */
-    --line:       #e8e8ee;   /* 发丝分隔线 */
-    --line-strong:#d8d8e2;
+    --line:       #e6e4de;   /* 发丝分隔线 */
+    --line-strong:#d7d4cb;
 
-    --brand:      #3d3d8f;   /* 沿用 app.wxss 的主色 */
-    --brand-soft: #ececf7;
-    --brand-line: #c9c9e6;
+    --brand:      #34377f;
+    --brand-soft: #eeeef8;
+    --brand-line: #c9cae6;
+    --spark:      #e4a83a;   /* 只用于品牌图形与「当前」锚点标记，不表示成功或警示 */
 
-    --danger:     #b3382c;
+    --danger:     #b43c32;
     --danger-soft:#fbeeec;
     --danger-line:#efc9c4;
 
@@ -815,7 +817,12 @@
   <p>
     按 <code>miniprogram/app.wxss</code> 的令牌与 <code>docs/ui-design.md</code> 的区块划分绘制，375px 视口（750rpx 设计稿）。
     这是<b>原型</b>，不是可运行的小程序：WXML/WXSS 的真实编译与渲染仍需在微信开发者工具中确认。
-    信息结构与文案与设计文档一致，视觉表达为本次修订。
+  </p>
+  <p>
+    <b>时效说明（2026-09-30）：</b>本文件是 2026-09-22 的原型，色板令牌已与 <code>app.wxss</code> 重新对齐，
+    但<b>页面内容尚未跟上 2026-09-30 的界面调整</b>（记录页标题与副标题、列表页控件收敛与段落头、
+    详情页整理标记折叠与动作按钮分行、状态图标分形状、我的页每日回顾开关）。
+    当前界面以 <code>docs/design-proposal-20260930.html</code> 与实际页面 WXML/WXSS 为准。
   </p>
 </div>
 

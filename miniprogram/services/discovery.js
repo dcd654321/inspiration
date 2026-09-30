@@ -15,10 +15,14 @@ function searchInspirations(items, options) {
   const opts = options || {};
   const query = String(opts.query || '').trim().slice(0, 100).toLocaleLowerCase();
   const at = opts.now == null ? Date.now() : opts.now;
-  return (items || []).filter((item) => opts.filter === 'merged' ? item && !isDeleted(item) && isMerged(item) : valid(item)).sort(byUpdatedAtDesc).flatMap((item) => {
+  // 旧调用方用 filter 表达单项条件；列表页的筛选面板用 recent 布尔量叠加到其他条件上。
+  // 两套写法都保留：filter 的四个值语义不变，recent 是新增的可组合条件。
+  const merged = opts.filter === 'merged';
+  const recent = opts.recent === true || opts.filter === 'recent';
+  return (items || []).filter((item) => merged ? item && !isDeleted(item) && isMerged(item) : valid(item)).sort(byUpdatedAtDesc).flatMap((item) => {
     const supplements = activeSupplements(item);
     if (opts.filter === 'supplemented' && supplements.length === 0) return [];
-    if (opts.filter === 'recent' && item.updatedAt < at - 7 * DAY) return [];
+    if (recent && item.updatedAt < at - 7 * DAY) return [];
     if (['seed', 'growing', 'ready'].includes(opts.stage) && (item.stage || 'seed') !== opts.stage) return [];
     if (!query) return [{ item, matchText: '', matchSource: '' }];
     const choices = [{ text: item.text, source: '正文' }].concat(supplements.map((s) => ({ text: s.content, source: '补充' })), (item.tags || []).map((text) => ({ text, source: '标签' })));

@@ -5,21 +5,61 @@
 .error-empty {
   margin-top: 36rpx;
 }
-.search-box { display: flex; align-items: center; gap: 16rpx; background: #fff; border: 1rpx solid #dedfd9; border-radius: 20rpx; padding: 12rpx 24rpx; margin-top: 24rpx; }
-.search-box input { flex: 1; min-width: 0; height: 76rpx; font-size: 29rpx; }
-.list-filters { display: flex; flex-wrap: wrap; gap: 12rpx; margin: 20rpx 0; }
-.filter-chip { margin: 0; border: 1rpx solid #dedfd9; background: transparent; border-radius: 44rpx; font-size: 25rpx; padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; color: #59625c; }
-.list-filters .filter-chip { width: auto; flex: 0 0 auto; margin: 0; box-sizing: border-box; }
+
+/* 列表右上入口：小屏也不缩成两行，热区保持 88rpx */
+.add-link {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  margin-left: 0;
+  margin-right: 0;
+  width: auto;
+}
+
+.search-box { display: flex; align-items: center; gap: 16rpx; background: #fff; border: 1rpx solid var(--line-strong); border-radius: 20rpx; padding: 12rpx 24rpx; margin-top: 24rpx; }
+.search-box input { flex: 1; min-width: 0; height: 76rpx; font-size: 29rpx; font-size: max(29rpx, 16px); }
+.list-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8rpx; margin: 20rpx 0; }
+.filter-chip { margin: 0; border: 1rpx solid var(--line-strong); background: transparent; border-radius: 44rpx; font-size: 25rpx; font-size: max(25rpx, 14px); padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; color: var(--ink-2); }
+/* 两层选择器：button 默认的左右内边距比设计值宽，单类选择器改不动它 */
+.list-filters .filter-chip { width: auto; flex: 0 0 auto; margin: 0; padding: 0 18rpx; box-sizing: border-box; }
 .filter-chip.selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand-line); }
 .filter-chip::after { border: 0; }
-.review-setting { display: flex; justify-content: space-between; align-items: center; font-size: 26rpx; color: #64716a; }
-.review-card { background: var(--brand-soft); border: 1rpx solid var(--brand-line); padding: 28rpx; border-radius: 24rpx; margin: 22rpx 0; }
-.review-heading { font-size: 26rpx; color: var(--brand); }
-.review-text { font-size: 30rpx; line-height: 1.65; margin: 16rpx 0 24rpx; white-space: pre-wrap; word-break: break-all; }
-.review-actions { display: flex; justify-content: space-between; align-items: center; }
-.match-snippet { font-size: 25rpx; line-height: 1.65; color: #59665d; margin-top: 12rpx; word-break: break-all; }
-.match-source { color: #476b59; }
-.stage-picker { min-height: 88rpx; display: flex; align-items: center; }
-.item-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; color: #526550; font-size: 23rpx; }
-.item-tags text { background: #edf1e9; border-radius: 8rpx; padding: 4rpx 12rpx; }
-.material-entry { margin: 16rpx 0 24rpx; }
+
+/* 回顾入口：轻量一行，串在第一条记录之后；展开才有内容与动作 */
+.review-row {
+  border-bottom: 2rpx solid var(--line);
+  padding: 0 32rpx;
+}
+.review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  min-height: 96rpx;
+}
+.review-label { font-size: 27rpx; color: var(--brand); }
+.review-caret { flex: 0 0 auto; font-size: 25rpx; font-size: max(25rpx, 13px); color: var(--ink-3); }
+.review-text {
+  font-size: 29rpx;
+  line-height: 1.65;
+  color: var(--ink-2);
+  padding-bottom: 8rpx;
+  white-space: pre-wrap;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.review-actions { display: flex; justify-content: space-between; align-items: center; padding-bottom: 24rpx; }
+.review-actions .btn { width: auto; margin: 0; }
+
+.match-snippet { font-size: 25rpx; font-size: max(25rpx, 14px); line-height: 1.65; color: var(--ink-2); margin-top: 12rpx; word-break: break-all; }
+.match-source { color: var(--ink-2); }
+.item-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; color: var(--ink-2); font-size: 23rpx; font-size: max(23rpx, 13px); }
+.item-tags text { background: #edede7; border-radius: 8rpx; padding: 4rpx 12rpx; }
+/* 段落头：区名与数量在左，整份列表级别的动作（汇总、选材）在右 */
+.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16rpx; margin: 32rpx 0 12rpx; }
+.list-head-title { display: flex; align-items: baseline; gap: 14rpx; min-width: 0; }
+.list-head-title .k { font-size: 27rpx; font-size: max(27rpx, 14px); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-2); }
+.list-head-title .v { font-size: 26rpx; font-size: max(26rpx, 13px); color: var(--ink-3); }
+.list-head-acts { display: flex; align-items: center; gap: 8rpx; }

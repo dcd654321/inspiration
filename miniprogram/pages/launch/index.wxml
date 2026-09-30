@@ -1,0 +1,23 @@
+<view class="launch">
+  <view class="launch-center">
+    <image class="launch-mark" src="/assets/brand-mark.png" mode="aspectFit" />
+    <view class="launch-name">灵感拾光簿</view>
+    <view class="launch-line">让想法慢慢成形。</view>
+  </view>
+
+  <view class="launch-foot">
+    <block wx:if="{{!failed}}">
+      <!-- 「拾光」：一颗光点沿发丝线往返，读完即走 -->
+      <view class="launch-track"><view class="launch-spark"></view></view>
+      <view class="launch-status">{{slow ? '读取还在进行…' : '正在读取你的灵感…'}}</view>
+    </block>
+    <block wx:else>
+      <view class="launch-status launch-error">{{error}}</view>
+    </block>
+
+    <block wx:if="{{slow || failed}}">
+      <button class="btn btn-block launch-action" bindtap="onRetry">重试</button>
+      <button class="btn btn-quiet btn-block launch-action" bindtap="onEnterAnyway">先进入记录页</button>
+    </block>
+  </view>
+</view>

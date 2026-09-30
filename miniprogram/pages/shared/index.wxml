@@ -3,15 +3,15 @@
   <block wx:elif="{{error}}">
     <view class="page-title">{{unavailable ? '分享无法查看' : '暂时无法查看'}}</view>
     <view class="shared-state">{{error}}</view>
-    <button wx:if="{{!unavailable}}" class="btn btn-quiet btn-block" bindtap="onRetry">重试</button>
-    <button class="btn btn-plain btn-block" bindtap="onStart">去记录我的想法</button>
+    <button wx:if="{{!unavailable}}" class="btn btn-quiet btn-block" bindtap="onRetry">重新读取</button>
+    <button class="btn btn-plain btn-block" bindtap="onStart">记录我的想法</button>
   </block>
   <block wx:else>
     <view class="shared-eyebrow">来自灵感拾光簿 · 只读分享</view>
     <view class="page-title">{{title}}</view>
     <view class="shared-date">分享于 {{date}}</view>
     <view class="shared-content"><text selectable="true">{{body}}</text></view>
-    <view class="shared-note">这是一份分享时保存的文字快照。原作者之后的修改不会自动更新到这里。</view>
+    <view class="shared-note">这是分享时的文字。原作者之后的修改不会更新到这里。</view>
     <button class="btn btn-quiet btn-block" bindtap="onCopy">复制文字</button>
     <button class="btn btn-plain btn-block" bindtap="onStart">记录我的想法</button>
     <button class="shared-report" bindtap="onReport">举报这份内容</button>

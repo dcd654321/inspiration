@@ -94,5 +94,7 @@ Page({
     this.setData({ busy: false, completed: true, preview: false, entries: [], summary: '', notice: '已保存，可返回查看。' });
     this.snapshot = null;
   },
-  onBack() { wx.navigateBack(); }
+  onBack() { wx.navigateBack(); },
+  /** 能力关闭时没有可返回的页面栈（旧链接直达），给一个明确的 tab 出口 */
+  onBackToList() { wx.switchTab({ url: '/pages/list/index' }); }
 });

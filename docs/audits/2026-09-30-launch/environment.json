@@ -1,0 +1,10 @@
+{
+  "capturedAt": "2026-09-30T23:02:00+08:00",
+  "model": "iPhone 12/13 (Pro)",
+  "platform": "devtools",
+  "SDKVersion": "3.17.2",
+  "windowWidth": 390,
+  "windowHeight": 671,
+  "screenHeight": 844,
+  "source": "离线合成样例；云与 AI 关闭；读取窗口为运行时注入（挂起 ensureReady）；截图是模拟器输出，不是真机"
+}

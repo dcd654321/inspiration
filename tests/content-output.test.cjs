@@ -75,9 +75,14 @@ test('输出页可选择、编辑、复制，并另存独立灵感', async () =>
 
     await page.onLoad({ id: original.id });
     assert.strictEqual(page.data.options.length, 2);
+    // 进入即有可编辑的自由稿，补充默认全选——看结果不必先做选择
+    assert.strictEqual(page.data.draft, '当前正文\n\n第一条补充\n\n第二条补充');
+    assert.strictEqual(page.data.summary, '正文 + 2条补充');
     page.onToggleSupplement({ currentTarget: { dataset: { id: 'sup_a' } } });
-    page.onGenerate();
+    page.onApply();
+    // 未编辑过：应用选择直接替换，不走确认
     assert.strictEqual(page.data.draft, '当前正文\n\n第二条补充');
+    assert.strictEqual(page.data.summary, '正文 + 1条补充');
     page.onDraftInput({ detail: { value: '整理后的可用文字' } });
     page.onCopyDraft();
     assert.strictEqual(clipboard, '整理后的可用文字');
@@ -86,6 +91,12 @@ test('输出页可选择、编辑、复制，并另存独立灵感', async () =>
     assert.strictEqual(saved.text, '整理后的可用文字');
     assert.strictEqual(original.text, '当前正文');
     assert.strictEqual(page.data.savedId, saved.id);
+    assert.strictEqual(page.data.notice, '已另存为新灵感');
+    // 同一稿件重复点击不得新增第二条
+    const firstSaved = saved;
+    await page.onSaveAsNew();
+    assert.strictEqual(saved, firstSaved);
+    assert.strictEqual(page.data.notice, '这份稿件已另存，可以直接查看。');
   } finally {
     delete require.cache[pagePath];
     for (const [key, value] of Object.entries(previous)) {
@@ -330,7 +341,8 @@ test('详情页提供三种复制路径和整理入口', () => {
   const detail = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/detail/index.wxml'), 'utf8');
   const output = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/output/index.wxml'), 'utf8');
   const app = JSON.parse(fs.readFileSync(path.join(__dirname, '../miniprogram/app.json'), 'utf8'));
-  assert.match(detail, /bindtap="onCopyContent"/);
+  // 复制全文（可选范围）在「更多」面板里，单条补充复制在操作面板里
+  assert.match(detail, /bindtap="onMoreCopy"/);
   assert.match(detail, /bindtap="onSheetCopy"/);
   assert.match(detail, /bindtap="onOpenOutput"/);
   assert.match(output, /bindtap="onCopyDraft"/);

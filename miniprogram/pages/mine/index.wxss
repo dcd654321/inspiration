@@ -4,11 +4,12 @@
   gap: 24rpx;
 }
 
+/* 与记录页标题区的品牌图形同尺寸、同圆角——同一个东西在两页不该长得不一样 */
 .profile-mark {
   flex: 0 0 auto;
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: 28rpx;
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 26rpx;
 }
 
 .privacy-panel {
@@ -28,13 +29,15 @@
 
 .privacy-item:last-child { border-bottom: none; }
 
+/* 圆点是结构不是语义，用中性墨色。琥珀只留给品牌图形里的灵光标记——
+   规则越窄越守得住，掺一个例外进来，下次就没人记得边界在哪。 */
 .privacy-dot {
   flex: 0 0 auto;
   width: 12rpx;
   height: 12rpx;
   margin-top: 16rpx;
   border-radius: 50%;
-  background: var(--spark);
+  background: var(--ink-3);
 }
 
 .use-panel {
@@ -78,4 +81,27 @@
   font-size: 27rpx;
   line-height: 1.75;
   color: var(--ink-2);
+}
+
+/* 设置行：说明在左、开关在右，一眼能看到当前状态；
+   补充说明另起一行并弱一档，不跟开关抢位置 */
+.panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 24rpx 0 6rpx;
+}
+
+.panel-row .use-copy {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.panel-note {
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--ink-3);
+  margin-bottom: 24rpx;
 }
