@@ -51,21 +51,6 @@
   margin-bottom: 24rpx;
 }
 
-.remote-item {
-  padding: 24rpx 0;
-  border-top: 2rpx solid var(--line);
-}
-
-.remote-text {
-  display: block;
-  margin-bottom: 20rpx;
-  font-size: 26rpx;
-  line-height: 1.7;
-  color: var(--ink);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 .about-panel {
   padding: 30rpx 32rpx 34rpx;
 }
@@ -81,27 +66,4 @@
   font-size: 27rpx;
   line-height: 1.75;
   color: var(--ink-2);
-}
-
-/* 设置行：说明在左、开关在右，一眼能看到当前状态；
-   补充说明另起一行并弱一档，不跟开关抢位置 */
-.panel-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24rpx;
-  padding: 24rpx 0 6rpx;
-}
-
-.panel-row .use-copy {
-  flex: 1;
-  min-width: 0;
-  margin-bottom: 0;
-}
-
-.panel-note {
-  font-size: 25rpx;
-  line-height: 1.7;
-  color: var(--ink-3);
-  margin-bottom: 24rpx;
 }

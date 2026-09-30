@@ -50,7 +50,12 @@ test('界面整改：我的页不暴露开发能力开关', () => {
   const page = read('miniprogram/pages/mine/index.wxml');
   assert.doesNotMatch(page, /云端同步|AI 扩展|已启用|未启用/);
   assert.match(page, /数据与隐私/);
-  assert.match(page, /open-type="feedback"/);
+  // 反馈入口只有一个，按钮就叫「提交反馈」（用户 2026-09-30 决定，不写「向微信反馈」），
+  // 当前接微信原生通道；自建反馈页入口暂时隐藏（云环境未联通），方法与页面保留。
+  assert.match(page, /open-type="feedback">提交反馈</);
+  assert.doesNotMatch(page, /bindtap="onOpenFeedback">提交反馈</);
+  const logic = read('miniprogram/pages/mine/index.js');
+  assert.match(logic, /onOpenFeedback/, '恢复入口要用到的方法不应被删');
 });
 
 test('界面整改：品牌图已进入小程序包', () => {
@@ -182,10 +187,11 @@ test('本轮整改：我的页不再重复列表入口，分组按用途排列',
   assert.doesNotMatch(page, /查看我的灵感/);
   const share = page.indexOf('我的分享');
   const privacy = page.indexOf('数据与隐私');
-  const help = page.indexOf('使用帮助');
   const feedback = page.indexOf('意见反馈');
   const about = page.indexOf('关于');
-  assert.ok(share >= 0 && privacy > share && help > privacy && feedback > help && about > feedback);
+  assert.ok(share >= 0 && privacy > share && feedback > privacy && about > feedback);
+  // 「使用帮助」组已按用户 2026-09-30 决定删除（会话级回顾开关与诊断信息对真实用户无用）
+  assert.doesNotMatch(page, /使用帮助|显示回顾入口|诊断信息/);
   const logic = read('miniprogram/pages/mine/index.js');
   assert.doesNotMatch(logic, /照片不会被分享/);
 });

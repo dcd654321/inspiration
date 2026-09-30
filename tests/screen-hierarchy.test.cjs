@@ -377,17 +377,17 @@ test('分享页与我的分享：失效不推断原因，空态有入口', () =>
   assert.match(myShares, /bindtap="onOpenList">查看我的灵感</);
 });
 
-test('我的页：分组按用途排列，回顾说明重新启动边界', () => {
+test('我的页：开发者向的「使用帮助」组已删除，回顾控制只留在列表内', () => {
   const page = read('miniprogram/pages/mine/index.wxml');
-  assert.match(page, /显示回顾入口/);
-  assert.match(page, /设置仅在本次使用期间有效，下次重新启动小程序后恢复默认。/);
   assert.match(page, /数据与隐私/);
-  assert.match(page, /使用帮助/);
-  assert.match(page, /诊断信息/);
-  // 统计默认关闭、由用户主动复制
-  assert.match(page, /默认关闭/);
+  assert.match(page, /open-type="feedback">提交反馈</);
+  // 「显示回顾入口」开关与会话统计（诊断信息）按用户 2026-09-30 决定删除
+  assert.doesNotMatch(page, /使用帮助|显示回顾入口|诊断信息|使用统计/);
   const logic = read('miniprogram/pages/mine/index.js');
-  assert.match(logic, /onCopyUsage/);
+  assert.doesNotMatch(logic, /onReviewSetting|onUsageSetting|onCopyUsage/);
+  // 回顾的会话内控制保留在列表里的「本次先不看」
+  const list = read('miniprogram/pages/list/index.wxml');
+  assert.match(list, /本次先不看/);
 })
 
 test('AI 页：关闭时只给一句事实和返回列表，不写开发进度', () => {

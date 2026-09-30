@@ -22,33 +22,11 @@
     </view>
   </view>
 
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">使用帮助</text></view>
-  <view class="panel privacy-panel">
-    <block wx:if="{{reviewAvailable}}">
-      <view class="panel-row">
-        <text class="use-copy">显示回顾入口</text>
-        <switch checked="{{reviewEnabled}}" bindchange="onReviewSetting" aria-label="显示回顾入口" color="#34377f" />
-      </view>
-      <view class="panel-note">在灵感列表里推荐一条继续补充。设置仅在本次使用期间有效，下次重新启动小程序后恢复默认。</view>
-      <view wx:if="{{reviewError}}" class="notice notice-err">{{reviewError}}</view>
-    </block>
-    <block wx:if="{{usageAvailable}}">
-      <view class="panel-row">
-        <text class="use-copy">诊断信息</text>
-        <switch checked="{{usageEnabled}}" bindchange="onUsageSetting" aria-label="开启本次使用统计" color="#34377f" />
-      </view>
-      <view class="panel-note">统计本次打开期间的动作次数，不含内容或搜索词；默认关闭，退出即清空，需要时由你自己复制。</view>
-      <block wx:if="{{usageEnabled}}">
-        <button class="btn btn-plain btn-block" bindtap="onViewUsage">查看使用统计</button>
-        <block wx:if="{{usageVisible}}"><text class="remote-text" selectable="true">{{usageReport}}</text><button class="btn btn-plain btn-block" bindtap="onCopyUsage">复制统计</button></block>
-      </block>
-      <view wx:if="{{usageError}}" class="notice notice-err">{{usageError}}</view>
-    </block>
-  </view>
-
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">意见反馈</text></view>
-  <button class="btn btn-plain btn-block" bindtap="onOpenFeedback">提交反馈</button>
-  <button class="btn btn-plain btn-block" open-type="feedback">向微信反馈</button>
+  <!-- 「提交反馈」当前接微信原生反馈通道（open-type）。自建反馈页的入口暂时隐藏：
+       共享云环境未联通，提交无法落库、维护者也无从查阅（见 docs/UX-IMPLEMENTATION-20260930.md 附录）。
+       云环境接通后恢复：把调用 onOpenFeedback 的按钮加回本区块。 -->
+  <button class="btn btn-plain btn-block" open-type="feedback">提交反馈</button>
 
   <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">关于</text></view>
   <view class="panel about-panel">

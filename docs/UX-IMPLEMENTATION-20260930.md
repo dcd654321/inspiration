@@ -152,3 +152,11 @@
 文件：`miniprogram/pages/launch/*`（新增）、`app.json`（首页注册）、`sitemap.json`（禁索引）、`app.wxss`（`.launch` 按钮复位）、`tests/launch-page.test.cjs`（新增 7 项）。
 
 验证：`npm test` 418/418、`npm run check` 242 项、OpenSpec strict 8/8、`node scripts/build-cloud.cjs` 同步（无副本变化）；开发者工具四张证据 `docs/audits/2026-09-30-launch/`（读取/慢读取/失败为运行时注入的呈现，跳转为真实执行，`transition-check.json` 记录 `switchTab` 调用与最终路由）。真机弱网时序与系统「减少动态效果」联动未验证。未部署、未提交。
+
+## 附：反馈入口与「使用帮助」（2026-09-30）
+
+**意见反馈**：区块只留一个按钮「提交反馈」——按钮就叫这个名字（用户决定：不写「向微信反馈」），当前接微信原生反馈通道（`open-type="feedback"`）。自建反馈页的入口暂时隐藏：共享云环境未联通，自建反馈无法落库、维护者也无从查阅；方法与页面保留，云环境接通后把调用 `onOpenFeedback` 的按钮加回「意见反馈」区块（届时需重新区分两个通道的命名）。
+
+**「使用帮助」组已删除**（用户决定）：内容是会话级「显示回顾入口」开关与「诊断信息」（本次使用统计）——前者重开小程序即重置、且与列表里的「本次先不看」重复，后者本质是开发者排查工具，两者对真实用户都没有用处。保留物：列表内的「本次先不看」；`services/discovery.js` 与 `services/usage-metrics.js` 及其测试原样保留（服务休眠、无界面入口）；`app.js` 接线未动，恢复界面时无需改服务层。
+
+**反馈的去处（供维护参考）**：提交写入云端集合 `linggan_feedback`（字段与索引见 `docs/database-design.md` §10.2）；提交者本人在反馈页下方「我的反馈」看到自己的记录与状态（`feedback.listMine`；`submitted` 由服务端初设，`reviewing/closed` 只允许受权后台改，`(status, createdAt desc)` 索引为后台处理队列预留）。当前没有管理端页面，维护者阅读反馈的途径是云开发控制台（或腾讯云控制台）的数据库。分享页「举报这份内容」不受本次调整影响，仍进入反馈页的举报分支。
