@@ -58,8 +58,11 @@
 .item-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; color: var(--ink-2); font-size: 23rpx; font-size: max(23rpx, 13px); }
 .item-tags text { background: #edede7; border-radius: 8rpx; padding: 4rpx 12rpx; }
 /* 段落头：区名与数量在左，整份列表级别的动作（汇总、选材）在右 */
-.list-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16rpx; margin: 32rpx 0 12rpx; }
+.list-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8rpx 16rpx; margin: 32rpx 0 12rpx; }
 .list-head-title { display: flex; align-items: baseline; gap: 14rpx; min-width: 0; }
 .list-head-title .k { font-size: 27rpx; font-size: max(27rpx, 14px); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-2); }
 .list-head-title .v { font-size: 26rpx; font-size: max(26rpx, 13px); color: var(--ink-3); }
 .list-head-acts { display: flex; align-items: center; gap: 8rpx; }
+.refresh-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.6; }
+.refresh-status text { flex: 1; }
+.refresh-status .btn-link { flex: 0 0 auto; margin: 0; }

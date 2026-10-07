@@ -30,7 +30,7 @@ const CODE = {
 
 /** 降级时的提示。规范要求每种失效都明确告知，且不影响基础功能。 */
 const MESSAGE = {
-  [CODE.disabled]: 'AI 扩展还没开放。',
+  [CODE.disabled]: 'AI 暂时无法使用。可以稍后重试，或先手动整理。',
   [CODE.timeout]: '这次等待已超时，未保存生成内容。请稍后重试。',
   [CODE.quotaExceeded]: '本次可用额度已用完。',
   [CODE.contractInvalid]: '这次生成的内容不符合要求，没有采用。可以重试。',

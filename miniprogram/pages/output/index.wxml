@@ -27,13 +27,14 @@
       <button class="btn-link" bindtap="onOpenMore" disabled="{{busy}}">更多</button>
     </view>
 
-    <textarea class="draft-editor" value="{{draft}}" maxlength="-1" bindinput="onDraftInput" aria-label="编辑稿件" />
+    <textarea class="draft-editor" value="{{draft}}" maxlength="-1" bindinput="onDraftInput" disabled="{{busy}}" aria-label="编辑稿件" />
     <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">
       <text wx:if="{{draft.length > maxLength}}">另存最多{{maxLength}}字符，当前超出{{draft.length - maxLength}}字符。</text>
       <text wx:else>{{draft.length}}字符 · 另存最多{{maxLength}}字符</text>
     </view>
 
     <view class="selection-note">可以直接编辑，原记录不会改变。</view>
+    <view wx:if="{{!savedSame}}" class="selection-note draft-leave-hint">未另存的稿件离开后不保留，请先复制或另存。</view>
     <button class="btn btn-block main-action" bindtap="onCopyDraft" disabled="{{busy}}">复制稿件</button>
     <button class="btn btn-quiet btn-block secondary-action" bindtap="onSaveAsNew" disabled="{{busy || !canSaveAs}}">{{busy ? '正在另存…' : (savedSame ? '已另存' : '另存为新灵感')}}</button>
     <view wx:if="{{noticeLink}}" class="saved-link"><button class="btn btn-link" bindtap="onOpenSaved">查看新灵感</button></view>
@@ -47,7 +48,7 @@
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">调整内容</view>
       <view class="sheet-hint">正文始终保留；已并入正文或已合并的补充不会重复加入。</view>
-      <scroll-view scroll-y="true" class="sheet-scroll">
+      <scroll-view scroll-y="true" class="sheet-scroll" style="{{sheetScrollHeight ? 'height: ' + sheetScrollHeight + 'px;' : ''}}">
         <view wx:if="{{stagedOptions.length === 0}}" class="sheet-hint">还没有可选择的补充，稿件只包含正文。</view>
         <button wx:for="{{stagedOptions}}" wx:key="id" class="sheet-item option-item" data-id="{{item.id}}" bindtap="onToggleSupplement" aria-label="{{item.selected ? '取消选择' : '选择'}}补充">
           <text class="option-check {{item.selected ? 'option-checked' : ''}}">{{item.selected ? '✓' : ''}}</text>
@@ -90,7 +91,7 @@
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">文字留档</view>
       <view class="sheet-hint">包含正文、补充和修改记录，不含照片。删除原记录后，已复制或导出的文字仍会保留。</view>
-      <scroll-view scroll-y="true" class="sheet-scroll">
+      <scroll-view scroll-y="true" class="sheet-scroll" style="{{sheetScrollHeight ? 'height: ' + sheetScrollHeight + 'px;' : ''}}">
         <view class="archive-preview"><text selectable="true">{{archive}}</text></view>
       </scroll-view>
       <view class="archive-acts">

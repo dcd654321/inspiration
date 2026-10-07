@@ -1,71 +1,55 @@
 const { formatAbsolute } = require('../../core/format');
+const { beginPage, endPage, readPageAccount } = require('../../services/page-session');
 
 Page({
-  data: {
-    ready: false,
-    missing: false,
-    // 读取失败（账户/网络）与「确认不存在」分开
-    readError: false,
-    versions: [],
-    current: ''
-  },
-
+  data: { ready: false, missing: false, readError: false, versions: [], versionCount: 0, current: '' },
   async onLoad(query) {
+    beginPage(this);
     this.id = (query && query.id) || '';
-    await getApp().ensureReady();
-    this.load();
+    await this.load();
   },
-
   async onShow() {
-    if (!this.id) return;
-    this.setData({ ready: false, current: '', versions: [] });
-    await getApp().ensureReady();
-    this.load();
-  },
-
-  load() {
     const app = getApp();
-    const store = app && app.globalData && app.globalData.store;
-    if (!store) {
-      this.setData({ ready: true, missing: false, readError: true, current: '', versions: [] });
-      return;
+    if (!this.id || (this.visible && ((this.loadingPage && this.loadingEpoch === app.globalData.sessionEpoch) ||
+        (this.loadedEpoch === app.globalData.sessionEpoch && this.sessionStore === app.globalData.store)))) return;
+    beginPage(this);
+    await this.load();
+  },
+  onHide() {
+    endPage(this);
+    this.loadingPage = false;
+    this.setData({ ready: false, current: '', versions: [], versionCount: 0 });
+  },
+  onUnload() { this.onHide(); },
+  async load() {
+    if (this.visible === false) return;
+    const version = this.loadVersion = (this.loadVersion || 0) + 1;
+    this.loadingPage = true;
+    this.setData({ ready: false, current: '', versions: [], versionCount: 0, readError: false });
+    const pending = readPageAccount(this);
+    this.loadingEpoch = getApp().globalData.sessionEpoch;
+    const account = await pending;
+    if (!account.isCurrent() || this.loadVersion !== version) return;
+    this.loadingPage = false;
+    this.loadedEpoch = account.epoch;
+    this.sessionStore = account.store;
+    if (!account.store) {
+      this.setData({ ready: true, missing: false, readError: true }); return;
     }
-    const item = store.getInspiration(this.id);
-
+    const item = account.store.getInspiration(this.id);
     if (!item) {
-      this.setData({ ready: true, missing: true, readError: false });
-      return;
+      this.setData({ ready: true, missing: true, readError: false }); return;
     }
-
     const history = Array.isArray(item.textHistory) ? item.textHistory : [];
-
-    this.setData({
-      ready: true,
-      missing: false,
-      readError: false,
-      // 倒序：最近被替换掉的排在最上，往上翻就是更早的
+    this.setData({ ready: true, missing: false, readError: false, versionCount: history.length,
       versions: history.slice().reverse().map((version) => ({
-        id: version.id,
-        text: version.text,
-        // 这里用绝对时间而不是相对时间：几个版本放在一起比，谁先谁后要一眼看得出来
-        time: formatAbsolute(version.replacedAt)
-      })),
-      current: item.text
-    });
+        id: version.id, text: version.text, time: formatAbsolute(version.replacedAt)
+      })), current: item.text });
   },
-
-  onRetryLoad() {
-    const app = getApp();
-    this.setData({ ready: false, readError: false });
-    app.refreshAccount().then(() => { this.load(); });
-  },
-
+  onRetryLoad() { if (!this.loadingPage) return this.load(); },
   onBack() {
     if (getCurrentPages().length > 1) wx.navigateBack();
     else wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.id) });
   },
-
-  onBackToList() {
-    wx.switchTab({ url: '/pages/list/index' });
-  }
+  onBackToList() { wx.switchTab({ url: '/pages/list/index' }); }
 });

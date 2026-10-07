@@ -61,7 +61,16 @@ function validRevision(data) {
 }
 
 function sameContent(a, b) {
-  return JSON.stringify(a) === JSON.stringify(b);
+  function canonical(value) {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object') {
+      const result = {};
+      Object.keys(value).sort().forEach((key) => { result[key] = canonical(value[key]); });
+      return result;
+    }
+    return value;
+  }
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 }
 
 function createRepository(options) {

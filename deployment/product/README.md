@@ -49,7 +49,7 @@ wechatide.cmd -c codex cloud_db_write_struct --appid wx7ad85943fe81e095 --env pr
 | 函数 | 用途 | 部署条件 |
 | --- | --- | --- |
 | linggan_api | 记录同步、分享、反馈与照片生命周期 | 数据库规则及索引、可信来源、审核和小程序码权限 |
-| linggan_ai | AI 扩展/整理、内容校验与额度 | 部署但保持关闭；启用前模型、预算、审核、至少 60 秒超时须独立验收 |
+| linggan_ai | AI 扩展/整理、内容校验与额度 | 2026-10-02 已获启用授权；按 AI 启用计划核验模型、额度、审核、至少 60 秒超时后配置并部署 |
 | linggan_maintenance | 有条件的过期内容清理 | 无定时触发器，保持关闭，本次不执行清理 |
 
 非敏感目标环境变量在 manifest 中列出，**本地存在这些值不代表平台已配置**。`config.json` 中 OpenAPI 声明也不代替平台授权验证。
@@ -60,7 +60,7 @@ wechatide.cmd -c codex cloud_db_write_struct --appid wx7ad85943fe81e095 --env pr
 - `LINGGAN_MAINTENANCE_TOKEN`：至少 32 字符的随机值，同样不得写日志或仓库。无触发器且 `LINGGAN_MAINTENANCE_ENABLED=false`。
 - 旧分享密钥轮换映射仅在已有旧密钥需兼容时设置，不在新环境填假值。
 - 照片保持关闭。`LINGGAN_STORAGE_PREFIX` 只能由目标桶的真实 fileID 核实，不能猜；私有读写/删除和双账户测试通过后再启用。
-- AI 保持关闭，不填未经核验的模型 ID，不发起付费推理。
+- AI 已获启用授权，客户端入口已开。`manifest.json` 保留远端关闭的部署基线；启用增量与实测缺口见 `../ai-enablement-20261002.json`。模型 ID 取自目标环境实际已开通列表；本轮模型调用返回 `AI_DISABLED`，未成功推理。
 
 当前 wechatide 0.3.9 注册的云管理命令未提供集合安全规则、函数环境变量和超时配置入口；不能用索引写入接口代替，不能改用隐藏接口或读取本机登录凭据。需要支持这些配置的正常平台入口。共用认证、全局存储规则和其他应用资源均不在修改范围。
 

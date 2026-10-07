@@ -1,0 +1,50 @@
+[
+  {
+    "token": "ink",
+    "fg": "#191A23",
+    "bg": "#F7F6F2",
+    "ratio": 16.0
+  },
+  {
+    "token": "muted",
+    "fg": "#5F6070",
+    "bg": "#FFFFFF",
+    "ratio": 6.19
+  },
+  {
+    "token": "secondary",
+    "fg": "#6F6F7B",
+    "bg": "#FFFFFF",
+    "ratio": 4.96
+  },
+  {
+    "token": "brand",
+    "fg": "#FFFFFF",
+    "bg": "#34377F",
+    "ratio": 10.51
+  },
+  {
+    "token": "field",
+    "fg": "#858596",
+    "bg": "#FFFFFF",
+    "ratio": 3.63
+  },
+  {
+    "token": "success",
+    "fg": "#24604B",
+    "bg": "#EDF6F0",
+    "ratio": 6.68
+  },
+  {
+    "token": "warning",
+    "fg": "#805B1F",
+    "bg": "#FDF4E3",
+    "ratio": 5.6
+  },
+  {
+    "token": "danger",
+    "fg": "#B43C32",
+    "bg": "#FBEEEC",
+    "ratio": 5.1
+  }
+]

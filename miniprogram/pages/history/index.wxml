@@ -22,7 +22,7 @@
       <view class="hv-now-t">{{current}}</view>
     </view>
 
-    <block wx:if="{{versions.length === 0}}">
+    <block wx:if="{{versionCount === 0}}">
       <view class="hv-empty">
         <view class="et">还没有修改记录</view>
         <view class="ed">正文还没有改过。修改后，旧内容会保留在这里。</view>
@@ -31,7 +31,7 @@
     </block>
 
     <block wx:else>
-      <view class="history-head">共 {{versions.length}} 条修改记录</view>
+      <view class="history-head">共 {{versionCount}} 条修改记录</view>
 
       <!-- 只读。没有编辑入口，也没有删除入口——这是「你说过的话不会被悄悄抹掉」的界面体现 -->
       <view class="history-list">

@@ -116,7 +116,7 @@ test('AI 页面预览不自动保存，拒绝变化来源且离开后丢弃迟�
   const app = { globalData: { store, sessionEpoch: 1 }, ensureReady: async () => store };
   const target = require.resolve('../miniprogram/pages/ai-workbench/index');
   try {
-    global.Page = (value) => { definition = value; }; global.getApp = () => app; global.wx = {};
+    global.Page = (value) => { definition = value; }; global.getApp = () => app; global.wx = { showModal: (opts) => opts.success({ confirm: true }) };
     delete require.cache[target]; require(target);
     const page = Object.assign({}, definition, { data: structuredClone(definition.data), setData(data) { Object.assign(this.data, data); } });
     await page.onLoad({ id: 'a', scope: 'expand' }); page.data.enabled = true;
@@ -125,6 +125,8 @@ test('AI 页面预览不自动保存，拒绝变化来源且离开后丢弃迟�
     current = core.updateText(current, { text: '来源文字发生了变化', historyId: 'h', now: NOW + 1 });
     await page.onAccept(); assert.equal(saves, 0); assert.match(page.data.error, /来源内容已变化/);
     page.onDiscard(); assert.equal(page.data.entries.length, 0);
+    // 来源已更新：先重新读取，再检查新生成请求离开后的迟到回执。
+    await page.onLoad({ id: 'a', scope: 'expand' });
     page.ai = { expand: () => new Promise((r) => { resolve = r; }) };
     const pending = page.onGenerate(); page.onUnload(); resolve({ ok: true, value: draft }); await pending;
     assert.equal(page.data.entries.length, 0); assert.equal(saves, 0);

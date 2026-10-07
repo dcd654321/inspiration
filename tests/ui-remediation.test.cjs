@@ -171,7 +171,7 @@ test('本轮整改：详情先提供补充，再展示时间线；整理与复�
   const compose = page.indexOf('class="compose"');
   const timeline = page.indexOf('class="timeline"');
   assert.ok(compose >= 0 && timeline > compose);
-  assert.match(page, /bindtap="onOpenOutput">整理成稿/);
+  assert.match(page, /bindtap="onOpenOutput"[^>]*>整理成稿/);
   // 复制全文收进「更多」面板，但仍然可达且范围不变
   assert.match(page, /bindtap="onMoreCopy"/);
   const logic = read('miniprogram/pages/detail/index.js');

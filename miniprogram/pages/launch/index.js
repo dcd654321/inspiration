@@ -29,12 +29,13 @@ Page({
 
   /** 读取结论：拿到 store 即进入；拿不到（网络/账户失败）落到失败态。 */
   settle(promise) {
+    const version = this.readVersion = (this.readVersion || 0) + 1;
     return Promise.resolve(promise).then((store) => {
-      if (!this.alive) return;
+      if (!this.alive || this.readVersion !== version) return;
       if (store) this.enter();
       else this.fail(getApp().globalData.accountError);
     }).catch(() => {
-      if (!this.alive) return;
+      if (!this.alive || this.readVersion !== version) return;
       this.fail(getApp().globalData.accountError);
     });
   },
@@ -53,6 +54,7 @@ Page({
   },
 
   onRetry() {
+    if (!this.alive) return;
     this.setData({ loading: true, failed: false, slow: false, error: '' });
     this.armSlowTimer();
     return this.settle(getApp().refreshAccount());

@@ -51,7 +51,7 @@ test('列表：默认筛选行只放三个 chip，七天内/阶段/已合并进�
   assert.match(page, /bindtap="onResetPanel">重置筛选</);
   // 选材整理与汇总属于整份列表，放在段落头
   assert.ok(page.indexOf('选材整理') > head);
-  assert.ok(page.indexOf('汇总多条灵感') > head);
+  assert.ok(page.indexOf('AI 汇总') > head);
 });
 
 test('列表：搜索框清空只清搜索词，全局清空在无结果态', () => {
@@ -65,7 +65,7 @@ test('列表：搜索框清空只清搜索词，全局清空在无结果态', ()
   assert.doesNotMatch(clearQuery.slice(0, 200), /filter: 'all'/);
   // 账户变化清空查询、筛选与阅读位置
   assert.match(logic, /resetViewState/);
-  assert.match(logic, /scope !== this\.scope/);
+  // 账户变化清空由 ui-interaction-repair.test.cjs 的异步行为断言覆盖。
 });
 
 test('列表：回顾行串在第一条记录之后，展开才有内容与动作', () => {
@@ -144,12 +144,12 @@ test('写了一半被打断：输入非空时离开页面给出提示，但不�
   const capture = read('miniprogram/pages/capture/index.js');
   assert.match(capture, /enableAlertBeforeUnload/);
   assert.match(capture, /disableAlertBeforeUnload/);
-  // 只在可编辑且未提交时打开离开提示；提交中与结果未知时不叠加
+  // 未提交及结果未知仍可能丢失；超长输入也需提醒。
   assert.match(capture, /canEdit = value\.trim\(\)\.length > 0 && overBy === 0/);
-  assert.match(capture, /guardDraft\(canEdit\)/);
+  assert.match(capture, /guardDraft\(Boolean\(value\)\)/);
   assert.match(capture, /guardDraft\(false\)/);
   const detail = read('miniprogram/pages/detail/index.js');
-  assert.match(detail, /guardDraft\(canEdit\)/);
+  assert.match(detail, /guardDetailDraft\(this\.data\)/);
   // 仍然不落盘
   assert.doesNotMatch(capture, /setStorage|saveFile/);
   assert.doesNotMatch(detail, /setStorage|saveFile/);
@@ -227,8 +227,8 @@ test('记录页：结果未知与确认被拒绝分开，成功卡带摘录与�
   // 结果未知：标题 + 重试/复制两条路，输入保留
   assert.match(page, /尚未确认保存/);
   assert.match(page, /内容还在输入框中。退出前请重试保存或复制内容。/);
-  assert.match(page, /bindtap="onRetrySave">重试保存</);
-  assert.match(page, /bindtap="onCopyDraft">复制内容</);
+  assert.match(page, /status === 'unknown' \? '重试保存'/);
+  assert.match(page, /bindtap="onCopyDraft"[^>]*>复制内容</);
   // 确认被拒绝：可用确定回执说明原因，不编造
   assert.match(page, /未能保存/);
   assert.match(logic, /UNKNOWN_CODES = \['NETWORK', 'INTERNAL'\]/);
@@ -354,7 +354,7 @@ test('分享预览：同一主按钮按状态替换，制作海报为次入口',
   const page = read('miniprogram/pages/share-preview/index.wxml');
   assert.match(page, /确认内容并准备分享/);
   assert.match(page, /准备中…/);
-  assert.match(page, /open-type="share">选择微信好友</);
+  assert.match(page, /open-type="share"[^>]*>选择微信好友</);
   assert.match(page, /制作海报/);
   assert.match(page, /重新制作海报/);
   assert.doesNotMatch(page, /一键发朋友圈/);

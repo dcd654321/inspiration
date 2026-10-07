@@ -22,6 +22,22 @@ function decorate(inspiration, now) {
   };
 }
 
+function syncAccount(page, app) {
+  const { store, sessionEpoch, cacheScope } = app.globalData;
+  const changed = Object.prototype.hasOwnProperty.call(page, 'listEpoch') &&
+    (store !== page.listStore || sessionEpoch !== page.listEpoch || cacheScope !== page.scope);
+  if (changed || !store) {
+    page.savedScrollTop = 0;
+    page.anchorId = '';
+    page.setData({ items: [], activeCount: 0, mergedCount: 0, reviewItem: null, reviewExpanded: false,
+      reviewError: '', error: '', query: '', filter: 'all', recentOn: false, mergedOn: false,
+      stage: '', stageIndex: 0, panelOpen: false, panelCount: 0 });
+  }
+  page.listStore = store;
+  page.listEpoch = sessionEpoch;
+  page.scope = cacheScope;
+}
+
 Page({
   data: {
     items: [],
@@ -47,11 +63,19 @@ Page({
 
   // 用 onShow 而不是 onLoad：从详情页返回时列表要跟着更新（改了原文、加了补充）
   async onShow() {
-    this.setData({ items: [], reviewItem: null, loading: true, error: '' });
     const app = getApp();
-    if (app) await app.ensureReady();
+    if (!app || !app.globalData) return;
+    this.visible = true;
+    const version = this.viewVersion = (this.viewVersion || 0) + 1;
+    syncAccount(this, app);
+    this.setData({ loading: true, error: '' });
+    try { await app.ensureReady(); } catch (err) { /* load 按当前可信账户显示恢复入口。 */ }
+    if (this.visible === false || version !== this.viewVersion) return;
     this.load({ restoreScroll: true });
   },
+
+  onHide() { this.visible = false; this.viewVersion = (this.viewVersion || 0) + 1; },
+  onUnload() { this.onHide(); },
 
   onPageScroll(event) { this.savedScrollTop = event.scrollTop; },
 
@@ -76,9 +100,7 @@ Page({
     const opts = options || {};
     const app = getApp();
     if (!app || !app.globalData) return;
-    const scope = app.globalData.cacheScope;
-    if (this.scope && scope && scope !== this.scope) this.resetViewState();
-    if (scope) this.scope = scope;
+    syncAccount(this, app);
 
     const store = app.globalData.store;
     if (!store) {
@@ -127,15 +149,33 @@ Page({
       // 用户看到空白会以为自己的灵感没了。
       this.setData({
         loading: false,
-        error: '请稍后重试。'
-      });
+        error: this.data.items.length ? '暂时无法更新，仍显示上次读取的内容。' : '请稍后重试。'
+      }, () => { if (opts.restoreScroll) this.restoreScroll(); });
     }
   },
 
   async onRetry() {
     const app = getApp();
-    if (app) await app.refreshAccount();
-    this.load();
+    if (!app || !app.globalData || this.data.loading) return;
+    const version = this.viewVersion = (this.viewVersion || 0) + 1;
+    syncAccount(this, app);
+    const store = app.globalData.store, epoch = app.globalData.sessionEpoch;
+    this.setData({ loading: true, error: '' });
+    let result;
+    try {
+      if (store && typeof store.refresh === 'function') result = await store.refresh();
+      else { await app.refreshAccount(); result = { ok: true }; }
+    } catch (err) { result = null; }
+    if (this.visible === false || version !== this.viewVersion) return;
+    if (store && (store !== app.globalData.store || epoch !== app.globalData.sessionEpoch)) {
+      syncAccount(this, app); this.load(); return;
+    }
+    if (!result || !result.ok) {
+      this.setData({ loading: false, error: this.data.items.length
+        ? '暂时无法更新，仍显示上次读取的内容。' : '请稍后重试。' });
+      return;
+    }
+    this.load({ restoreScroll: true });
   },
 
   onAdd() {

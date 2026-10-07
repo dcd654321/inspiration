@@ -3,9 +3,9 @@
   <view class="page-sub">{{reporting ? '请说明你认为不合适的地方。' : '遇到问题或有建议，都可以告诉我们。'}}</view>
   <view wx:if="{{!reporting}}" class="feedback-categories">
     <button wx:for="{{categories}}" wx:key="value" data-value="{{item.value}}"
-      class="feedback-category {{category === item.value ? 'feedback-category-on' : ''}}" bindtap="onCategory">{{item.label}}</button>
+      class="feedback-category {{category === item.value ? 'feedback-category-on' : ''}}" bindtap="onCategory" disabled="{{busy}}">{{item.label}}</button>
   </view>
-  <textarea class="feedback-editor" value="{{body}}" maxlength="1000" auto-height
+  <textarea class="feedback-editor" value="{{body}}" maxlength="1000" auto-height disabled="{{busy}}"
     placeholder="请写下具体情况（至少 10 字）" bindinput="onInput" />
   <view class="feedback-count">{{trimmedLength >= 10 ? body.length + ' / 1000' : '还需 ' + (10 - trimmedLength) + ' 字'}}</view>
   <view class="feedback-note">请勿填写密码、身份证号等敏感信息。提交后可在下方查看处理状态。</view>
@@ -21,5 +21,5 @@
     <view class="feedback-record-body">{{item.body}}</view>
     <view class="feedback-record-date">{{item.date}}</view>
   </view>
-  <button wx:if="{{nextBefore}}" class="btn btn-plain btn-block" bindtap="onMore">加载更多</button>
+  <button wx:if="{{nextBefore}}" class="btn btn-plain btn-block" bindtap="onMore" disabled="{{loading}}">加载更多</button>
 </view>

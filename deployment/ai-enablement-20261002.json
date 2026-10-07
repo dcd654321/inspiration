@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "resourceAppid": "wx7ad85943fe81e095",
+  "consumerAppid": "wxed8fdc5d559d973d",
+  "functionName": "linggan_ai",
+  "environments": [
+    { "name": "test", "environmentId": "cloud1-d8gopnalv908bb47a" },
+    { "name": "product", "environmentId": "product-d2g59zty74d7d1ec1" }
+  ],
+  "requestedEnvironment": {
+    "LINGGAN_AI_ENABLED": "true",
+    "LINGGAN_AI_DAILY_LIMIT": "20",
+    "LINGGAN_AI_MINUTE_LIMIT": "3"
+  },
+  "modelEnvironmentName": "LINGGAN_AI_MODEL",
+  "modelSelection": "required-from-provisioned-platform-models",
+  "minimumTimeoutSeconds": 60,
+  "clientDatabaseAccess": "deny-all",
+  "quotaCollection": "linggan_ai_usage",
+  "quotaIndexFile": "product/indexes/linggan_ai_usage.json",
+  "openapi": ["security.msgSecCheck"],
+  "clientEnabled": true,
+  "remoteApplied": false,
+  "observed": {
+    "date": "2026-10-02",
+    "testResponse": "AI_DISABLED",
+    "testFunctionTimeoutSeconds": 3,
+    "productFunctionTimeoutSeconds": 3,
+    "testExpiresAtIndexPresent": false,
+    "productExpiresAtIndexPresent": false
+  },
+  "rollback": "set client ai.enabled=false and server LINGGAN_AI_ENABLED=false; preserve records and quota data"
+}

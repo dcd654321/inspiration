@@ -1,5 +1,6 @@
 const { LIMITS, createId } = require('../../core/limits');
 const { createInspiration } = require('../../core/inspiration');
+const { pageGuard } = require('../../services/page-session');
 
 const DISPLAY_ERRORS = {
   EMPTY_TEXT: '写点内容再保存',
@@ -19,8 +20,7 @@ function messageFor(err) {
 
 /**
  * 写了一半被打断是「随手记」的常见情境，而输入只存在会话内存里。
- * 只在**可编辑且未提交**时打开离开提示；提交中和结果未知时不叠加——
- * 那时输入框上已有明确的常驻状态，再加一层返回询问只会让人以为内容丢了。
+ * 输入和未确认内容开启平台支持的返回提示；提交中以可见状态为主。
  * **不做本机暂存**——那与「云端确认才算保存」的取舍冲突。
  * 写成模块级函数而不是页面方法：测试会用一个假 page 对象直接调 onInput，
  * 挂在 this 上的辅助方法在那种调用方式下不存在。
@@ -51,7 +51,10 @@ Page({
   },
 
   async onShow() {
+    this.visible = true;
+    const version = this.viewVersion = (this.viewVersion || 0) + 1;
     const app = getApp(); await app.ensureReady();
+    if (this.visible === false || this.viewVersion !== version) return;
     const scope = app.globalData.cacheScope;
     if (this.scope && scope && scope !== this.scope) {
       this.pendingSave = null;
@@ -59,15 +62,26 @@ Page({
       this.setData({ draft: '', canSave: false, overBy: 0, nearLimit: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '' });
     }
     if (scope) this.scope = scope;
+    guardDraft(Boolean(this.data.draft));
   },
 
+  onHide() {
+    this.visible = false;
+    this.viewVersion = (this.viewVersion || 0) + 1;
+    if (this.data.saving) this.setData({ saving: false, status: 'unknown' });
+    guardDraft(false);
+  },
+
+  onUnload() { this.onHide(); },
+
   onInput(event) {
+    if (this.data.saving || this.visible === false) return;
     const value = event.detail.value;
     if (this.pendingSave && this.pendingSave.text !== value) this.pendingSave = null;
     const overBy = Math.max(0, value.length - LIMITS.textMaxLength);
     const canEdit = value.trim().length > 0 && overBy === 0;
     // 结果未知时输入框仍然可用：用户改了内容就回到普通编辑态，旧的未确认状态随之撤下
-    guardDraft(canEdit);
+    guardDraft(Boolean(value));
     this.setData({
       draft: value,
       canSave: canEdit,
@@ -86,17 +100,29 @@ Page({
   onFocus() { this.setData({ inputFocus: false }); },
 
   async onSave() {
-    if (this.data.saving) return;
+    if (this.data.saving || this.visible === false) return;
 
     const text = this.data.draft;
     if (text.trim().length === 0 || text.length > LIMITS.textMaxLength) return; // 按钮已 disabled，这里是兜底
 
     const app = getApp();
-    const store = app && await app.ensureReady();
-    if (!store) {
-      this.setData({ status: 'rejected', errorText: app && app.globalData.accountError || '暂时无法确认账户，请联网后重试。', copyNotice: '' });
+    const version = this.viewVersion, preparationEpoch = app.globalData.sessionEpoch, preparationStore = app.globalData.store;
+    const preparationScope = this.scope || app.globalData.cacheScope;
+    // 从准备账户开始锁定快照，避免等待 ensureReady 时产生重复提交或新输入。
+    this.setData({ saving: true, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '' });
+    let store;
+    try { store = app && await app.ensureReady(); } catch (err) { store = null; }
+    if (this.visible === false || this.viewVersion !== version ||
+        (preparationScope && app.globalData.cacheScope && preparationScope !== app.globalData.cacheScope) ||
+        (preparationStore && (app.globalData.sessionEpoch !== preparationEpoch || app.globalData.store !== preparationStore))) {
+      if (this.visible !== false && this.viewVersion === version) this.setData({ saving: false });
       return;
     }
+    if (!store) {
+      this.setData({ saving: false, status: 'rejected', errorText: app && app.globalData.accountError || '暂时无法确认账户，请联网后重试。', copyNotice: '' });
+      return;
+    }
+    const epoch = app.globalData.sessionEpoch;
 
     // 当前会话内重试同一内容时复用记录标识；不会把待写内容持久化到设备。
     let inspiration;
@@ -105,7 +131,7 @@ Page({
         ? this.pendingSave.item : createInspiration({ text, id: createId('insp'), now: Date.now() });
       this.pendingSave = { text, scope: app.globalData.cacheScope, item: inspiration };
     } catch (err) {
-      this.setData({ status: 'rejected', errorText: messageFor(err), copyNotice: '' });
+      this.setData({ saving: false, status: 'rejected', errorText: messageFor(err), copyNotice: '' });
       return;
     }
 
@@ -119,8 +145,8 @@ Page({
     } catch (err) {
       threw = true;
     }
+    if (this.visible === false || this.viewVersion !== version || app.globalData.sessionEpoch !== epoch || app.globalData.store !== store) return;
     this.setData({ saving: false });
-    if (app.globalData.store !== store) return;
     const metrics = app.globalData.store === store && app.globalData.metrics;
     if (metrics) metrics.track(result && result.ok && result.synced === true ? 'record_saved' : 'save_failed');
 
@@ -135,6 +161,7 @@ Page({
     }
 
     const code = threw ? 'NETWORK' : (result && result.code) || 'NETWORK';
+    guardDraft(Boolean(this.data.draft));
     if (UNKNOWN_CODES.includes(code)) {
       // 超时、连接中断：不能宣布失败，也不能假装成功。内容确实还在输入框里。
       this.setData({ status: 'unknown', errorText: '', copyNotice: '' });
@@ -152,16 +179,16 @@ Page({
 
   onCopyDraft() {
     const text = this.data.draft;
-    if (!text) return;
-    const epoch = getApp().globalData.sessionEpoch;
+    if (!text || this.visible === false) return;
+    const isCurrent = pageGuard(this);
     try {
       wx.setClipboardData({
         data: text,
-        success: () => { if (getApp().globalData.sessionEpoch === epoch) this.setData({ copyNotice: '已复制，可粘贴到需要的地方。' }); },
-        fail: () => { if (getApp().globalData.sessionEpoch === epoch) this.setData({ copyNotice: '复制未完成，请重试。' }); }
+        success: () => { if (isCurrent()) this.setData({ copyNotice: '已复制，可粘贴到需要的地方。' }); },
+        fail: () => { if (isCurrent()) this.setData({ copyNotice: '复制未完成，请重试。' }); }
       });
     } catch (err) {
-      this.setData({ copyNotice: '复制未完成，请重试。' });
+      if (isCurrent()) this.setData({ copyNotice: '复制未完成，请重试。' });
     }
   },
 

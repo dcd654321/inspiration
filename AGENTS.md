@@ -8,7 +8,7 @@
 
 **云开关已打开**（`config/cloud.js` 的 `enabled: true`，环境 `product-d2g59zty74d7d1ec1`，资源方 `wx7ad85943fe81e095`）。六个 `linggan_` 集合已创建；非 AI 所需十四个业务索引已回读成功，但集合权限、函数代码版本、配置和云存储规则仍未验收。保存失败时先核对正式环境服务与权限，再排查客户端；不得把本地测试通过当成线上可用。部署输入清单见 `deployment/product/`。
 
-AI 仍未启用（`config/ai.js` 的 `enabled: false`，服务端 `LINGGAN_AI_ENABLED` 也为关）：适配器已接云开发 AI，但模型标识、预算与审核权限未确认，见 `docs/PENDING-INPUT.md`。
+2026-10-02 用户已授权开放 AI：客户端 `config/ai.js.enabled: true`，入口与工作台已优化；服务端独立检查模型、审核、额度。测试环境实时仍返回 `AI_DISABLED`，test/product 函数均为 3 秒、AI 额度索引缺失；本轮未修改远端配置或部署。实际状态与启用输入见 `docs/AI-EXPERIENCE-20261002.md`、`docs/PENDING-INPUT.md`，不得把客户端开关说成真实模型已可用。
 
 **真机与开发者工具未做完整验证**，`wx.*` 的绑定只有语法检查兜底。
 

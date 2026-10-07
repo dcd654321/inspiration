@@ -3,6 +3,11 @@ const { USE_TEMPLATES } = require('../../services/content-output');
 const { createInspiration } = require('../../core/inspiration');
 const { createId, LIMITS } = require('../../core/limits');
 const { formatAbsolute } = require('../../core/format');
+const { setDraftLeaveAlert } = require('../../services/draft-alert');
+
+function guardDraft(data) {
+  setDraftLeaveAlert(Boolean(data.draft.trim() && !(data.savedId && data.savedDraft === data.draft)));
+}
 
 function initialData() {
   return { ready: false, phase: 'select', options: [], total: 0, query: '', selectedOnly: false,
@@ -17,10 +22,12 @@ Page({
   onHide() { this.suspend(); },
   onUnload() { this.suspend(); },
   suspend() {
+    setDraftLeaveAlert(false);
     this.active = false; this.session = (this.session || 0) + 1; this.store = null;
     this.materials = []; this.selected = []; this.pendingSave = null; this.setData(initialData());
   },
   async load() {
+    setDraftLeaveAlert(false);
     this.active = true; const session = this.session = (this.session || 0) + 1;
     this.materials = []; this.selected = []; this.pendingSave = null; this.selectionVersion = 0; this.setData(initialData());
     const app = getApp();
@@ -65,9 +72,10 @@ Page({
     this.selectionVersion++; this.setData({ error: '' }); this.renderOptions();
   },
   onTemplate(event) {
-    if (!this.current() || this.data.busy) return;
+    if (!this.current() || this.data.busy || this.data.phase !== 'edit') return;
     const templateId = event.currentTarget.dataset.template;
-    if (USE_TEMPLATES.some((entry) => entry.id === templateId)) { this.selectionVersion++; this.setData({ templateId }); }
+    if (templateId === this.data.templateId || !USE_TEMPLATES.some((entry) => entry.id === templateId)) return;
+    this.onGenerate(templateId);
   },
   onRefresh() {
     if (!this.current() || this.data.busy) return;
@@ -80,15 +88,18 @@ Page({
       } catch (err) { this.setData({ error: '素材未能刷新，当前稿件仍保留。' }); }
     } });
   },
-  onGenerate() {
+  onGenerate(requestedTemplate) {
     if (!this.current() || this.data.busy) return;
+    const templateId = typeof requestedTemplate === 'string' ? requestedTemplate : this.data.templateId;
+    const oldTemplate = this.data.templateId, oldPhase = this.data.phase;
     const session = this.session, revision = this.selectionVersion, oldDraft = this.data.draft;
     const apply = () => {
-      if (!this.current(session) || revision !== this.selectionVersion || oldDraft !== this.data.draft) return;
+      if (!this.current(session) || this.data.busy || this.data.phase !== oldPhase || revision !== this.selectionVersion || oldDraft !== this.data.draft || oldTemplate !== this.data.templateId) return;
       try {
-        const result = buildMaterialDraft(this.store.listInspirations(), this.selected, this.data.templateId);
+        const result = buildMaterialDraft(this.store.listInspirations(), this.selected, templateId);
         if (this.pendingSave && this.pendingSave.text !== result.text) this.pendingSave = null;
-        this.setData({ phase: 'edit', draft: result.text, draftEdited: false, error: '', notice: '' }, () => this.scrollTop(session));
+        this.setData({ phase: 'edit', templateId, draft: result.text, draftEdited: false, error: '', notice: '' }, () => this.scrollTop(session));
+        guardDraft(this.data);
       } catch (err) { this.setData({ error: err.message }); }
     };
     if (this.data.draftEdited) {
@@ -107,7 +118,12 @@ Page({
     if (!this.current() || !this.data.draft) return;
     const session = this.session; this.setData({ phase: 'edit', error: '' }, () => this.scrollTop(session));
   },
-  onInput(event) { if (this.current() && !this.data.busy) { if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null; this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '' }); } },
+  onInput(event) {
+    if (!this.current() || this.data.busy) return;
+    if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null;
+    this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '' });
+    guardDraft(this.data);
+  },
   onCopy() {
     if (!this.current() || this.data.busy) return;
     const text = this.data.draft, session = this.session;
@@ -134,13 +150,20 @@ Page({
       this.pendingSave = { text, store, item };
       const result = await store.saveInspiration(item);
       if (!this.current(session)) return;
-      if (!result || !result.ok || result.synced !== true) throw Error('SAVE_FAILED');
+      if (!result || !result.ok || result.synced !== true) {
+        const unknown = !result || !result.code || ['NETWORK', 'INTERNAL'].includes(result.code);
+        this.setData({ busy: false, error: unknown
+          ? '尚未确认另存，稿件还在。请重试确认，或先复制。'
+          : '未能另存，稿件还在。请检查内容后重试，或先复制。' });
+        return;
+      }
       this.setData({ busy: false, savedId: item.id, savedDraft: text,
         notice: '已另存为新灵感' });
       this.pendingSave = null;
+      guardDraft(this.data);
       if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
     } catch (err) {
-      if (this.current(session)) this.setData({ busy: false, error: '另存未完成，稿件仍保留，可重试或先复制。' });
+      if (this.current(session)) this.setData({ busy: false, error: '尚未确认另存，稿件还在。请重试确认，或先复制。' });
     }
   },
   onOpenSaved() { if (this.current() && this.data.savedId) wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.savedId) }); },

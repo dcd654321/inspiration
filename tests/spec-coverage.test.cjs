@@ -24,7 +24,11 @@ const IN_SCOPE = [
   ['complete-product-workflows', 'find-and-use'],
   ['add-material-output', 'material-output'],
   ['deploy-product-release', 'product-deployment'],
-  ['cloud-confirmed-saves', 'cloud-confirmed-storage']
+  ['cloud-confirmed-saves', 'cloud-confirmed-storage'],
+  ['repair-ui-interactions', 'ui-interactions'],
+  ['refine-editing-and-material-flow', 'experience-refinement'],
+  ['enable-ai-workbench', 'ai-workbench-experience'],
+  ['repair-page-session-races', 'page-session-safety']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */

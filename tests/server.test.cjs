@@ -410,6 +410,35 @@ test('相同内容在确认丢失后重试不增加版本，真正的并发改�
   assert.strictEqual(conflict.code, CODE.conflict);
 });
 
+test('全量复核：字段排序变化不误判照片历史删除且同内容重试不增版本', async () => {
+  const { repository, db } = setup();
+  const item = anInspiration({
+    photos: [{ id: 'photo', fileId: 'cloud://synthetic/file', createdAt: NOW }],
+    textHistory: [{ id: 'history', text: '旧原文', replacedAt: NOW }],
+    supplements: [{ id: 'sup', content: '补充', createdAt: NOW, source: 'user',
+      contentHistory: [{ id: 'version', content: '旧补充', replacedAt: NOW }] }]
+  });
+  await db.put('acct_dcd', { accountKey: 'acct_dcd', generation: 1, version: 1,
+    updatedAt: NOW, inspirations: [item], photoCleanup: [] });
+  function reorder(value) {
+    if (Array.isArray(value)) return value.map(reorder);
+    if (value && typeof value === 'object') return Object.fromEntries(
+      Object.entries(value).reverse().map(([key, entry]) => [key, reorder(entry)]));
+    return value;
+  }
+  const reordered = reorder(item);
+  const duplicate = await repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [reordered] });
+  assert.strictEqual(duplicate.ok, true);
+  assert.strictEqual(duplicate.data.version, 1);
+  const changed = { ...reordered, text: '新正文', updatedAt: NOW + 1 };
+  const accepted = await repository.push('acct_dcd', { generation: 1, baseVersion: 1, upserts: [changed] });
+  assert.strictEqual(accepted.ok, true);
+  assert.strictEqual(accepted.data.version, 2);
+  const tampered = { ...changed, photos: [{ ...changed.photos[0], fileId: 'cloud://another/file' }] };
+  assert.strictEqual((await repository.push('acct_dcd', { generation: 1, baseVersion: 2, upserts: [tampered] })).code, 'PHOTO_REMOVE_REQUIRES_ACTION');
+  assert.strictEqual((await repository.push('acct_dcd', { generation: 1, baseVersion: 2, upserts: [{ ...changed, textHistory: [] }] })).code, CODE.immutableViolation);
+});
+
 test('并发写入同一账户只有一条能通过版本条件更新', async () => {
   const { repository, db } = setup();
   const responses = await Promise.all([

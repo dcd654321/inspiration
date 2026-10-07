@@ -145,9 +145,9 @@ test('选材稿另存独立记录且同稿不重复保存，失败和超长不�
     const before = JSON.stringify(state.items);
     page.onToggle(event('ins_b:text')); page.onGenerate();
     state.savedResult = { ok: false }; await page.onSave();
-    assert.match(page.data.error, /另存未完成/); assert.equal(page.data.savedId, ''); assert.equal(page.data.draft, '正文乙');
+    assert.match(page.data.error, /尚未确认另存/); assert.equal(page.data.savedId, ''); assert.equal(page.data.draft, '正文乙');
     state.savedResult = { ok: true, synced: false }; await page.onSave();
-    assert.match(page.data.error, /另存未完成/); assert.equal(page.data.savedId, '');
+    assert.match(page.data.error, /尚未确认另存/); assert.equal(page.data.savedId, '');
     state.savedResult = { ok: true, synced: true }; await page.onSave();
     assert.match(page.data.notice, /已另存/); assert.ok(page.data.savedId);
     assert.equal(state.saves[0].id, state.saves[1].id); assert.equal(state.saves[1].id, state.saves[2].id);

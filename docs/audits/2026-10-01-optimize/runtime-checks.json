@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-01",
+  "environment": {
+    "width": 390,
+    "height": 844,
+    "library": "3.17.2",
+    "cloud": false,
+    "ai": false,
+    "data": "synthetic in-memory fixture"
+  },
+  "captureUnknown": {
+    "status": "unknown",
+    "draftRetained": true,
+    "primarySaveButtons": 1
+  },
+  "originSaving": {
+    "pending": "text",
+    "nativeDisabled": "true",
+    "draftAfterLateEvent": "修改 A2：等待确认时保留这句话。"
+  },
+  "originConfirmed": {
+    "snapshotText": "修改 A：整理周末散步路线。",
+    "displayText": "修改 A：整理周末散步路线。",
+    "editing": false
+  },
+  "latestOriginUnknown": {
+    "unknown": true,
+    "message": "尚未确认保存，内容还在。请重试，或先复制。",
+    "finalScreenshotCaptured": false,
+    "warningClass": "notice notice-warn",
+    "warningBackground": "rgb(253, 244, 227)",
+    "buttonLabel": "重试保存"
+  },
+  "computedDetailStyles": {
+    "origin": "19px",
+    "compose": "16px",
+    "timeline": "16px",
+    "count": "13px",
+    "timestamp": "13px",
+    "composeBorder": "rgb(133, 133, 150)"
+  },
+  "materialSelection": {
+    "phase": "select",
+    "template": "free",
+    "formatButtons": 0,
+    "options": 4
+  },
+  "materialDraft": {
+    "phase": "edit",
+    "template": "free",
+    "formatButtons": 5
+  },
+  "materialTemplateCancel": {
+    "draftRetained": true,
+    "template": "free",
+    "selectedCount": 1,
+    "modalResult": "mocked"
+  },
+  "materialTemplateConfirm": {
+    "template": "work",
+    "selectedCount": 1,
+    "selectedSourceRetained": true,
+    "modalResult": "mocked"
+  },
+  "limitations": [
+    "390px only",
+    "native keyboard not tested",
+    "real cloud not tested",
+    "final warning and material screenshots incomplete after window minimized"
+  ]
+}

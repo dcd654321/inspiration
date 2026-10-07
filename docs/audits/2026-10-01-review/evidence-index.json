@@ -1,0 +1,213 @@
+{
+  "baseline": "dev/a6dd036",
+  "scope": "WeChat Developer Tools QA fixture; synthetic data; no cloud or device verification",
+  "screenshots": [
+    {
+      "file": "01-capture.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "02-editing.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "03-saved.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "04-continue-stable.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "04-continue.png",
+      "usable": false,
+      "note": "transitional frame; use 04-continue-stable.png"
+    },
+    {
+      "file": "06-list.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "07-filter.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "08-detail.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "09-detail-menu.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "10-supplement-menu.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "11-delete-confirm.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "12-output.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "13-content.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "14-format.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "15-material.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "16-mine.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "17-mine-lower.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "18-share.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "19-missing.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "20-recovery.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "21-focus-not-bound.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "22-supplement-pending-edit.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "23-supplement-input-lost.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "24-output-pending-edit.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "25-output-false-saved.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "26-format-safe-area.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "27-output-unknown-as-failed.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "28-archive-long.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "29-material-selected.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "30-list-return-failure.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "31-focus-detail.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "32-launch-loading.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "33-launch-slow.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "34-launch-failed.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "35-history.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "36-ai-disabled.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "37-photo-unavailable.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "38-shared-unavailable.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "39-my-shares.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "40-feedback.png",
+      "usable": true,
+      "note": ""
+    },
+    {
+      "file": "41-welcome.png",
+      "usable": true,
+      "note": ""
+    }
+  ],
+  "count": 41,
+  "usableCount": 40
+}

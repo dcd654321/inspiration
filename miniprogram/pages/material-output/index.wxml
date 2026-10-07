@@ -1,15 +1,13 @@
-<view class="page material-page">
+<view class="page material-page {{phase === 'select' ? 'material-select-page' : ''}}">
   <view class="page-title">选材整理</view>
   <view class="page-sub">从多条灵感中选择内容，整理成一份稿件。</view>
-  <view class="selection-note">未另存的稿件离开后不保留，请先复制或另存。</view>
+  <view wx:if="{{draft && !(savedId && savedDraft === draft)}}" class="selection-note">未另存的稿件离开后不保留，请先复制或另存。</view>
   <view wx:if="{{!ready}}" class="empty"><view class="ed">正在读取素材…</view></view>
   <view wx:elif="{{error && !total}}" class="empty">
     <view class="notice notice-err" aria-live="polite">{{error}}</view>
     <button class="btn btn-plain btn-block" bindtap="load">重新读取</button>
   </view>
   <block wx:elif="{{phase === 'select'}}">
-    <view class="section-label">选择使用方式</view>
-    <view class="template-options"><button wx:for="{{templates}}" wx:key="id" class="template-option {{templateId === item.id ? 'template-selected' : ''}}" data-template="{{item.id}}" bindtap="onTemplate">{{item.name}}</button></view>
     <view class="selection-note">只整理选中的文字，不自动补写。数字表示内容进入稿件的顺序。</view>
     <input class="material-search" value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索素材文字" aria-label="搜索素材文字" />
     <view class="material-tools"><button class="btn-link" bindtap="onSelectedOnly">{{selectedOnly ? '显示全部' : '只看已选'}}</button><button class="btn-link" bindtap="onRefresh">刷新素材</button></view>
@@ -22,6 +20,9 @@
   </block>
   <block wx:else>
     <button class="back-select" bindtap="onBackToSelection" disabled="{{busy}}">返回选材</button>
+    <view class="section-label">稿件格式</view>
+    <view class="template-options"><button wx:for="{{templates}}" wx:key="id" class="template-option {{templateId === item.id ? 'template-selected' : ''}}" data-template="{{item.id}}" bindtap="onTemplate" disabled="{{busy}}" aria-label="{{item.name}}{{templateId === item.id ? '，已选择' : ''}}">{{templateId === item.id ? '✓ ' : ''}}{{item.name}}</button></view>
+    <view class="selection-note">只编排选中的文字，不自动补写。切换格式会重新整理稿件。</view>
     <textarea class="draft-editor" value="{{draft}}" maxlength="-1" bindinput="onInput" disabled="{{busy}}" aria-label="编辑稿件" />
     <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">
       <text wx:if="{{draft.length > maxLength}}">另存最多{{maxLength}}字符，当前超出{{draft.length - maxLength}}字符。</text>

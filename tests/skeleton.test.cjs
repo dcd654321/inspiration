@@ -8,12 +8,14 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 
-test('AI 开关保持关闭，云开关打开时环境 ID 必须已填', () => {
+test('授权开放 AI 客户端且保留独立函数与超时边界，云环境必须已填', () => {
   const cloud = require('../miniprogram/config/cloud');
   const ai = require('../miniprogram/config/ai');
 
-  // AI 还没接入真实模型，也没有额度与内容安全，不能开
-  assert.strictEqual(ai.enabled, false, 'AI 开关须为 false：未接入真实模型，且缺少额度与内容安全');
+  // 2026-10-02 用户授权打开入口；服务端仍以模型/审核/事务额度失败关闭。
+  assert.strictEqual(ai.enabled, true);
+  assert.strictEqual(ai.functionName, 'linggan_ai');
+  assert.strictEqual(ai.timeoutMs, 55000);
 
   // 云开关**可以由用户打开**（2026-09-22 起，此前这里断言它必须为 false）。
   //

@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-01",
+  "scope": "local HTML design prototype, synthetic data; no cloud, native clipboard, authorization, real keyboard or user test",
+  "browser": "Codex in-app browser",
+  "checks": [
+    { "task": "unknown save has one retry primary and keeps text", "result": "pass", "retryButtons": 1, "oldSaveButtons": 0 },
+    { "task": "confirmed save links to supplement with focus", "result": "pass", "selected": "s4", "focused": "supplement" },
+    { "task": "supplement input disabled while waiting", "result": "pass" },
+    { "task": "body modification locks editor, save and cancel for simulated 3s", "result": "pass" },
+    { "task": "cancel draft format replacement preserves manual text exactly", "result": "pass" },
+    { "task": "copy action renders independent confirmation", "result": "pass", "clipboard": "not written" },
+    { "task": "second list record opens its matching content", "result": "pass" },
+    { "task": "five screens at 320/375/390/430 logical px", "result": "pass", "combinations": 20, "overflowFailures": 0, "visibleButtonTargetFailures": 0, "minTargetPx": 44 },
+    { "task": "B direction token switch", "result": "pass", "paper": "#f3f6fa", "brand": "#2459ba", "limit": "palette, fonts and radius comparison; full B material layout not implemented" },
+    { "task": "final browser error logs", "result": "pass", "count": 0 },
+    { "task": "five visual captures", "result": "pass", "limit": "prototype only; chrome and safe area are schematic" }
+  ],
+  "unchecked": [
+    "native launch route", "WeChat actual cloud save and lost receipt retry", "real multi-account isolation",
+    "iOS/Android Chinese keyboard and back gesture", "permissions and real photo lifecycle", "screen readers", "1.3 font scale on native device", "real user preference and task success"
+  ],
+  "sourceChecks": { "npmTest": "437/437", "npmCheck": "261 checks", "openSpec": "9/9 strict", "limit": "existing suite does not prevent the newly observed body edit race; no business fix made" }
+}

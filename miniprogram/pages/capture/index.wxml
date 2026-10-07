@@ -30,12 +30,6 @@
       <text class="count {{nearLimit ? 'count-near' : ''}} {{overBy > 0 ? 'count-over' : ''}}">{{draft.length}} / {{maxLength}}</text>
     </view>
 
-    <button
-      class="btn btn-block save-btn"
-      bindtap="onSave"
-      disabled="{{!canSave || saving}}"
-    >{{saving ? '正在记下…' : '记下来'}}</button>
-
     <!-- 结果未知：超时、连接中断。不能宣布失败，也不能假装成功；
          内容确实还在输入框里，用常驻提示给出重试与保全两条路。 -->
     <view wx:if="{{status === 'unknown'}}" class="notice notice-warn">
@@ -44,8 +38,7 @@
         <view class="notice-title">尚未确认保存</view>
         <view class="notice-text">内容还在输入框中。退出前请重试保存或复制内容。</view>
         <view class="notice-acts">
-          <button class="btn btn-sm" bindtap="onRetrySave">重试保存</button>
-          <button class="btn btn-plain btn-sm" bindtap="onCopyDraft">复制内容</button>
+          <button class="btn btn-plain btn-sm" bindtap="onCopyDraft" disabled="{{saving}}">复制内容</button>
         </view>
       </view>
     </view>
@@ -58,6 +51,12 @@
         <view class="notice-text">{{errorText}}</view>
       </view>
     </view>
+
+    <button
+      class="btn btn-block save-btn"
+      bindtap="onSave"
+      disabled="{{!canSave || saving}}"
+    >{{saving ? '正在记下…' : status === 'unknown' ? '重试保存' : '记下来'}}</button>
 
     <!-- 保存成功：只认云端确认。带上刚记下的内容摘录与两条下一步 -->
     <view wx:if="{{lastSavedId}}" class="notice notice-success notice-saved">

@@ -1,0 +1,25 @@
+{
+  "rects": [
+    {
+      "id": "",
+      "dataset": {},
+      "left": 20,
+      "right": 370,
+      "top": 588.484375,
+      "bottom": 633.484375,
+      "width": 350,
+      "height": 45
+    },
+    {
+      "id": "",
+      "dataset": {},
+      "left": 20,
+      "right": 370,
+      "top": 641.484375,
+      "bottom": 686.484375,
+      "width": 350,
+      "height": 45
+    }
+  ],
+  "windowHeight": 844
+}

@@ -60,7 +60,8 @@ test('AI 未启用时明确说明，不伪造任何结果', async () => {
 
   assert.strictEqual(result.ok, false);
   assert.strictEqual(result.code, CODE.disabled);
-  assert.ok(result.message.indexOf('还没开放') !== -1);
+  assert.match(result.message, /暂时无法使用/);
+  assert.match(result.message, /手动整理/);
 });
 
 test('正文过短不请求扩展，也不消耗额度', async () => {

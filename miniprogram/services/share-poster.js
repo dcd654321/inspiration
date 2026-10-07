@@ -78,19 +78,22 @@ function renderOne(page, lines, index, total, qrPath, title) {
   });
 }
 
-async function renderPosters(page, body, title, base64, codePath) {
+async function renderPosters(page, body, title, base64, codePath, isCurrent = () => true) {
   const pages = paginatePoster(body);
   if (!pages) throw Error('POSTER_TOO_LONG');
-  await writeCodeFile(base64, codePath);
   const files = [];
   try {
+    if (!isCurrent()) throw Error('STALE_PAGE');
+    await writeCodeFile(base64, codePath);
     for (let index = 0; index < pages.length; index += 1) {
+      if (!isCurrent()) throw Error('STALE_PAGE');
       files.push(await renderOne(page, pages[index], index, pages.length, codePath, title));
     }
+    if (!isCurrent()) throw Error('STALE_PAGE');
     return files;
   } catch (err) {
     const manager = wx.getFileSystemManager();
-    files.forEach((filePath) => {
+    files.concat(codePath).forEach((filePath) => {
       try { manager.unlink({ filePath, fail() {} }); } catch (ignored) { /* 不掩盖原始生成失败。 */ }
     });
     throw err;

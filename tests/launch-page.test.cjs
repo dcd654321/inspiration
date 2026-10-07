@@ -55,6 +55,25 @@ test('启动页：快照就绪即切入记录页，不额外停留', async () =>
   } finally { ctx.done(); }
 });
 
+test('全量复核：启动重试旧失败不覆盖新读取且旧成功不触发跳转', async () => {
+  for (const oldResult of [null, { ready: true }]) {
+    let oldResolve, nextResolve;
+    const ctx = drive({
+      ensureReady: () => new Promise((resolve) => { oldResolve = resolve; }),
+      refreshAccount: () => new Promise((resolve) => { nextResolve = resolve; })
+    });
+    try {
+      const first = ctx.page.onLoad(), next = ctx.page.onRetry();
+      oldResolve(oldResult); await first;
+      assert.strictEqual(ctx.page.data.loading, true);
+      assert.strictEqual(ctx.opened(), '');
+      nextResolve(null); await next;
+      assert.strictEqual(ctx.page.data.failed, true);
+      assert.strictEqual(ctx.opened(), '');
+    } finally { ctx.done(); }
+  }
+});
+
 test('启动页：云能力关闭时直接进入，不空转', async () => {
   let ensureCalled = false;
   const ctx = drive({ cloudEnabled: false, ensureReady() { ensureCalled = true; return Promise.resolve(null); } });

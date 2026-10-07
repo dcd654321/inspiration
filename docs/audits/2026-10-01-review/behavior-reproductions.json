@@ -1,0 +1,39 @@
+{
+  "scope": "Node executes current page logic with deferred synthetic store; not device or cloud evidence",
+  "outputEditDuringSave": {
+    "displayed": "等待期间输入的新稿 B",
+    "actuallySaved": "提交的旧稿 A",
+    "savedSame": true,
+    "canSaveAs": false,
+    "notice": "已另存为新灵感",
+    "incorrectlyMarkedSaved": true
+  },
+  "supplementEditDuringSave": {
+    "draftAfter": "",
+    "sessionDraft": "",
+    "saved": [
+      "第一句 A"
+    ],
+    "newInputLost": true
+  },
+  "returnReadFailure": {
+    "before": 1,
+    "after": 0,
+    "error": "请稍后重试。",
+    "sameAccount": true
+  },
+  "outputLeave": {
+    "afterReopen": "原始正文",
+    "guardCalls": 0,
+    "lostEdits": true
+  },
+  "cancelReplace": {
+    "text": "必须保留的修改",
+    "templateId": "free",
+    "pass": true
+  },
+  "outputUnknown": {
+    "message": "另存失败，稿件还在，可稍后重试或先复制。",
+    "incorrectDefiniteFailure": true
+  }
+}

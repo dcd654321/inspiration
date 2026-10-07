@@ -1,0 +1,141 @@
+[
+  {
+    "name": "32-launch-loading",
+    "path": "pages/launch/index",
+    "data": {
+      "loading": true,
+      "failed": false,
+      "slow": true,
+      "error": "",
+      "__webviewId__": 32
+    }
+  },
+  {
+    "name": "35-history",
+    "path": "pages/history/index",
+    "data": {
+      "ready": true,
+      "missing": false,
+      "readError": false,
+      "versions": [],
+      "current": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+      "__webviewId__": 33
+    }
+  },
+  {
+    "name": "36-ai-disabled",
+    "path": "pages/ai-workbench/index",
+    "data": {
+      "ready": true,
+      "enabled": false,
+      "scope": "expand",
+      "options": [
+        {
+          "id": "demo_s1",
+          "content": "每条路线控制在两小时内，补充休息点和雨天替代安排。",
+          "selected": false
+        },
+        {
+          "id": "demo_s2",
+          "content": "先从自己熟悉的三个街区开始，照片仅留作个人参考。",
+          "selected": false
+        }
+      ],
+      "preview": false,
+      "entries": [],
+      "summary": "",
+      "mode": "",
+      "targetId": "",
+      "selectedCount": 0,
+      "targets": [],
+      "busy": false,
+      "completed": false,
+      "error": "",
+      "notice": "",
+      "__webviewId__": 34,
+      "title": "扩展想法",
+      "original": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。"
+    }
+  },
+  {
+    "name": "37-photo-unavailable",
+    "path": "pages/photo-viewer/index",
+    "data": {
+      "photos": [
+        {
+          "id": "demo_p",
+          "src": "",
+          "failed": true
+        }
+      ],
+      "current": 0,
+      "error": "照片未加载",
+      "loading": false,
+      "__webviewId__": 35
+    }
+  },
+  {
+    "name": "38-shared-unavailable",
+    "path": "pages/shared/index",
+    "data": {
+      "loading": false,
+      "unavailable": false,
+      "error": "请稍后重试。",
+      "title": "",
+      "body": "",
+      "date": "",
+      "__webviewId__": 36
+    }
+  },
+  {
+    "name": "39-my-shares",
+    "path": "pages/my-shares/index",
+    "data": {
+      "items": [],
+      "loading": false,
+      "busy": false,
+      "error": "分享记录暂时无法加载。",
+      "nextBefore": null,
+      "__webviewId__": 37
+    }
+  },
+  {
+    "name": "40-feedback",
+    "path": "pages/feedback/index",
+    "data": {
+      "reporting": false,
+      "category": "idea",
+      "categories": [
+        {
+          "value": "idea",
+          "label": "功能建议"
+        },
+        {
+          "value": "bug",
+          "label": "使用问题"
+        },
+        {
+          "value": "other",
+          "label": "其他意见"
+        }
+      ],
+      "body": "",
+      "trimmedLength": 0,
+      "canSubmit": false,
+      "busy": false,
+      "error": "反馈记录暂时无法加载。",
+      "notice": "",
+      "items": [],
+      "loading": false,
+      "nextBefore": null,
+      "__webviewId__": 38
+    }
+  },
+  {
+    "name": "41-welcome",
+    "path": "pages/welcome/index",
+    "data": {
+      "__webviewId__": 39
+    }
+  }
+]

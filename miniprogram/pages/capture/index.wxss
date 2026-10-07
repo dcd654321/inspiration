@@ -22,6 +22,7 @@
   width: 100%;
   min-height: 300rpx;
   font-size: 33rpx;
+  font-size: max(33rpx, 16px);
   line-height: 1.75;
   letter-spacing: 0.01em;
   color: var(--ink);
@@ -46,18 +47,21 @@
 
 .hint-draft {
   font-size: 24rpx;
+  font-size: max(24rpx, 13px);
   color: var(--ink-3);
 }
 
 /* 超限时说清差多少，并保持全文可见——不静默截断粘贴内容 */
 .hint-over {
   font-size: 24rpx;
+  font-size: max(24rpx, 13px);
   color: var(--danger);
 }
 
 .count {
   flex: 0 0 auto;
   font-size: 24rpx;
+  font-size: max(24rpx, 13px);
   color: var(--ink-3);
 }
 
@@ -76,6 +80,7 @@
 /* 成功卡里的摘录：就是刚确认写入的那条文字，两行封顶 */
 .saved-quote {
   font-size: 27rpx;
+  font-size: max(27rpx, 16px);
   line-height: 1.6;
   color: var(--ink-2);
   margin-top: 8rpx;
@@ -89,6 +94,7 @@
 
 .hint-copy {
   font-size: 24rpx;
+  font-size: max(24rpx, 13px);
   color: var(--ink-3);
   margin-top: 16rpx;
 }

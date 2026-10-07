@@ -26,7 +26,12 @@
     <text>{{reviewError}}</text>
   </view>
 
-  <view wx:if="{{loading}}" class="skeleton-list">
+  <view wx:if="{{items.length && (loading || error)}}" class="refresh-status" aria-live="polite">
+    <text>{{loading ? '正在更新…' : error}}</text>
+    <button wx:if="{{!loading}}" class="btn-link" bindtap="onRetry">重试</button>
+  </view>
+
+  <view wx:if="{{loading && items.length === 0}}" class="skeleton-list">
     <view class="skeleton-row" wx:for="{{[1, 2, 3]}}" wx:key="*this">
       <view class="skeleton-line"></view>
       <view class="skeleton-line"></view>
@@ -65,15 +70,6 @@
   </block>
 
   <block wx:else>
-    <view wx:if="{{error}}" class="notice notice-warn list-notice">
-      <view class="mark"></view>
-      <view class="notice-body">
-        <view class="notice-title">刷新未完成</view>
-        <view class="notice-text">当前内容仍可查看。</view>
-        <view class="notice-acts"><button class="btn btn-plain btn-sm" bindtap="onRetry">重新读取</button></view>
-      </view>
-    </view>
-
     <!-- 段落头：区名与数量在左，「取用」类入口在右。这类动作属于整份列表，不属于某一条。 -->
     <view class="list-head">
       <view class="list-head-title">
@@ -81,7 +77,7 @@
         <text class="v">共 {{items.length}} 条</text>
       </view>
       <view class="list-head-acts">
-        <button wx:if="{{aiEnabled}}" class="btn-link" bindtap="onSummarize">汇总多条灵感</button>
+        <button wx:if="{{aiEnabled && activeCount > 1}}" class="btn-link" bindtap="onSummarize">AI 汇总</button>
         <button class="btn-link" bindtap="onMaterialOutput">选材整理</button>
       </view>
     </view>

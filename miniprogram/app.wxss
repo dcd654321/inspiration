@@ -15,6 +15,7 @@ page {
   --surface: #ffffff;        /* 承载面 */
   --line: #e6e4de;           /* 发丝分隔线 */
   --line-strong: #d7d4cb;
+  --field-line: #858596;
 
   --brand: #34377f;
   --brand-soft: #eeeef8;
@@ -305,10 +306,19 @@ page {
   background: var(--surface);
   border-radius: 32rpx 32rpx 0 0;
   padding: 12rpx 0 24rpx;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
+
+.sheet > view, .sheet > button, .sheet > picker { flex-shrink: 0; }
 
 .sheet-title {
   font-size: 24rpx;
+  font-size: max(24rpx, 13px);
   color: var(--ink-3);
   text-align: center;
   padding: 24rpx 40rpx 20rpx;

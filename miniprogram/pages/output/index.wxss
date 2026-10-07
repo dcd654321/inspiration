@@ -3,6 +3,7 @@
 .output-summary {
   margin-top: 14rpx;
   font-size: 27rpx;
+  font-size: max(27rpx, 14px);
   color: var(--ink-2);
 }
 
@@ -24,6 +25,7 @@
 .selection-note {
   margin-top: 10rpx;
   font-size: 25rpx;
+  font-size: max(25rpx, 13px);
   line-height: 1.65;
   color: var(--ink-3);
 }
@@ -39,13 +41,15 @@
   padding: 30rpx;
   box-sizing: border-box;
   background: var(--surface);
-  border: 2rpx solid var(--line);
+  border: 2rpx solid var(--field-line);
   border-radius: 18rpx;
   color: var(--ink);
   font-size: 29rpx;
+  font-size: max(30rpx, 16px);
+  font-weight: 400;
   line-height: 1.7;
 }
-.draft-count { margin-top: 10rpx; color: var(--ink-3); font-size: 24rpx; text-align: right; }
+.draft-count { margin-top: 10rpx; color: var(--ink-3); font-size: max(24rpx, 13px); text-align: right; }
 .count-over { color: var(--danger); }
 .saved-link { margin-top: 16rpx; }
 .saved-link .btn-link { width: auto; margin: 0; }
@@ -54,12 +58,15 @@
 .sheet-hint {
   padding: 20rpx 40rpx 0;
   font-size: 25rpx;
+  font-size: max(25rpx, 13px);
   line-height: 1.65;
   color: var(--ink-3);
 }
 
 .sheet-scroll {
   max-height: 56vh;
+  flex: 0 1 auto;
+  min-height: 0;
   margin-top: 16rpx;
 }
 
@@ -88,6 +95,8 @@
   flex: 1;
   min-width: 0;
   font-size: 29rpx;
+  font-size: max(30rpx, 16px);
+  font-weight: 400;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
@@ -95,7 +104,7 @@
 
 /* 格式选择 */
 .format-options { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 24rpx 40rpx 0; }
-.format-options .template-option { width: auto; flex: 0 0 auto; margin: 0; padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; font-size: 26rpx; background: var(--surface); color: var(--ink-2); border: 1rpx solid var(--line); border-radius: 18rpx; }
+.format-options .template-option { width: auto; flex: 0 0 auto; margin: 0; padding: 0 22rpx; min-height: max(88rpx, 44px); line-height: max(88rpx, 44px); font-size: max(28rpx, 14px); background: var(--surface); color: var(--ink-2); border: 1rpx solid var(--line); border-radius: 18rpx; }
 .template-option::after { border: 0; }
 .format-options .template-selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
 
@@ -107,6 +116,7 @@
   border-radius: 18rpx;
   color: var(--ink-2);
   font-size: 25rpx;
+  font-size: max(30rpx, 16px);
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-all;

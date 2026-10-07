@@ -20,7 +20,7 @@
   <block wx:else>
     <view class="detail-head">
       <view class="stamp">{{time}}</view>
-      <button class="detail-more" bindtap="onOpenMore" aria-label="更多操作">更多</button>
+      <button class="detail-more" bindtap="onOpenMore" disabled="{{pending !== '' || editing || editingSupplementId}}" aria-label="更多操作">更多</button>
     </view>
     <view wx:if="{{isAi}}" class="notice">AI 汇总内容，请核对后使用。</view>
     <view wx:if="{{merged}}" class="notice">此条灵感已合并，内容仍完整保留。<button class="btn-link" bindtap="onRestoreInspiration" disabled="{{pending}}">恢复为独立灵感</button></view>
@@ -33,15 +33,18 @@
           value="{{editDraft}}"
           maxlength="{{textMax}}"
           auto-height
+          disabled="{{pending !== ''}}"
+          aria-label="修改正文"
           bindinput="onEditInput"
         />
+        <view wx:if="{{pending === 'text' || editDraft !== text}}" class="draft-hint">{{pending === 'text' ? '正在保存，请稍候。' : editUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
         <view class="origin-acts">
-          <button class="btn btn-sm" bindtap="onSaveEdit" disabled="{{!canSaveEdit || pending !== ''}}">{{pending === 'text' ? '保存中…' : '保存修改'}}</button>
+          <button class="btn btn-sm" bindtap="onSaveEdit" disabled="{{!canSaveEdit || pending !== ''}}">{{pending === 'text' ? '保存中…' : editUnknown ? '重试保存' : '保存修改'}}</button>
           <button class="btn btn-plain btn-sm" bindtap="onCancelEdit" disabled="{{pending !== ''}}">取消</button>
         </view>
-        <view wx:if="{{editError}}" class="notice notice-err">
+        <view wx:if="{{editError}}" class="notice {{editUnknown ? 'notice-warn' : 'notice-err'}}">
           <view class="mark"></view>
-          <text>{{editError}}</text>
+          <view class="notice-body"><text>{{editError}}</text><button class="btn-link" data-kind="text" bindtap="onCopyUnsaved">复制当前输入</button></view>
         </view>
       </block>
 
@@ -52,16 +55,16 @@
 
     <!-- 轻量动作：低频操作都收进了「更多」，这里只留两个主任务 -->
     <view class="detail-actions">
-      <button class="btn btn-quiet btn-sm" bindtap="onOpenOutput">整理成稿</button>
-      <button wx:if="{{!merged}}" class="btn btn-plain btn-sm" bindtap="onLocateCompose">继续补充</button>
+      <button class="btn btn-quiet btn-sm" bindtap="onOpenOutput" disabled="{{pending !== '' || editing || editingSupplementId}}">整理成稿</button>
+      <button wx:if="{{!merged}}" class="btn btn-plain btn-sm" bindtap="onLocateCompose" disabled="{{pending !== '' || editing || editingSupplementId}}">继续补充</button>
     </view>
-    <view wx:if="{{aiEnabled}}" class="output-acts output-acts-ai">
-      <button class="btn btn-plain btn-sm" bindtap="onAiExpand">扩展想法</button>
-      <button wx:if="{{supplements.length > 1}}" class="btn btn-plain btn-sm" bindtap="onAiSummarize">汇总补充</button>
+    <view wx:if="{{aiEnabled && !merged}}" class="output-acts output-acts-ai">
+      <button class="btn btn-plain btn-sm" bindtap="onAiExpand" disabled="{{pending !== '' || editing || editingSupplementId}}">AI 扩展想法</button>
+      <button wx:if="{{supplements.length > 1}}" class="btn btn-plain btn-sm" bindtap="onAiSummarize" disabled="{{pending !== '' || editing || editingSupplementId}}">AI 汇总补充</button>
     </view>
 
     <!-- 补充是详情页的主动作：输入框紧随原文，已有补充在输入框下方 -->
-    <view wx:if="{{!editing && !merged}}" class="detail-next">
+    <view wx:if="{{!editing && !editingSupplementId && !merged}}" class="detail-next">
       <view class="compose">
         <textarea
           class="compose-editor {{(composeFocus || supplementDraft) ? 'compose-tall' : ''}}"
@@ -70,6 +73,8 @@
           placeholder="又想到什么？"
           placeholder-class="compose-ph"
           bindinput="onSupplementInput"
+          focus="{{composeRequestedFocus}}"
+          disabled="{{pending !== ''}}"
           bindfocus="onComposeFocus"
           bindblur="onComposeBlur"
           cursor-spacing="24"
@@ -80,13 +85,14 @@
             class="btn btn-sm"
             bindtap="onSubmitSupplement"
             disabled="{{!canAddSupplement || pending !== ''}}"
-          >{{pending === 'supplement' ? '添加中…' : '添加补充'}}</button>
+          >{{pending === 'supplement' ? '添加中…' : supplementUnknown ? '重试保存' : '添加补充'}}</button>
         </view>
         <view wx:if="{{supplementDraft.length > supplementMax}}" class="hint-over">超出{{supplementDraft.length - supplementMax}}字符，请缩短后保存。</view>
+        <view wx:elif="{{supplementDraft}}" class="draft-hint">{{pending === 'supplement' ? '正在保存，请稍候。' : supplementUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
 
-        <view wx:if="{{supplementError}}" class="notice notice-err">
+        <view wx:if="{{supplementError}}" class="notice {{supplementUnknown ? 'notice-warn' : 'notice-err'}}">
           <view class="mark"></view>
-          <text>{{supplementError}}</text>
+          <view class="notice-body"><text>{{supplementError}}</text><button class="btn-link" data-kind="supplement" bindtap="onCopyUnsaved">复制当前输入</button></view>
         </view>
       </view>
     </view>
@@ -110,7 +116,7 @@
               <text>{{item.time}}</text>
               <text wx:if="{{item.isAi}}" class="tag tag-ai">AI 生成 · 请核对</text>
             </view>
-            <button class="tl-more" data-id="{{item.id}}" aria-label="打开补充操作" catchtap="onSupplementAction">更多</button>
+            <button class="tl-more" data-id="{{item.id}}" aria-label="打开补充操作" catchtap="onSupplementAction" disabled="{{pending !== '' || editing || editingSupplementId}}">更多</button>
           </view>
 
           <!-- 行内修改：旧内容会留在历史里 -->
@@ -120,15 +126,18 @@
               value="{{supplementEditDraft}}"
               maxlength="{{supplementEditMax}}"
               auto-height
+              disabled="{{pending !== ''}}"
+              aria-label="修改补充"
               bindinput="onSupplementEditInput"
             />
+            <view wx:if="{{pending === 'supplementEdit' || supplementEditDraft !== supplementEditOriginal}}" class="draft-hint">{{pending === 'supplementEdit' ? '正在保存，请稍候。' : supplementEditUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
             <view class="tl-acts">
-              <button class="btn btn-sm" bindtap="onSupplementEditSave" disabled="{{!canSaveSupplementEdit || pending !== ''}}">{{pending === 'supplementEdit' ? '保存中…' : '保存修改'}}</button>
+              <button class="btn btn-sm" bindtap="onSupplementEditSave" disabled="{{!canSaveSupplementEdit || pending !== ''}}">{{pending === 'supplementEdit' ? '保存中…' : supplementEditUnknown ? '重试保存' : '保存修改'}}</button>
               <button class="btn btn-plain btn-sm" bindtap="onSupplementEditCancel" disabled="{{pending !== ''}}">取消</button>
             </view>
-            <view wx:if="{{supplementEditError}}" class="notice notice-err">
+            <view wx:if="{{supplementEditError}}" class="notice {{supplementEditUnknown ? 'notice-warn' : 'notice-err'}}">
               <view class="mark"></view>
-              <text>{{supplementEditError}}</text>
+              <view class="notice-body"><text>{{supplementEditError}}</text><button class="btn-link" data-kind="editSupplement" bindtap="onCopyUnsaved">复制当前输入</button></view>
             </view>
           </block>
 
@@ -170,14 +179,14 @@
     </view>
 
     <!-- 标签与阶段：一行摘要，点开才是表单；取消恢复进入前的值 -->
-    <view wx:if="{{!merged}}" class="organization">
+    <view wx:if="{{!merged && !editing && !editingSupplementId}}" class="organization">
       <view class="org-summary" bindtap="onToggleOrganization">
         <text class="org-value">{{orgSummary}}</text>
         <text class="org-toggle">{{orgOpen ? '收起' : '修改标记'}}</text>
       </view>
       <block wx:if="{{orgOpen}}">
-        <input class="tag-input" value="{{tagsDraft}}" bindinput="onTagsInput" maxlength="64" placeholder="标签，以逗号分隔，最多五个" aria-label="标签" />
-        <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageSelect"><view class="stage-picker">阶段：{{stages[stageIndex].label}} · 选择</view></picker>
+        <input class="tag-input" value="{{tagsDraft}}" bindinput="onTagsInput" maxlength="64" disabled="{{pending !== ''}}" placeholder="标签，以逗号分隔，最多五个" aria-label="标签" />
+        <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageSelect" disabled="{{pending !== ''}}"><view class="stage-picker">阶段：{{stages[stageIndex].label}} · 选择</view></picker>
         <view class="org-acts">
           <button class="btn btn-sm" bindtap="onSaveOrganization" disabled="{{pending !== ''}}">{{pending === 'organize' ? '保存中…' : '保存标记'}}</button>
           <button class="btn btn-plain btn-sm" bindtap="onCancelOrganization" disabled="{{pending !== ''}}">取消</button>

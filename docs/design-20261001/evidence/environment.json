@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-01",
+  "ai": false,
+  "scope": "current worktree; isolated fixture; synthetic memory data; cloud disabled; launch route bypassed",
+  "info": {
+    "pixelRatio": 3,
+    "safeArea": {
+      "top": 47,
+      "left": 0,
+      "right": 390,
+      "bottom": 810,
+      "width": 390,
+      "height": 763
+    },
+    "screenWidth": 390,
+    "screenHeight": 844,
+    "screenTop": 173,
+    "windowWidth": 390,
+    "windowHeight": 671,
+    "statusBarHeight": 47
+  }
+}

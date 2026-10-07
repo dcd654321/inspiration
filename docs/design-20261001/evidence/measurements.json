@@ -1,0 +1,58 @@
+[
+  {
+    "sel": ".editor",
+    "font": "17px",
+    "size": {
+      "width": 318,
+      "height": 156
+    }
+  },
+  {
+    "sel": ".count",
+    "font": "12px",
+    "size": {
+      "width": 54.453125,
+      "height": 19.1875
+    }
+  },
+  {
+    "sel": ".save-btn",
+    "font": "16px",
+    "size": {
+      "width": 318,
+      "height": 45
+    }
+  },
+  {
+    "sel": ".compose-editor",
+    "font": "14px",
+    "size": {
+      "width": 324,
+      "height": 66
+    }
+  },
+  {
+    "sel": ".tl-what",
+    "font": "15px",
+    "size": {
+      "width": 330,
+      "height": 51.59375
+    }
+  },
+  {
+    "sel": ".stamp",
+    "font": "12px",
+    "size": {
+      "width": 46.59375,
+      "height": 19.1875
+    }
+  },
+  {
+    "sel": ".detail-more",
+    "font": "14px",
+    "size": {
+      "width": 48,
+      "height": 45
+    }
+  }
+]
