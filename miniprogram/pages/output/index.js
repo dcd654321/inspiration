@@ -3,6 +3,8 @@ const { createInspiration } = require('../../core/inspiration');
 const { formatAbsolute } = require('../../core/format');
 const { currentSupplements, buildTemplateText, buildArchiveText, USE_TEMPLATES } = require('../../services/content-output');
 const { setDraftLeaveAlert } = require('../../services/draft-alert');
+const { draftContext, sourceVersion } = require('../../services/session-drafts');
+const { shareConfirmedDraft } = require('../../services/result-share');
 
 function guardDraft(data) {
   setDraftLeaveAlert(Boolean(data.draftEdited && data.draft.trim() && !data.savedSame));
@@ -56,12 +58,14 @@ Page({
     noticeLink: false,
     savedId: '',
     savedDraft: '',
-    busy: false
+    busy: false,
+    saveUnknown: false, sourceStale: false, draftRecoveryNotice: ''
   },
 
   async onLoad(query) {
     this.pendingSave = null;
     this.id = (query && query.id) || '';
+    this.requestedTemplate = query && USE_TEMPLATES.some((entry) => entry.id === query.template) ? query.template : '';
     this.disposed = false;
     return this.readAccount();
   },
@@ -71,8 +75,13 @@ Page({
     const version = this.loadVersion = (this.loadVersion || 0) + 1;
     this.loading = true;
     this.pendingSave = null;
+    const previousFile = this.data.txtPath;
+    if (previousFile && typeof wx.getFileSystemManager === 'function') {
+      try { wx.getFileSystemManager().unlink({ filePath: previousFile, fail() {} }); }
+      catch (err) { /* 显式导出的临时文件清理失败不阻断重新读取。 */ }
+    }
     this.fileToken = createId('arc');
-    this.setData({ ready: false, draft: '', archive: '', options: [], txtPath: '', savedId: '', savedDraft: '', readError: false, error: '', notice: '', busy: false });
+    this.setData({ ready: false, draft: '', archive: '', options: [], stagedOptions: [], txtPath: '', savedId: '', savedDraft: '', readError: false, error: '', notice: '', busy: false, saveUnknown: false, sourceStale: false, draftRecoveryNotice: '' });
     const app = getApp();
     let store, epoch = this.loadingEpoch = app.globalData.sessionEpoch;
     try {
@@ -88,7 +97,9 @@ Page({
       this.setData({ ready: true, missing: false, readError: true, error: app.globalData.accountError || '请稍后重试。' });
       return;
     }
-    this.build(store);
+    this.draftOwner = draftContext(app, store);
+    const recovered = app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('output:' + this.id, this.draftOwner);
+    this.build(store, recovered);
   },
 
   current(version = this.loadVersion) {
@@ -98,12 +109,36 @@ Page({
   },
 
   /** 进入即给出一份可编辑的自由稿：不让用户在看到结果之前先做一串选择。 */
-  build(store) {
+  build(store, recovered) {
     const item = store && store.getInspiration(this.id);
+    this.sourceStamp = sourceVersion(item);
+    if (recovered) {
+      this.pendingSave = recovered.pendingSave;
+      const sourceStale = recovered.sourceStamp !== this.sourceStamp;
+      if (sourceStale) this.sourceStamp = recovered.sourceStamp;
+      const next = Object.assign({}, recovered.data, { ready: true, missing: false, readError: false, phase: 'edit', busy: false,
+        sourceStale, draftRecoveryNotice: sourceStale ? '素材已更新，已保留当前稿件供复制。重新读取后可继续整理。' : '已接续这次稿件。',
+        error: sourceStale ? '来源已变化，请先复制当前稿件，再重新读取素材。' : '' });
+      if (this.pendingSave && sourceVersion(store.getInspiration(this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
+        next.savedId = this.pendingSave.item.id; next.savedDraft = this.pendingSave.text; next.saveUnknown = false;
+        next.savedSame = next.draft === next.savedDraft; this.pendingSave = null;
+      }
+      const confirmed = next.savedId && store.getInspiration(next.savedId);
+      if (next.savedId && (!confirmed || confirmed.text !== next.savedDraft || (confirmed.templateId || 'free') !== next.templateId)) {
+        next.savedId = ''; next.savedDraft = ''; next.savedSame = false;
+        next.draftRecoveryNotice = '已保留当前稿件，之前另存的记录已变化，请重新保存后分享。';
+      }
+      next.archive = item ? buildArchiveText(item, Date.now()) : '';
+      next.noticeLink = Boolean(next.savedId);
+      next.canSaveAs = !sourceStale && this.canSaveAs(next.draft, next.savedDraft);
+      this.setData(next); guardDraft(this.data); return;
+    }
     if (!item) {
       this.setData({ ready: true, missing: true, readError: false });
       return;
     }
+    const templateId = this.requestedTemplate || (USE_TEMPLATES.some((entry) => entry.id === item.templateId) ? item.templateId : 'free');
+    this.setData({ templateId });
     const options = currentSupplements(item).map((supplement) => ({
       id: supplement.id,
       content: supplement.content,
@@ -124,7 +159,7 @@ Page({
       savedSame: false,
       summary: selectedIds.length ? '正文 + ' + selectedIds.length + '条补充' : '正文',
       archive: buildArchiveText(item, Date.now()),
-      error: '', notice: '', noticeLink: false, savedId: '', savedDraft: '', busy: false
+      error: '', notice: '', noticeLink: false, savedId: '', savedDraft: '', busy: false, saveUnknown: false, sourceStale: false, draftRecoveryNotice: ''
     });
     guardDraft(this.data);
   },
@@ -138,21 +173,32 @@ Page({
     const app = getApp();
     if (this.loading && this.loadingEpoch === app.globalData.sessionEpoch) return;
     if (!this.id || this.current()) { guardDraft(this.data); return; }
-    this.onUnload();
     this.disposed = false;
     this.setData({ ready: false, draft: '', archive: '', options: [], txtPath: '', savedId: '', savedDraft: '' });
-    await this.onLoad({ id: this.id });
+    await this.readAccount();
   },
 
-  onHide() { setDraftLeaveAlert(false); },
+  onHide() { this.suspend(); },
 
-  onUnload() {
+  onUnload() { this.suspend(); },
+
+  suspend() {
     setDraftLeaveAlert(false);
+    const app = getApp();
+    if (!this.disposed && this.draftOwner && app.globalData.sessionDrafts && this.data.ready && !this.data.readError) {
+      const fields = ['draft', 'draftEdited', 'templateId', 'options', 'selectedCount', 'summary', 'savedId', 'savedDraft', 'savedSame', 'saveUnknown'];
+      const data = fields.reduce((result, key) => { result[key] = this.data[key]; return result; }, {});
+      if (this.data.busy && this.pendingSave) data.saveUnknown = true;
+      const pendingSave = this.pendingSave && { text: this.pendingSave.text, item: this.pendingSave.item };
+      app.globalData.sessionDrafts.put('output:' + this.id, this.draftOwner, { data, pendingSave, sourceStamp: this.sourceStamp });
+    }
     this.disposed = true;
     this.loadVersion = (this.loadVersion || 0) + 1;
     this.loading = false;
     this.pendingSave = null;
     const filePath = this.data.txtPath;
+    this.loadedStore = null; this.draftOwner = null;
+    this.setData({ ready: false, draft: '', archive: '', options: [], stagedOptions: [], txtPath: '', savedId: '', savedDraft: '', notice: '', error: '', busy: false, saveUnknown: false, sourceStale: false, draftRecoveryNotice: '' });
     if (!filePath || typeof wx.getFileSystemManager !== 'function') return;
     try {
       wx.getFileSystemManager().unlink({ filePath, fail() {} });
@@ -162,7 +208,18 @@ Page({
   },
 
   onRetryLoad() {
-    if (!this.disposed && !this.loading) return this.readAccount(true);
+    if (this.disposed || this.loading || this.data.busy) return;
+    const reload = () => {
+      if (this.disposed || this.data.busy) return;
+      const app = getApp();
+      if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('output:' + this.id, this.draftOwner);
+      return this.readAccount(true);
+    };
+    if (this.data.draft && (this.data.draftEdited || this.data.sourceStale || this.data.saveUnknown)) {
+      const version = this.loadVersion;
+      wx.showModal({ title: '重新读取素材？', content: '重新读取将替换当前稿件，可先复制要保留的文字。', confirmText: '重新读取', cancelText: '保留稿件',
+        success: (result) => { if (result.confirm && this.current(version)) reload(); } });
+    } else return reload();
   },
 
   onBackToList() { wx.switchTab({ url: '/pages/list/index' }); },
@@ -174,6 +231,7 @@ Page({
 
   onOpenContent() {
     if (this.data.busy) return;
+    if (this.data.sourceStale) return this.onRetryLoad();
     this.setData({
       phase: 'content',
       sheetScrollHeight: 0,
@@ -234,7 +292,7 @@ Page({
    * 取消保留当前文字、光标与选择；确认才替换。
    */
   onApply() {
-    if (this.data.busy || !this.current()) return;
+    if (this.data.busy || this.data.saveUnknown || this.data.sourceStale || !this.current()) return;
     const version = this.loadVersion, draft = this.data.draft, phase = this.data.phase;
     const staged = JSON.stringify([this.data.stagedOptions, this.data.stagedTemplateId]);
     const store = getApp().globalData.store;
@@ -260,6 +318,7 @@ Page({
           JSON.stringify([this.data.stagedOptions, this.data.stagedTemplateId]) !== staged) return;
       if (JSON.stringify(store.getInspiration(this.id)) !== source) { this.setData({ error: '素材已更新，请重新读取后核对。' }); return; }
       this.pendingSave = null;
+      this.sourceStamp = sourceVersion(item);
       // 确认后才把暂存写回：取消（onClosePanel）不改动 options/templateId
       this.setData({
         phase: 'edit',
@@ -289,7 +348,7 @@ Page({
   // ------------------------------------------------------------ 编辑与出口
 
   onDraftInput(event) {
-    if (this.data.busy || !this.current()) return;
+    if (this.data.busy || this.data.saveUnknown || !this.current()) return;
     const value = event.detail.value;
     if (this.pendingSave && this.pendingSave.text !== value) this.pendingSave = null;
     this.setData({
@@ -330,6 +389,9 @@ Page({
     const version = this.loadVersion;
     const app = getApp(), store = app.globalData.store, epoch = app.globalData.sessionEpoch;
     if (!store || this.disposed || this.loadedEpoch !== epoch) return;
+    if (this.data.sourceStale || sourceVersion(store.getInspiration(this.id)) !== this.sourceStamp) {
+      this.setData({ sourceStale: true, canSaveAs: false, error: '来源已变化，请先复制当前稿件，再重新读取素材。' }); return;
+    }
     const draft = this.data.draft;
     if (this.data.savedId && this.data.savedDraft === draft) {
       this.setData({ notice: '这份稿件已另存，可以直接查看。', noticeLink: true, error: '' });
@@ -346,8 +408,9 @@ Page({
 
     let next;
     try {
-      next = this.pendingSave && this.pendingSave.text === draft && this.pendingSave.store === store
-        ? this.pendingSave.item : createInspiration({ id: createId('ins'), text: draft, now: Date.now() });
+      next = this.pendingSave && this.pendingSave.text === draft
+        ? this.pendingSave.item : Object.assign({}, createInspiration({ id: createId('ins'), text: draft, now: Date.now() }),
+          { templateId: USE_TEMPLATES.some((entry) => entry.id === this.data.templateId) ? this.data.templateId : 'free' });
       this.pendingSave = { text: draft, store, item: next };
     } catch (err) {
       this.setData({ error: '暂时无法另存，请检查内容后重试。', notice: '' });
@@ -366,11 +429,12 @@ Page({
       const unknown = !result || !result.code || ['NETWORK', 'INTERNAL'].includes(result.code);
       this.setData({ busy: false, error: unknown
         ? '尚未确认另存，稿件还在。请重试确认，或先复制。'
-        : '未能另存，稿件还在。请检查内容后重试，或先复制。' });
+        : '未能另存，稿件还在。请检查内容后重试，或先复制。', saveUnknown: unknown });
       return;
     }
     this.setData({
       busy: false,
+      saveUnknown: false,
       savedId: next.id,
       savedDraft: draft,
       savedSame: this.data.draft === draft,
@@ -380,12 +444,18 @@ Page({
     });
     guardDraft(this.data);
     this.pendingSave = null;
+    if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('output:' + this.id, this.draftOwner);
     if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
   },
 
   onOpenSaved() {
     if (!this.data.savedId) return;
     wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.savedId) });
+  },
+
+  onShareDraft() {
+    const version = this.loadVersion;
+    shareConfirmedDraft(this, { isCurrent: () => this.current(version), save: () => this.onSaveAsNew() });
   },
 
   // ------------------------------------------------------------ 文字留档

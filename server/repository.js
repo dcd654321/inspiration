@@ -179,12 +179,12 @@ function createRepository(options) {
       }
     }
 
-    // 传输层缓存可能已过期；相同内容的重试仍应按已完成处理，不再增加版本。
+    // 旧版本的相同内容请求须由客户端完整回读确认，不能只抬高旧快照版本。
+    if (data.baseVersion !== doc.version) return err(CODE.conflict);
+    // 同版本相同内容重试按已完成处理，不再增加版本。
     if (data.upserts.length === 0 || data.upserts.every((item) => sameContent(doc.inspirations.find((old) => old.id === item.id), item))) {
       return ok({ version: doc.version, applied });
     }
-
-    if (data.baseVersion !== doc.version) return err(CODE.conflict);
 
     const next = Object.assign({}, doc, {
       inspirations: Array.from(byId.values()),
@@ -214,7 +214,10 @@ function createRepository(options) {
     const doc = await load(accountKey);
     if (data.generation !== doc.generation) return err(CODE.staleGeneration);
     const index = doc.inspirations.findIndex((item) => item.id === data.inspirationId);
-    if (index === -1) return ok({ deletedPhotos: 0, version: doc.version, alreadyAbsent: true });
+    if (index === -1) {
+      if (data.baseVersion !== doc.version) return err(CODE.conflict);
+      return ok({ deletedPhotos: 0, version: doc.version, alreadyAbsent: true });
+    }
 
     const target = doc.inspirations[index];
     const fileIds = (target.photos || []).map((photo) => photo.fileId).filter(Boolean);

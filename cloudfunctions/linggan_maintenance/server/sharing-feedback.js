@@ -13,6 +13,7 @@ const SHARE_LIFETIME = 30 * DAY;
 const MAX_ACTIVE = 20;
 const MAX_SHARE_DAY = 10;
 const MAX_FEEDBACK_DAY = 5;
+const PUBLIC_TEMPLATES = ['free', 'social', 'video', 'work', 'action'];
 
 function ok(data) { return { ok: true, data }; }
 function fail(code, message) { return { ok: false, code, message }; }
@@ -57,16 +58,20 @@ function makeSnapshot(item, selectedIds, channel) {
   const max = channel === 'timeline_poster' ? 1800 : 6000;
   if (body.length > max) return { tooLong: true, max };
   const title = item.text.trim().split(/\r?\n/)[0].slice(0, 50);
-  return { title, body };
+  const snapshot = { title, body };
+  if (PUBLIC_TEMPLATES.includes(item.templateId)) snapshot.templateId = item.templateId;
+  return snapshot;
 }
 
 function publicView(doc) {
-  return {
+  const result = {
     title: doc.snapshot.title,
     body: doc.snapshot.body,
     createdAt: doc.createdAt,
     expiresAt: doc.expiresAt
   };
+  if (PUBLIC_TEMPLATES.includes(doc.snapshot.templateId)) result.templateId = doc.snapshot.templateId;
+  return result;
 }
 
 function createSharingFeedbackService(options) {

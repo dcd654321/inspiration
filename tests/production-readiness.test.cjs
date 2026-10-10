@@ -37,7 +37,7 @@ test('全量复核：维护函数入口缺密钥和客户端身份拒绝且默�
   identity = {};
   const result = await exports.main({ token, dryRun: false });
   assert.equal(result.ok, true); assert.equal(result.data.dryRun, true);
-  assert.equal(collections, 6);
+  assert.equal(collections, 5);
 });
 function share(id, owner = 'owner', createdAt = at) {
   return { _id: id, ownerAccountKey: owner, requestId: id, tokenHash: id, createdAt,
@@ -136,6 +136,19 @@ test('保留期清理：默认演练无写入，执行只清到期内容并保�
   assert.equal(db.rows('linggan_rate_limits').length, 1);
   assert.equal((await service.run({ dryRun: false })).counts.shares.changed, 0);
   assert.equal(JSON.stringify(result).includes('private'), false);
+});
+
+test('移除 AI 后维护仅扫描非 AI 集合并保留远端历史配额', async () => {
+  const db = memoryCloudDatabase();
+  const historicalUsage = { _id: 'legacy_ai_quota', expiresAt: at - DAY, used: 2 };
+  db.seed('linggan_ai_usage', [historicalUsage]);
+  const scanned = [];
+  const collection = db.collection;
+  db.collection = function (name) { scanned.push(name); return collection.call(this, name); };
+  const result = await createRetentionService({ db: createCloudRetentionDb(db), now: () => at }).run({ dryRun: false });
+  assert.deepEqual(Object.keys(result.counts), ['shares', 'feedback', 'rates']);
+  assert.deepEqual(new Set(scanned), new Set(['linggan_shares', 'linggan_feedback', 'linggan_rate_limits']));
+  assert.deepEqual(db.rows('linggan_ai_usage'), [historicalUsage]);
 });
 
 test('保留期清理：扫描后状态变化不误删，失败记录下次可重试', async () => {

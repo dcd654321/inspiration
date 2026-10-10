@@ -403,7 +403,11 @@ test('相同内容在确认丢失后重试不增加版本，真正的并发改�
   const first = await repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [item] });
   assert.strictEqual(first.ok, true);
   const duplicate = await repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [item] });
-  assert.strictEqual(duplicate.data.version, 1);
+  assert.strictEqual(duplicate.code, CODE.conflict, '旧版本重试应由客户端完整回读确认');
+  const confirmed = await repository.pull('acct_dcd');
+  assert.strictEqual(confirmed.data.version, 1);
+  const currentDuplicate = await repository.push('acct_dcd', { generation: 1, baseVersion: 1, upserts: [item] });
+  assert.strictEqual(currentDuplicate.data.version, 1);
   const conflict = await repository.push('acct_dcd', {
     generation: 1, baseVersion: 0, upserts: [anInspiration({ text: '另一设备改写' })]
   });
@@ -427,7 +431,7 @@ test('全量复核：字段排序变化不误判照片历史删除且同内容�
     return value;
   }
   const reordered = reorder(item);
-  const duplicate = await repository.push('acct_dcd', { generation: 1, baseVersion: 0, upserts: [reordered] });
+  const duplicate = await repository.push('acct_dcd', { generation: 1, baseVersion: 1, upserts: [reordered] });
   assert.strictEqual(duplicate.ok, true);
   assert.strictEqual(duplicate.data.version, 1);
   const changed = { ...reordered, text: '新正文', updatedAt: NOW + 1 };

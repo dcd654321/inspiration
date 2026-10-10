@@ -3,7 +3,7 @@ page, .viewer { background: #1b1b1f; color: #f5f5f3; min-height: 100vh; }
 .viewer { box-sizing: border-box; height: 100vh; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 swiper { flex: 1; min-height: 0; height: 0; } swiper image { width: 100%; height: 100%; }
 .viewer > .caption, .viewer > .error, .viewer > button { flex-shrink: 0; }
-.caption, .error { text-align: center; padding: 24rpx 40rpx; font-size: 28rpx; line-height: 1.8; }
+.caption, .error { text-align: center; padding: 24rpx 40rpx; font-size: max(28rpx, 16px); line-height: 1.8; }
 
 /* 照片失败时的占位动作：原因未知只给重试，不写「文件已删除」 */
 .viewer .error-retry {
@@ -20,7 +20,8 @@ swiper { flex: 1; min-height: 0; height: 0; } swiper image { width: 100%; height
   border: 2rpx solid rgba(245, 245, 243, 0.4);
   border-radius: 16rpx;
   font-size: 28rpx;
-  line-height: 1;
+  font-size: max(28rpx, 16px);
+  line-height: 1.4;
 }
 
 .error-retry::after { border: none; }

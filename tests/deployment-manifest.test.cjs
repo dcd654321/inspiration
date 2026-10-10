@@ -20,11 +20,11 @@ test('product deployment manifest only targets the confirmed shared environment 
   assert.equal(manifest.clientDatabaseAccess, 'deny-all');
   assert.deepEqual(manifest.collections.map((item) => item.name), [
     'linggan_accounts', 'linggan_shares', 'linggan_feedback',
-    'linggan_usage', 'linggan_rate_limits', 'linggan_ai_usage'
+    'linggan_usage', 'linggan_rate_limits'
   ]);
 });
 
-test('product index inputs contain all fifteen designed indexes without deletion or TTL', () => {
+test('product index inputs contain all fourteen non-AI indexes without deletion or TTL', () => {
   const expected = {
     linggan_accounts: [['accountKey:1', true]],
     linggan_shares: [
@@ -38,8 +38,7 @@ test('product index inputs contain all fifteen designed indexes without deletion
       ['status:1,closedAt:1,_id:1', false], ['status:1,createdAt:1,_id:1', false]
     ],
     linggan_usage: [],
-    linggan_rate_limits: [['expiresAt:1', false]],
-    linggan_ai_usage: [['expiresAt:1', false]]
+    linggan_rate_limits: [['expiresAt:1', false]]
   };
   let count = 0;
   for (const collection of manifest.collections) {
@@ -64,11 +63,11 @@ test('product index inputs contain all fifteen designed indexes without deletion
     assert.deepEqual(actual, expected[collection.name]);
     count += indexes.length;
   }
-  assert.equal(count, 15);
+  assert.equal(count, 14);
 });
 
-test('product function plan keeps AI photos and maintenance disabled and contains no secret values', () => {
-  assert.deepEqual(manifest.functions.map((item) => item.name), ['linggan_api', 'linggan_ai', 'linggan_maintenance']);
+test('product function plan only includes non-AI functions and keeps photos and maintenance disabled', () => {
+  assert.deepEqual(manifest.functions.map((item) => item.name), ['linggan_api', 'linggan_maintenance']);
   for (const fn of manifest.functions) {
     assert.equal(fn.directory, `cloudfunctions/${fn.name}`);
     assert.ok(fs.existsSync(path.join(root, fn.directory, 'index.js')));
@@ -79,12 +78,10 @@ test('product function plan keeps AI photos and maintenance disabled and contain
       assert.deepEqual(fn.openapi, config.permissions.openapi);
     }
   }
-  const [api, ai, maintenance] = manifest.functions;
+  const [api, maintenance] = manifest.functions;
   assert.equal(api.nonSecretEnvironment.LINGGAN_PHOTOS_ENABLED, 'false');
   assert.equal(api.nonSecretEnvironment.LINGGAN_SHARE_CODE_VERSION, 'release');
   assert.deepEqual(api.requiredSecretNames, ['LINGGAN_SHARE_TOKEN_KEY']);
-  assert.equal(ai.nonSecretEnvironment.LINGGAN_AI_ENABLED, 'false');
-  assert.equal(ai.minimumTimeoutSecondsBeforeEnable, 60);
   assert.equal(maintenance.nonSecretEnvironment.LINGGAN_MAINTENANCE_ENABLED, 'false');
   assert.deepEqual(maintenance.triggers, []);
   assert.deepEqual(maintenance.requiredSecretNames, ['LINGGAN_MAINTENANCE_TOKEN']);

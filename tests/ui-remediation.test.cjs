@@ -50,10 +50,9 @@ test('界面整改：我的页不暴露开发能力开关', () => {
   const page = read('miniprogram/pages/mine/index.wxml');
   assert.doesNotMatch(page, /云端同步|AI 扩展|已启用|未启用/);
   assert.match(page, /数据与隐私/);
-  // 反馈入口只有一个，按钮就叫「提交反馈」（用户 2026-09-30 决定，不写「向微信反馈」），
-  // 当前接微信原生通道；自建反馈页入口暂时隐藏（云环境未联通），方法与页面保留。
-  assert.match(page, /open-type="feedback">提交反馈</);
-  assert.doesNotMatch(page, /bindtap="onOpenFeedback">提交反馈</);
+  // 反馈列表项继续接微信原生通道，自建反馈方法与页面保留。
+  assert.match(page, /open-type="feedback"[^>]*>[\s\S]*?<text class="menu-label">意见与问题反馈<\/text>/);
+  assert.doesNotMatch(page, /bindtap="onOpenFeedback"/);
   const logic = read('miniprogram/pages/mine/index.js');
   assert.match(logic, /onOpenFeedback/, '恢复入口要用到的方法不应被删');
 });
@@ -79,7 +78,7 @@ test('公众首用：三个 Tab 均配置轻量的普通态和选中态图标', 
   }
 });
 
-test('公众首用：保存后成功卡带摘录与两条下一步，继续输入时旧入口消失', async () => {
+test('公众首用：保存后成功卡带摘录、补充与整理入口，只导航已确认记录', async () => {
   const pagePath = require.resolve('../miniprogram/pages/capture/index');
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;
@@ -119,8 +118,24 @@ test('公众首用：保存后成功卡带摘录与两条下一步，继续输�
     definition.onContinueSupplement.call(page);
     assert.strictEqual(opened, '/pages/detail/index?id=' + encodeURIComponent(saved.id) + '&focus=supplement');
 
+    definition.onOrganizeSaved.call(page);
+    assert.strictEqual(opened, '/pages/output/index?id=' + encodeURIComponent(saved.id));
+
+    // 隐藏页面和账户变更不继续导航已失效的成功内容。
+    opened = '';
+    page.visible = false;
+    definition.onOrganizeSaved.call(page);
+    assert.strictEqual(opened, '');
+    page.visible = true;
+    page.scope = 'old-account';
+    definition.onOrganizeSaved.call(page);
+    assert.strictEqual(opened, '');
+    page.scope = '';
+
     definition.onInput.call(page, { detail: { value: '另一个想法' } });
     assert.strictEqual(page.data.lastSavedId, '');
+    definition.onOrganizeSaved.call(page);
+    assert.strictEqual(opened, '');
   } finally {
     delete require.cache[pagePath];
     for (const [key, value] of Object.entries(previous)) {
@@ -185,13 +200,14 @@ test('本轮整改：我的页不再重复列表入口，分组按用途排列',
   // 重复的「查看我的灵感」入口已删除；分组按用途排列
   assert.doesNotMatch(page, /从记录到使用/);
   assert.doesNotMatch(page, /查看我的灵感/);
-  const share = page.indexOf('我的分享');
+  const share = page.indexOf('一起进步');
+  const support = page.indexOf('数据与支持');
   const privacy = page.indexOf('数据与隐私');
-  const feedback = page.indexOf('意见反馈');
-  const about = page.indexOf('关于');
-  assert.ok(share >= 0 && privacy > share && feedback > privacy && about > feedback);
-  // 「使用帮助」组已按用户 2026-09-30 决定删除（会话级回顾开关与诊断信息对真实用户无用）
-  assert.doesNotMatch(page, /使用帮助|显示回顾入口|诊断信息/);
+  const help = page.indexOf('使用帮助');
+  const feedback = page.indexOf('意见与问题反馈');
+  assert.ok(share >= 0 && support > share && privacy > support && help > privacy && feedback > help);
+  // 使用说明不恢复会话级回顾开关、诊断或统计入口。
+  assert.doesNotMatch(page, /显示回顾入口|诊断信息|使用统计/);
   const logic = read('miniprogram/pages/mine/index.js');
   assert.doesNotMatch(logic, /照片不会被分享/);
 });

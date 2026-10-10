@@ -121,7 +121,7 @@ Page({
     confirmQuoteTime: '',
 
     historyCount: 0,
-    aiEnabled: false, isAi: false, merged: false, provenance: [],
+    isAi: false, merged: false, provenance: [],
     tagsDraft: '', stageIndex: 0, stages: STAGES,
     /* 整理标记默认收起：它是整理期才关心的表单，每次都摊开会把补充时间线推得很远 */
     orgOpen: false, orgSummary: '',
@@ -201,7 +201,6 @@ Page({
       missing: false,
       loadError: false,
       text: item.text,
-      aiEnabled: app.globalData.aiEnabled,
       isAi: item.source === 'ai', merged: Boolean(item.mergedInto),
       tagsDraft: tags.join('，'),
       stageIndex: Math.max(0, STAGES.findIndex((x) => x.id === item.stage)),
@@ -473,8 +472,6 @@ Page({
     });
   },
 
-  onAiExpand() { if (!this.data.pending && !this.data.editing && !this.data.editingSupplementId) wx.navigateTo({ url: '/pages/ai-workbench/index?scope=expand&id=' + encodeURIComponent(this.id) }); },
-  onAiSummarize() { if (!this.data.pending && !this.data.editing && !this.data.editingSupplementId) wx.navigateTo({ url: '/pages/ai-workbench/index?scope=supplements&id=' + encodeURIComponent(this.id) }); },
   onToggleOrganization() {
     if (this.data.pending) return;
     if (!this.data.orgOpen) {

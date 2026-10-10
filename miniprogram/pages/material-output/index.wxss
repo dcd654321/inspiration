@@ -1,6 +1,7 @@
 @import "../output/index.wxss";
 .material-select-page { padding-bottom: 0; }
-.material-page .option { display: flex; align-items: flex-start; gap: 12px; width: 100%; margin: 8px 0 0; padding: 12px; font-weight: normal; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; line-height: 1.6; }
+.material-page .option { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 72px; box-sizing: border-box; margin: 8px 0 0; padding: 16px; font-weight: normal; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; line-height: 1.6; }
+.material-page .option-selected { background: var(--brand-soft); border-color: var(--brand); }
 .material-page .option::after { border: 0; }
 .option-body { flex: 1; min-width: 0; }
 .option-time { display: block; font-size: max(25rpx, 13px); color: var(--ink-3); line-height: 1.5; }
@@ -9,6 +10,8 @@
 .material-page .option-checked { border-color: var(--brand); }
 .material-page .back-select { display: flex; align-items: center; justify-content: flex-start; width: 100%; padding: 0; background: transparent; color: var(--brand); font-size: max(28rpx, 14px); line-height: 1; font-weight: normal; }
 .back-select::after { border: 0; }
+.result-tools { display: flex; gap: 24px; margin: 8px 0; }
+.material-page .result-tools .back-select { width: auto; margin: 0; min-height: 44px; }
 .section-label { margin-top: 20px; font-size: max(28rpx, 14px); font-weight: 600; color: var(--ink-2); }
 .template-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .template-options .template-option { flex: 0 0 auto; width: auto; margin: 0; padding: 0 12px; min-height: 44px; line-height: 44px; font-size: max(28rpx, 14px); color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; }

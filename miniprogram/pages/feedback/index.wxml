@@ -5,8 +5,9 @@
     <button wx:for="{{categories}}" wx:key="value" data-value="{{item.value}}"
       class="feedback-category {{category === item.value ? 'feedback-category-on' : ''}}" bindtap="onCategory" disabled="{{busy}}">{{item.label}}</button>
   </view>
-  <textarea class="feedback-editor" value="{{body}}" maxlength="1000" auto-height disabled="{{busy}}"
-    placeholder="请写下具体情况（至少 10 字）" bindinput="onInput" />
+  <view class="field-label feedback-label">{{reporting ? '举报原因' : '具体情况'}}</view>
+  <textarea class="feedback-editor" value="{{body}}" maxlength="1000" auto-height disabled="{{busy}}" cursor-spacing="24"
+    aria-label="{{reporting ? '举报原因' : '具体情况'}}" placeholder="请写下具体情况（至少 10 字）" bindinput="onInput" />
   <view class="feedback-count">{{trimmedLength >= 10 ? body.length + ' / 1000' : '还需 ' + (10 - trimmedLength) + ' 字'}}</view>
   <view class="feedback-note">请勿填写密码、身份证号等敏感信息。提交后可在下方查看处理状态。</view>
   <view wx:if="{{error}}" class="notice notice-err"><text>{{error}}</text></view>
@@ -15,7 +16,9 @@
 
   <view class="section-label">我的反馈</view>
   <view wx:if="{{loading}}" class="feedback-note">正在加载…</view>
+  <view wx:elif="{{historyError}}" class="notice notice-err"><text>{{historyError}}</text></view>
   <view wx:elif="{{items.length === 0}}" class="feedback-note">还没有反馈记录。</view>
+  <button wx:if="{{historyError}}" class="btn btn-plain btn-block" bindtap="onRetryHistory" disabled="{{loading}}">重新加载反馈</button>
   <view wx:for="{{items}}" wx:key="feedbackId" class="feedback-record">
     <view class="feedback-record-head"><text>{{item.categoryText}}</text><text>{{item.statusText}}</text></view>
     <view class="feedback-record-body">{{item.body}}</view>

@@ -2,6 +2,7 @@ const { formatRelative, summarize, countLabel } = require('../../core/format');
 const { activeSupplements, isDeleted, isMerged } = require('../../core/inspiration');
 const { searchInspirations } = require('../../services/discovery');
 const { STAGES } = require('../../services/organization');
+const { startCapture } = require('../../services/capture-entry');
 
 /** 把一条灵感转成列表项要显示的样子。转换集中在这里，WXML 里就只做渲染。 */
 function decorate(inspiration, now) {
@@ -55,7 +56,6 @@ Page({
     panelCount: 0,
     activeCount: 0,
     mergedCount: 0,
-    aiEnabled: false,
     reviewItem: null,
     reviewExpanded: false,
     reviewError: ''
@@ -138,7 +138,6 @@ Page({
         }).map((result) => Object.assign(decorate(result.item, now), { matchText: result.matchText, matchSource: result.matchSource })),
         activeCount: active.length,
         mergedCount,
-        aiEnabled: app.globalData.aiEnabled,
         reviewItem, reviewError,
         panelCount: (this.data.recentOn ? 1 : 0) + (this.data.stage ? 1 : 0) + (this.data.mergedOn ? 1 : 0),
         loading: false,
@@ -179,7 +178,7 @@ Page({
   },
 
   onAdd() {
-    wx.switchTab({ url: '/pages/capture/index' });
+    startCapture();
   },
 
   onSearch(event) { this.setData({ query: event.detail.value }); this.load(); },
@@ -216,7 +215,6 @@ Page({
     catch (err) { this.setData({ reviewError: '暂时无法跳过，请稍后重试。' }); }
   },
 
-  onSummarize() { wx.navigateTo({ url: '/pages/ai-workbench/index?scope=inspirations' }); },
   onMaterialOutput() { wx.navigateTo({ url: '/pages/material-output/index' }); },
 
   onOpen(event) {
@@ -225,6 +223,7 @@ Page({
     const metrics = getApp().globalData.metrics;
     if (metrics && this.data.query) metrics.track('search_opened');
     if (metrics && event.currentTarget.dataset.review) metrics.track('review_opened');
-    wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(id) });
+    wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(id) +
+      (event.currentTarget.dataset.review ? '&focus=supplement' : '') });
   }
 });

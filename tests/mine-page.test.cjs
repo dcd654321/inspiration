@@ -4,36 +4,39 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-test('我的页按用途分组：我的分享 / 数据与隐私 / 意见反馈 / 关于', () => {
+test('我的页按用途分组：一起进步 / 数据与支持，说明与反馈入口可达', () => {
   const wxml = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/mine/index.wxml'), 'utf8');
-  const share = wxml.indexOf('>我的分享</text>');
-  const privacy = wxml.indexOf('>数据与隐私</text>');
-  const feedback = wxml.indexOf('>意见反馈</text>');
-  const about = wxml.indexOf('>关于</text>');
-  assert.ok(share >= 0 && privacy > share && feedback > privacy && about > feedback);
+  const share = wxml.indexOf('一起进步');
+  const support = wxml.indexOf('数据与支持');
+  const privacy = wxml.indexOf('数据与隐私');
+  const help = wxml.indexOf('>使用帮助</text>');
+  const feedback = wxml.indexOf('>意见与问题反馈</text>');
+  assert.ok(share >= 0 && support > share && privacy > support && help > privacy && feedback > help);
+  assert.match(wxml, /bindtap="onToggleInfo"[^>]*data-section="privacy"|data-section="privacy"[^>]*bindtap="onToggleInfo"/);
+  assert.match(wxml, /bindtap="onToggleInfo"[^>]*data-section="help"|data-section="help"[^>]*bindtap="onToggleInfo"/);
   // 「查看我的灵感」是重复入口，已删除；功能本身在 tab 里
   assert.doesNotMatch(wxml, /查看我的灵感/);
-  // 「使用帮助」组已按用户 2026-09-30 决定删除：会话级回顾开关与诊断信息对真实用户无用；
-  // 回顾的会话内控制保留为列表里的「本次先不看」
-  assert.doesNotMatch(wxml, /使用帮助|显示回顾入口|诊断信息|使用统计/);
+  // 产品说明不恢复旧诊断信息、统计或会话级回顾开关。
+  assert.doesNotMatch(wxml, /显示回顾入口|诊断信息|使用统计/);
   assert.doesNotMatch(wxml, /记录状态|recordText|recordError|onRetryRead|backupText|onUseRemote|recoveryItems/);
 });
 
-test('我的页反馈入口：「提交反馈」走微信原生通道，自建入口隐藏但方法与页面保留', () => {
+test('我的页反馈入口：「意见与问题反馈」走微信原生通道，自建入口隐藏但方法与页面保留', () => {
   const wxml = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/mine/index.wxml'), 'utf8');
-  // 按钮就叫「提交反馈」（用户决定，不写「向微信反馈」）；当前接 open-type 原生通道
-  assert.match(wxml, /open-type="feedback">提交反馈</);
-  assert.doesNotMatch(wxml, /bindtap="onOpenFeedback">提交反馈</);
+  assert.match(wxml, /open-type="feedback"[^>]*>[\s\S]*?<text class="menu-label">意见与问题反馈<\/text>/);
+  assert.equal((wxml.match(/open-type="feedback"/g) || []).length, 1);
+  assert.doesNotMatch(wxml, /bindtap="onOpenFeedback"/);
   const logic = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/mine/index.js'), 'utf8');
   assert.match(logic, /onOpenFeedback/, '恢复自建入口要用到的方法不应被删');
 });
 
-test('我的页不因账户读取失败生成无用状态，其他入口仍可使用', async () => {
+test('我的页说明展开与入口导航不依赖账户读取，不生成无用状态', async () => {
   const pagePath = require.resolve('../miniprogram/pages/mine/index');
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;
   let opened = '';
-  const app = { globalData: { metrics: null }, ensureReady: async () => null };
+  let accountReads = 0;
+  const app = { globalData: { metrics: null }, ensureReady: async () => { accountReads++; return null; } };
   try {
     global.Page = (value) => { definition = value; };
     global.getApp = () => app;
@@ -48,10 +51,24 @@ test('我的页不因账户读取失败生成无用状态，其他入口仍可�
     assert.equal(Object.hasOwn(page.data, 'usageAvailable'), false);
     assert.equal(Object.hasOwn(page.data, 'reviewAvailable'), false);
     assert.equal(typeof page.onRetryRead, 'undefined');
+    const toggle = (section) => page.onToggleInfo({ currentTarget: { dataset: { section } } });
+    assert.equal(page.data.expandedInfo, '');
+    toggle('privacy');
+    assert.equal(page.data.expandedInfo, 'privacy');
+    toggle('help');
+    assert.equal(page.data.expandedInfo, 'help', '切换说明只展开新项');
+    toggle('help');
+    assert.equal(page.data.expandedInfo, '', '再次点击同项收起说明');
+    toggle('privacy');
+    toggle('unknown');
+    assert.equal(page.data.expandedInfo, 'privacy', '非法项不改变已展开说明');
+    toggle('privacy');
+    assert.equal(page.data.expandedInfo, '');
     page.onOpenMyShares();
     assert.equal(opened, '/pages/my-shares/index');
     page.onOpenFeedback();
     assert.equal(opened, '/pages/feedback/index');
+    assert.equal(accountReads, 0, '说明与导航不应读取账户');
   } finally {
     delete require.cache[pagePath];
     for (const [key, value] of Object.entries(previous)) {

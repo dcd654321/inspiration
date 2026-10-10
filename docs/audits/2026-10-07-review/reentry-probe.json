@@ -1,0 +1,13 @@
+{
+  "beforeHide": {
+    "phase": "edit",
+    "draft": "【本次编辑的独特句子】为朋友做一条下雨也能走的散步路线。",
+    "selectedCount": 2
+  },
+  "afterHide": {
+    "phase": "select",
+    "draft": "",
+    "selectedCount": 0
+  },
+  "note": "受控生命周期；未用真机或实际微信前后台切换"
+}

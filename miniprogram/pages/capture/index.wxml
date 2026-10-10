@@ -1,24 +1,28 @@
 <view class="page">
   <view class="capture-head">
     <image class="capture-mark" src="/assets/brand-mark.png" mode="aspectFit" />
-    <view>
-      <view class="page-title">记录想法</view>
-      <view class="page-sub">先写下来，之后再补充。</view>
-    </view>
+    <view class="capture-brand">灵感拾光簿</view>
   </view>
+  <view class="capture-title">记下一闪念，<view>整理成可用稿</view></view>
+  <view class="capture-intro">先写一句。需要时，把零散想法整理成能直接使用的文字。</view>
+  <view wx:if="{{templateIntentLabel}}" class="capture-intent"><text>已选择：{{templateIntentLabel}}</text><button class="btn-link" bindtap="onClearTemplateIntent" disabled="{{saving || status === 'unknown'}}">取消</button></view>
+  <view wx:if="{{draftRecoveryNotice}}" class="recovery-note" aria-live="polite">{{draftRecoveryNotice}}</view>
 
   <view class="composer">
+    <view class="field-label">此刻的想法</view>
     <textarea
       class="editor"
       value="{{draft}}"
       maxlength="-1"
-      placeholder="此刻想到什么？"
+      placeholder="{{lastSavedId ? '继续写下一个想法…' : '此刻想到什么？'}}"
       placeholder-class="editor-ph"
       bindinput="onInput"
       bindfocus="onFocus"
+      bindblur="onBlur"
+      aria-label="此刻的想法"
+      cursor-spacing="24"
       disabled="{{saving}}"
       focus="{{inputFocus}}"
-      auto-height
     />
 
     <view class="foot">
@@ -52,25 +56,29 @@
       </view>
     </view>
 
-    <button
+    <button wx:if="{{lastSavedId}}" class="btn btn-block save-btn record-another" bindtap="onRecordAnother">再记一条</button>
+    <button wx:else
       class="btn btn-block save-btn"
       bindtap="onSave"
       disabled="{{!canSave || saving}}"
     >{{saving ? '正在记下…' : status === 'unknown' ? '重试保存' : '记下来'}}</button>
 
-    <!-- 保存成功：只认云端确认。带上刚记下的内容摘录与两条下一步 -->
-    <view wx:if="{{lastSavedId}}" class="notice notice-success notice-saved">
+    <view wx:if="{{copyNotice}}" class="hint-copy">{{copyNotice}}</view>
+
+    <!-- 输入区常驻；这里的反馈与辅助操作仅属于刚确认的上一条记录。 -->
+    <view wx:if="{{lastSavedId}}" class="notice notice-success notice-saved capture-result" aria-live="polite">
       <view class="mark"></view>
       <view class="notice-body">
-        <view class="notice-title">已记下</view>
+        <view class="notice-title">上一条已记下</view>
         <view class="saved-quote">{{lastSavedExcerpt}}</view>
         <view class="notice-acts">
-          <button class="btn btn-sm" bindtap="onContinueSupplement">继续补充</button>
-          <button class="btn btn-plain btn-sm" bindtap="onRecordAnother">再记一条</button>
+          <button class="btn-link" bindtap="onContinueSupplement">继续补充</button>
+          <button class="btn-link" bindtap="onOrganizeSaved">整理这条</button>
         </view>
       </view>
     </view>
-
-    <view wx:if="{{copyNotice}}" class="hint-copy">{{copyNotice}}</view>
   </view>
+
+  <view class="capture-process">记录 <text>→</text> 补充 <text>→</text> 成稿</view>
+  <view class="capture-privacy">灵感默认仅你可见。</view>
 </view>

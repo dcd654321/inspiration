@@ -1,8 +1,15 @@
-.shared-page { min-height: 100vh; }
-.shared-eyebrow { margin-bottom: 18rpx; color: var(--brand); font-size: 25rpx; font-weight: 600; }
-.shared-date { margin: 16rpx 0 32rpx; font-size: 25rpx; color: var(--ink-3); }
-.shared-content { background: var(--surface); padding: 36rpx; border-radius: 22rpx; font-size: 31rpx; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
-.shared-note, .shared-state { margin: 32rpx 0; color: var(--ink-2); font-size: 27rpx; line-height: 1.7; }
-.shared-report { margin: 36rpx auto 0; background: transparent; border: none; color: var(--ink-3); font-size: 25rpx; }
+.shared-page { min-height: 100vh; box-sizing: border-box; }
+.shared-eyebrow { margin-bottom: 18rpx; color: var(--brand); font-size: max(26rpx, 13px); font-weight: 600; }
+.shared-date { margin: 16rpx 0 24rpx; font-size: max(26rpx, 13px); color: var(--ink-3); }
+.shared-content { background: var(--surface); padding: 32rpx; border-radius: 22rpx; font-size: max(32rpx, 16px); line-height: 1.75; white-space: pre-wrap; word-break: break-all; }
+.shared-note, .shared-state { margin: 24rpx 0; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.7; }
+.shared-report { margin: 24rpx auto 0; background: transparent; border: none; color: var(--ink-3); font-size: max(26rpx, 13px); }
 .shared-report::after { border: 0; }
 .shared-page .btn { margin-top: 18rpx; }
+.shared-value { margin-top: 28rpx; padding: 28rpx; border: 1px solid var(--brand-line); border-radius: 20rpx; background: var(--brand-soft); }
+.shared-value-title { color: var(--ink); font-size: max(32rpx, 16px); font-weight: 600; }
+.shared-value-copy { margin-top: 10rpx; color: var(--ink-2); font-size: max(28rpx, 14px); line-height: 1.7; }
+.has-start-footer { padding-bottom: calc(240rpx + env(safe-area-inset-bottom)); }
+.shared-start-footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; padding: 24rpx 40rpx calc(24rpx + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--paper); }
+.shared-start-footer .btn { margin: 0; }
+.shared-purpose { margin: 0 0 12rpx; color: var(--ink-2); font-size: max(26rpx, 13px); }

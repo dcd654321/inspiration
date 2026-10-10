@@ -13,11 +13,7 @@
 // | 云函数 | 同步什么 | 为什么 |
 // | --- | --- | --- |
 // | `linggan_api` | `server/` | 协议与仓库层的唯一来源 |
-// | `linggan_ai` | `server/`、`miniprogram/core/` | 契约与内容安全的规则必须与客户端**完全一致** |
-//
-// `linggan_ai` 同步 `core/` 而不是自己重写一套校验规则：两边规则一旦分叉，
-// 「客户端认为安全、服务端认为不安全」这种事就会出现，而它极难排查。
-// `core/` 是纯函数、零 wx 依赖，放进云函数能直接跑。
+// | `linggan_maintenance` | `server/` | 保留期与维护入口的唯一来源 |
 //
 // 用法：
 //   node scripts/build-cloud.cjs          同步
@@ -31,8 +27,7 @@ const CLOUD_ROOT = path.join(root, 'cloudfunctions');
 
 const TARGETS = [
   { fn: 'linggan_api', copies: [{ from: 'server', to: 'server' }] },
-  { fn: 'linggan_maintenance', copies: [{ from: 'server', to: 'server' }] },
-  { fn: 'linggan_ai', copies: [{ from: 'server', to: 'server' }, { from: 'miniprogram/core', to: 'core' }] }
+  { fn: 'linggan_maintenance', copies: [{ from: 'server', to: 'server' }] }
 ];
 
 /** 递归列出目录下的文件（相对路径，用 / 分隔）。 */

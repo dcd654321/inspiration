@@ -1,6 +1,8 @@
 const { LIMITS, createId } = require('../../core/limits');
 const { createInspiration } = require('../../core/inspiration');
 const { pageGuard } = require('../../services/page-session');
+const { draftContext, sourceVersion } = require('../../services/session-drafts');
+const { USE_TEMPLATES } = require('../../services/content-output');
 
 const DISPLAY_ERRORS = {
   EMPTY_TEXT: '写点内容再保存',
@@ -47,27 +49,69 @@ Page({
     errorText: '',
     copyNotice: '',
     lastSavedId: '',
-    lastSavedExcerpt: ''
+    lastSavedExcerpt: '',
+    draftRecoveryNotice: '',
+    templateIntentId: '', templateIntentLabel: '', lastSavedTemplateId: ''
   },
 
   async onShow() {
     this.visible = true;
     const version = this.viewVersion = (this.viewVersion || 0) + 1;
-    const app = getApp(); await app.ensureReady();
+    const app = getApp(), revision = this.inputRevision || 0;
+    const intent = app.globalData.sharedTemplateIntent;
+    const startIntent = app.globalData.captureStartIntent;
+    delete app.globalData.sharedTemplateIntent;
+    delete app.globalData.captureStartIntent;
+    let store;
+    try { store = await app.ensureReady(); } catch (err) { store = null; }
     if (this.visible === false || this.viewVersion !== version) return;
+    const validIntent = (value) => value && value.epoch === app.globalData.sessionEpoch &&
+      Number.isFinite(value.expiresAt) && value.expiresAt > Date.now();
+    const template = validIntent(intent) && USE_TEMPLATES.find((entry) => entry.id === intent.templateId && entry.id !== 'free');
     const scope = app.globalData.cacheScope;
     if (this.scope && scope && scope !== this.scope) {
       this.pendingSave = null;
       guardDraft(false);
-      this.setData({ draft: '', canSave: false, overBy: 0, nearLimit: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '' });
+      this.setData({ draft: '', canSave: false, overBy: 0, nearLimit: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', templateIntentId: '', templateIntentLabel: '', lastSavedTemplateId: '' });
     }
     if (scope) this.scope = scope;
+    this.draftOwner = draftContext(app, store);
+    const saved = app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('capture', this.draftOwner);
+    if (saved && revision === (this.inputRevision || 0) && !this.data.draft) {
+      this.pendingSave = saved.pendingSave;
+      this.setData(Object.assign({}, saved.data, { saving: false,
+        draftRecoveryNotice: saved.data.lastSavedId ? '已接续这次已记下的想法。' : '已接续这次未完成的记录。' }));
+      if (this.pendingSave && store.getInspiration && sourceVersion(store.getInspiration(this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
+        this.setData({ draft: '', canSave: false, status: '', lastSavedId: this.pendingSave.item.id,
+          lastSavedExcerpt: this.pendingSave.text, lastSavedTemplateId: this.pendingSave.templateId || '' });
+        this.pendingSave = null;
+        app.globalData.sessionDrafts.remove('capture', this.draftOwner);
+      }
+    }
+    if ((validIntent(startIntent) || template) && !this.data.draft && !this.pendingSave) {
+      this.setData({ lastSavedId: '', lastSavedExcerpt: '', lastSavedTemplateId: '', draftRecoveryNotice: '',
+        templateIntentId: '', templateIntentLabel: '' });
+    }
+    if (template) {
+      this.setData({ templateIntentId: template.id, templateIntentLabel: template.name });
+    }
     guardDraft(Boolean(this.data.draft));
   },
 
   onHide() {
+    const app = getApp();
+    if (this.visible !== false && this.draftOwner && app.globalData.sessionDrafts) {
+      const data = Object.assign({}, this.data, { saving: false, inputFocus: false });
+      if (this.data.saving && this.pendingSave) data.status = 'unknown';
+      if (this.data.draft || this.pendingSave || this.data.lastSavedId) {
+        app.globalData.sessionDrafts.put('capture', this.draftOwner, { data, pendingSave: this.pendingSave });
+      } else app.globalData.sessionDrafts.remove('capture', this.draftOwner);
+      this.setData({ draft: '', canSave: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '', templateIntentId: '', templateIntentLabel: '', lastSavedTemplateId: '' });
+      this.pendingSave = null; this.scope = ''; this.draftOwner = null;
+    }
     this.visible = false;
     this.viewVersion = (this.viewVersion || 0) + 1;
+    this.setData({ inputFocus: false });
     if (this.data.saving) this.setData({ saving: false, status: 'unknown' });
     guardDraft(false);
   },
@@ -77,6 +121,7 @@ Page({
   onInput(event) {
     if (this.data.saving || this.visible === false) return;
     const value = event.detail.value;
+    this.inputRevision = (this.inputRevision || 0) + 1;
     if (this.pendingSave && this.pendingSave.text !== value) this.pendingSave = null;
     const overBy = Math.max(0, value.length - LIMITS.textMaxLength);
     const canEdit = value.trim().length > 0 && overBy === 0;
@@ -91,18 +136,25 @@ Page({
       status: '',
       errorText: '',
       copyNotice: '',
+      draftRecoveryNotice: '',
       // 用户重新开始输入就清掉上一条成功卡与失败提示——它们还挂着只会让人以为说的是这次
       lastSavedId: '',
-      lastSavedExcerpt: ''
+      lastSavedExcerpt: '', lastSavedTemplateId: ''
     });
   },
 
-  onFocus() { this.setData({ inputFocus: false }); },
+  onFocus() {
+    if (this.data.saving || this.visible === false) return;
+    this.setData({ inputFocus: true });
+  },
+
+  onBlur() { this.setData({ inputFocus: false }); },
 
   async onSave() {
     if (this.data.saving || this.visible === false) return;
 
     const text = this.data.draft;
+    const templateId = this.pendingSave && this.pendingSave.text === text ? this.pendingSave.templateId : this.data.templateIntentId;
     if (text.trim().length === 0 || text.length > LIMITS.textMaxLength) return; // 按钮已 disabled，这里是兜底
 
     const app = getApp();
@@ -123,13 +175,20 @@ Page({
       return;
     }
     const epoch = app.globalData.sessionEpoch;
+    const owner = draftContext(app, store);
+    if (this.pendingSave && this.pendingSave.generation && (!owner || this.pendingSave.generation !== owner.generation)) {
+      this.pendingSave = null;
+      this.setData({ saving: false, status: 'rejected', errorText: '账户状态已变化，请重新核对后保存。' });
+      return;
+    }
+    if (owner) { this.draftOwner = owner; this.scope = owner.cacheScope; }
 
     // 当前会话内重试同一内容时复用记录标识；不会把待写内容持久化到设备。
     let inspiration;
     try {
       inspiration = this.pendingSave && this.pendingSave.text === text && this.pendingSave.scope === app.globalData.cacheScope
         ? this.pendingSave.item : createInspiration({ text, id: createId('insp'), now: Date.now() });
-      this.pendingSave = { text, scope: app.globalData.cacheScope, item: inspiration };
+      this.pendingSave = { text, scope: app.globalData.cacheScope, generation: owner && owner.generation, item: inspiration, templateId };
     } catch (err) {
       this.setData({ saving: false, status: 'rejected', errorText: messageFor(err), copyNotice: '' });
       return;
@@ -152,10 +211,11 @@ Page({
 
     if (!threw && result && result.ok && result.synced === true) {
       this.pendingSave = null;
+      if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('capture', this.draftOwner);
       guardDraft(false);
       this.setData({
-        draft: '', canSave: false, overBy: 0, nearLimit: false, status: '', errorText: '', copyNotice: '',
-        lastSavedId: inspiration.id, lastSavedExcerpt: text
+        draft: '', canSave: false, overBy: 0, nearLimit: false, inputFocus: false, status: '', errorText: '', copyNotice: '',
+        lastSavedId: inspiration.id, lastSavedExcerpt: text, lastSavedTemplateId: templateId || ''
       });
       return;
     }
@@ -197,7 +257,21 @@ Page({
     wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.lastSavedId) + '&focus=supplement' });
   },
 
+  onOrganizeSaved() {
+    if (!this.data.lastSavedId || this.visible === false) return;
+    const app = getApp();
+    if (this.scope && app.globalData.cacheScope !== this.scope) return;
+    const template = USE_TEMPLATES.find((entry) => entry.id === this.data.lastSavedTemplateId && entry.id !== 'free');
+    wx.navigateTo({ url: '/pages/output/index?id=' + encodeURIComponent(this.data.lastSavedId) + (template ? '&template=' + template.id : '') });
+  },
+
+  onClearTemplateIntent() {
+    if (this.visible === false || this.data.saving || this.data.status === 'unknown') return;
+    this.setData({ templateIntentId: '', templateIntentLabel: '' });
+  },
+
   onRecordAnother() {
-    this.setData({ lastSavedId: '', lastSavedExcerpt: '', inputFocus: true });
+    if (this.data.saving || this.visible === false || !this.data.lastSavedId || this.data.draft || this.pendingSave) return;
+    this.setData({ lastSavedId: '', lastSavedExcerpt: '', lastSavedTemplateId: '', draftRecoveryNotice: '', inputFocus: true });
   }
 });

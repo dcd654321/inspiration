@@ -1,5 +1,6 @@
-.welcome-page { min-height: 100vh; box-sizing: border-box; padding: 100rpx 48rpx 80rpx; text-align: center; }
+.welcome-page { min-height: 100vh; box-sizing: border-box; padding: 72rpx 40rpx calc(64rpx + env(safe-area-inset-bottom)); text-align: center; }
 .welcome-mark { display: block; width: 144rpx; height: 144rpx; border-radius: 36rpx; margin: 0 auto 38rpx; }
-.welcome-copy { max-width: 580rpx; margin: 24rpx auto 68rpx; color: var(--ink-2); font-size: 30rpx; line-height: 1.8; }
+.welcome-value { margin-top: 28rpx; font-size: max(48rpx, 24px); line-height: 1.4; color: var(--ink); font-weight: 600; }
+.welcome-copy { max-width: 580rpx; margin: 24rpx auto 48rpx; color: var(--ink-2); font-size: max(28rpx, 14px); line-height: 1.8; }
 .welcome-page .btn { margin-top: 18rpx; }
-.welcome-hint { margin-top: 38rpx; font-size: 25rpx; color: var(--ink-3); line-height: 1.7; }
+.welcome-hint { margin-top: 28rpx; font-size: max(26rpx, 13px); color: var(--ink-3); line-height: 1.7; }

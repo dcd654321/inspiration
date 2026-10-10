@@ -9,15 +9,14 @@
     <block wx:if="{{!failed}}">
       <!-- 「拾光」：一颗光点沿发丝线往返，读完即走 -->
       <view class="launch-track"><view class="launch-spark"></view></view>
-      <view class="launch-status">{{slow ? '读取还在进行…' : '正在读取你的灵感…'}}</view>
+      <view class="launch-status">正在打开记录页…</view>
     </block>
     <block wx:else>
       <view class="launch-status launch-error">{{error}}</view>
     </block>
 
-    <block wx:if="{{slow || failed}}">
-      <button class="btn btn-block launch-action" bindtap="onRetry">重试</button>
-      <button class="btn btn-quiet btn-block launch-action" bindtap="onEnterAnyway">先进入记录页</button>
+    <block wx:if="{{failed}}">
+      <button class="btn btn-block launch-action" bindtap="onRetry">重新打开记录页</button>
     </block>
   </view>
 </view>

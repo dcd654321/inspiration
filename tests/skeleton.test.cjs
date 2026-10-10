@@ -1,6 +1,5 @@
 'use strict';
-// 骨架阶段的不变量守卫。这些断言是刻意的：改动它们意味着你在启用云或 AI，
-// 而那需要先完成授权、部署与验收，不能靠改开关生效。
+// 配置与发布结构守卫；云环境仍须单独部署和验收。
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
@@ -8,14 +7,8 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 
-test('授权开放 AI 客户端且保留独立函数与超时边界，云环境必须已填', () => {
+test('云开关开启时环境必须已填', () => {
   const cloud = require('../miniprogram/config/cloud');
-  const ai = require('../miniprogram/config/ai');
-
-  // 2026-10-02 用户授权打开入口；服务端仍以模型/审核/事务额度失败关闭。
-  assert.strictEqual(ai.enabled, true);
-  assert.strictEqual(ai.functionName, 'linggan_ai');
-  assert.strictEqual(ai.timeoutMs, 55000);
 
   // 云开关**可以由用户打开**（2026-09-22 起，此前这里断言它必须为 false）。
   //

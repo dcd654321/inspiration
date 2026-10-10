@@ -29,7 +29,7 @@ async function withPage(name, run) {
       return result;
     }
   };
-  const app = { globalData: { store, sessionEpoch: 1, cacheScope: 'a'.repeat(32), aiEnabled: false,
+  const app = { globalData: { store, sessionEpoch: 1, cacheScope: 'a'.repeat(32),
     drafts: createCaptureDrafts() }, ensureReady: async () => app.globalData.store,
     refreshAccount: async () => { throw Error('should not reauthenticate a confirmed session'); } };
   try {
@@ -263,11 +263,11 @@ test('交互修复：稿件编辑开启离开提醒复制不当作另存', async
     const disables = state.disabledAlerts; page.onCopyDraft();
     assert.equal(state.disabledAlerts, disables); assert.equal(page.data.savedSame, false);
     page.onHide(); assert.ok(state.disabledAlerts > disables);
-    await page.onShow(); assert.equal(state.alerts.length, initial + 2);
+    await page.onShow(); assert.equal(state.alerts.length, initial + 1, '缺少受信代际的测试账户不得恢复私人编辑');
     await page.onSaveAsNew(); const afterSave = state.disabledAlerts;
-    page.onDraftInput(input('再次编辑')); assert.equal(state.alerts.length, initial + 3);
+    page.onDraftInput(input('再次编辑')); assert.equal(state.alerts.length, initial + 2);
     page.onUnload(); assert.ok(state.disabledAlerts > afterSave);
-    assert.equal(page.data.draft, '再次编辑');
+    assert.equal(page.data.draft, '', '卸载后可见私人内容清空，恢复由受信账户会话测试覆盖');
   });
 });
 

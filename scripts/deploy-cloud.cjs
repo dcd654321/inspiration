@@ -3,8 +3,8 @@
 // 区别只在 --env 传哪个环境。避免"手点在控制台里传错环境/漏传函数"。
 //
 // 用法：
-//   npm run deploy:cloud -- --env test                 部署全部 3 个函数到共享测试环境
-//   npm run deploy:cloud -- --env product              部署全部 3 个函数到共享正式环境
+//   npm run deploy:cloud -- --env test                 部署全部 2 个函数到共享测试环境
+//   npm run deploy:cloud -- --env product              部署全部 2 个函数到共享正式环境
 //   npm run deploy:cloud -- --env test --names linggan_api
 //   npm run deploy:cloud -- --env test --dry-run       只打印将要执行的命令
 //   （--env 也接受原始环境 ID；不传环境一律拒绝，没有默认值）
@@ -19,7 +19,7 @@ const resources = require('../miniprogram/config/cloud-resources');
 
 const ENV_ALIASES = { test: 'cloud1-d8gopnalv908bb47a', product: 'product-d2g59zty74d7d1ec1' };
 const DEFAULT_CLI = 'E:\\weixinDevTool\\微信web开发者工具\\cli.bat';
-const ALL_FUNCTIONS = [resources.apiFunction, resources.aiFunction, resources.maintenanceFunction];
+const ALL_FUNCTIONS = [resources.apiFunction, resources.maintenanceFunction];
 
 function parseArgs(argv) {
   const options = { env: '', names: [], dryRun: false };

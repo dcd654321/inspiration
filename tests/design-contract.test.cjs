@@ -29,7 +29,6 @@ const format = require('../miniprogram/core/format');
 const merge = require('../miniprogram/core/merge');
 const photo = require('../miniprogram/services/photo');
 const upload = require('../miniprogram/services/upload');
-const ai = require('../miniprogram/services/ai');
 const repository = require('../server/repository');
 const protocol = require('../server/protocol');
 const { LIMITS } = require('../miniprogram/core/limits');
@@ -251,10 +250,6 @@ test('services/photo.js 的导出与详设 §7.10 一致', () => {
 
 test('services/upload.js 的导出与详设 §7.11 一致', () => {
   assertExportsMatch('### 7.11 `services/upload.js`', 'Uploader 实例上的方法', upload, '详设 §7.11');
-});
-
-test('services/ai.js 的导出与详设 §7.12 一致', () => {
-  assertExportsMatch('### 7.12 `services/ai.js`', 'AiService 实例上的方法', ai, '详设 §7.12');
 });
 
 test('server/repository.js 的导出与详设 §7.13 一致', () => {

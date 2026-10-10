@@ -12,6 +12,7 @@ function validRecord(item) {
   if (!validHistory(item.textHistory || [], 'text', 2000) || !Array.isArray(item.supplements || []) || !Array.isArray(item.photos || [])) return false;
   if (item.stage !== undefined && !['seed', 'growing', 'ready'].includes(item.stage)) return false;
   if (item.source !== undefined && !['user', 'ai'].includes(item.source)) return false;
+  if (item.templateId !== undefined && !['free', 'social', 'video', 'work', 'action'].includes(item.templateId)) return false;
   if (!validSources(item.summarySources)) return false;
   if (item.tags !== undefined && (!Array.isArray(item.tags) || item.tags.length > 5 || new Set(item.tags).size !== item.tags.length || item.tags.some((x) => !text(x, 12) || x !== x.trim() || /[\r\n]/.test(x)))) return false;
   const supplements = item.supplements || [];

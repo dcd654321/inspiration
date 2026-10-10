@@ -49,9 +49,9 @@ test('列表：默认筛选行只放三个 chip，七天内/阶段/已合并进�
   assert.ok(page.indexOf('bindchange="onStageFilter"') > panel, '阶段应在面板内');
   assert.ok(page.indexOf('bindtap="onToggleMerged"') > panel, '已合并应在面板内');
   assert.match(page, /bindtap="onResetPanel">重置筛选</);
-  // 选材整理与汇总属于整份列表，放在段落头
-  assert.ok(page.indexOf('选材整理') > head);
-  assert.ok(page.indexOf('AI 汇总') > head);
+  // 选材成稿属于整份列表，放在段落头
+  assert.ok(page.indexOf('选材成稿') > head);
+  assert.doesNotMatch(page, /AI 汇总|onSummarize/);
 });
 
 test('列表：搜索框清空只清搜索词，全局清空在无结果态', () => {
@@ -118,7 +118,7 @@ test('操作面板：说明文字另起一行，不用 flex 把主标签挤成�
 
 test('可编辑字段的输入边界：标签与阶段不能再长得像说明文字', () => {
   const styles = read('miniprogram/pages/detail/index.wxss');
-  assert.match(styles, /\.organization input,[\s\S]*?border:\s*2rpx solid var\(--line-strong\);/);
+  assert.match(styles, /\.organization input,[\s\S]*?border:\s*1px solid var\(--field-line\);/);
 });
 
 test('状态提示：成功、警示、失败用三种不同的图标形状', () => {
@@ -198,20 +198,21 @@ test('详情页：整理标记保存成功后收起', () => {
   assert.match(logic, /orgOpen:\s*result\.ok\s*\?\s*false/);
 });
 
-test('详情页：动作按钮等宽成行，不再出现落单的半个按钮', () => {
+test('详情页：补充与整理等宽，保留手动整理入口', () => {
   const page = read('miniprogram/pages/detail/index.wxml');
   const styles = read('miniprogram/pages/detail/index.wxss');
   assert.doesNotMatch(styles, /\.output-acts \.btn\s*\{[\s\S]*?calc\(50%/, '不应再用固定两列');
   assert.match(styles, /\.output-acts \.btn\s*\{[\s\S]*?flex:\s*1 1 0;/);
   assert.match(styles, /\.detail-actions \.btn\s*\{[\s\S]*?flex:\s*1 1 0;/);
-  // AI 按钮单独一行：数量与「整理/补充」不同，混在一行必然落单
-  assert.match(page, /class="output-acts output-acts-ai"/);
-  assert.match(styles, /\.output-acts-ai\s*\{/);
+  assert.match(page, /bindtap="onOpenOutput"/);
+  assert.doesNotMatch(page, /detail-ai|onAiExpand|onAiSummarize/);
 });
 
 test('记录页与我的页文案：不列功能清单，不写辩解句', () => {
   const capture = read('miniprogram/pages/capture/index.wxml');
-  assert.match(capture, /先写下来，之后再补充。/);
+  assert.match(capture, /记下一闪念/);
+  assert.match(capture, /整理成可用稿/);
+  assert.match(capture, /先写一句。需要时，把零散想法整理成能直接使用的文字。/);
   assert.doesNotMatch(capture, /点子、计划和问题/);
   const mine = read('miniprogram/pages/mine/index.wxml');
   assert.doesNotMatch(mine, /不代表已发送给谁|不展示任何人的私人记录/);
@@ -233,14 +234,17 @@ test('记录页：结果未知与确认被拒绝分开，成功卡带摘录与�
   assert.match(page, /未能保存/);
   assert.match(logic, /UNKNOWN_CODES = \['NETWORK', 'INTERNAL'\]/);
   assert.match(logic, /status: 'rejected'/);
-  // 成功卡：内容摘录 + 继续补充 / 再记一条
+  // 输入区常驻，保存后下一条入口仍是主按钮；上一条的辅助动作另行呈现。
+  assert.match(page, /<view class="composer">/);
+  assert.doesNotMatch(page, /wx:if="\{\{!lastSavedId\}\}"/);
+  assert.match(page, /class="btn btn-block save-btn record-another" bindtap="onRecordAnother"/);
   assert.match(page, /已记下/);
   assert.match(page, /class="saved-quote">\{\{lastSavedExcerpt\}\}/);
   assert.match(page, /bindtap="onContinueSupplement">继续补充</);
   assert.match(page, /bindtap="onRecordAnother">再记一条</);
-  // 摘录两行封顶
+  // 上一条摘录一行封顶，避免挤占新记录输入。
   const styles = read('miniprogram/pages/capture/index.wxss');
-  assert.match(styles, /\.saved-quote[\s\S]*?-webkit-line-clamp:\s*2/);
+  assert.match(styles, /\.saved-quote[\s\S]*?-webkit-line-clamp:\s*1/);
   // 未保存提示只在可编辑且未提交时出现
   assert.match(page, /尚未保存，退出后可能丢失。/);
   // 空输入不放示例行（2026-09-30 用户决定去掉），引导由占位符承担
@@ -371,33 +375,26 @@ test('分享页与我的分享：失效不推断原因，空态有入口', () =>
   assert.match(shared, /请稍后重试。/);
   const sharedPage = read('miniprogram/pages/shared/index.wxml');
   assert.match(sharedPage, /bindtap="onRetry">重新读取</);
-  assert.strictEqual((sharedPage.match(/记录我的想法/g) || []).length, 2);
+  assert.strictEqual((sharedPage.match(/bindtap="onStart"/g) || []).length, 2);
+  assert.match(sharedPage, /也整理我的想法/);
   const myShares = read('miniprogram/pages/my-shares/index.wxml');
   assert.match(myShares, /还没有分享记录/);
   assert.match(myShares, /bindtap="onOpenList">查看我的灵感</);
 });
 
-test('我的页：开发者向的「使用帮助」组已删除，回顾控制只留在列表内', () => {
+test('我的页：产品使用帮助可达，诊断与统计入口隐藏，回顾控制只留在列表内', () => {
   const page = read('miniprogram/pages/mine/index.wxml');
   assert.match(page, /数据与隐私/);
-  assert.match(page, /open-type="feedback">提交反馈</);
+  assert.match(page, /使用帮助/);
+  assert.match(page, /open-type="feedback"[^>]*>[\s\S]*?<text class="menu-label">意见与问题反馈<\/text>/);
   // 「显示回顾入口」开关与会话统计（诊断信息）按用户 2026-09-30 决定删除
-  assert.doesNotMatch(page, /使用帮助|显示回顾入口|诊断信息|使用统计/);
+  assert.doesNotMatch(page, /显示回顾入口|诊断信息|使用统计/);
   const logic = read('miniprogram/pages/mine/index.js');
   assert.doesNotMatch(logic, /onReviewSetting|onUsageSetting|onCopyUsage/);
   // 回顾的会话内控制保留在列表里的「本次先不看」
   const list = read('miniprogram/pages/list/index.wxml');
   assert.match(list, /本次先不看/);
 })
-
-test('AI 页：关闭时只给一句事实和返回列表，不写开发进度', () => {
-  const page = read('miniprogram/pages/ai-workbench/index.wxml');
-  assert.match(page, /暂时无法使用此功能/);
-  assert.match(page, /bindtap="onBackToList">返回灵感列表</);
-  assert.doesNotMatch(page, /尚未开放/);
-  const logic = read('miniprogram/pages/ai-workbench/index.js');
-  assert.match(logic, /switchTab/);
-});
 
 test('字号下限：正文与辅助类文字在窄屏不被缩到读不出', () => {
   const styles = read('miniprogram/app.wxss');

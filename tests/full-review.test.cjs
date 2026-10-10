@@ -109,6 +109,7 @@ test('全量复核：反馈隐藏后新账户清空原账户输入和记录', as
 
 test('全量复核：分享准备等待锁定选择重复操作只创建一次', async () => {
   await withPage('share-preview', async ({ page, app, store, state }) => {
+    page.onToggle(event('id', 's1'));
     const pending = deferred(); app.ensureReady = () => pending.promise;
     const preparing = page.onPrepareChat(); assert.equal(page.data.busy, true);
     page.onToggle(event('id', 's1')); await page.onPrepareChat();
@@ -231,6 +232,7 @@ test('全量复核：海报二维码迟到不创建文件或覆盖新页面', as
 
 test('全量复核：相册保存冻结来源离开后停止剩余图片', async () => {
   await withPage('share-preview', async ({ page, state }) => {
+    page.onToggle(event('id', 's1'));
     page.setData({ posterReady: true, posterFiles: ['/tmp/one', '/tmp/two'] });
     const saving = page.onSavePosters();
     page.onToggle(event('id', 's1')); await page.onMakePoster();

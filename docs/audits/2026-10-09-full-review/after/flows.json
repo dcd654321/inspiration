@@ -1,0 +1,214 @@
+{
+  "synthetic": true,
+  "cloud": false,
+  "steps": [
+    {
+      "name": "15-record-input",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "全量审查样例：保存后还能继续记录新的想法。",
+        "maxLength": 2000,
+        "canSave": true,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": true,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 22
+      }
+    },
+    {
+      "name": "16-save-confirmed",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": true,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "insp_mv0j2956_s9ilmxp8",
+        "lastSavedExcerpt": "全量审查样例：保存后还能继续记录新的想法。",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 22
+      }
+    },
+    {
+      "name": "17-list-start-record",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 22
+      }
+    },
+    {
+      "name": "18-unsaved-entry-preserved",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "尚未提交的文字应在再次进入时保留。",
+        "maxLength": 2000,
+        "canSave": true,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "已接续这次未完成的记录。",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 22
+      }
+    },
+    {
+      "name": "19-review-focus",
+      "route": "pages/list/index",
+      "state": {
+        "items": [
+          {
+            "id": "insp_mv0j2956_s9ilmxp8",
+            "excerpt": "全量审查样例：保存后还能继续记录新的想法。",
+            "time": "刚刚",
+            "supplements": "",
+            "stageLabel": "",
+            "tags": [],
+            "tagMore": 0,
+            "merged": false,
+            "matchText": "",
+            "matchSource": ""
+          },
+          {
+            "id": "demo_1",
+            "excerpt": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+            "time": "3 天前",
+            "supplements": "2 条补充",
+            "stageLabel": "整理中",
+            "tags": [
+              "内容选题",
+              "城市散步"
+            ],
+            "tagMore": 0,
+            "merged": false,
+            "matchText": "",
+            "matchSource": ""
+          },
+          {
+            "id": "demo_2",
+            "excerpt": "做一个方便回顾旧想法的小工具，让记录之后的整理更加自然。",
+            "time": "5 天前",
+            "supplements": "",
+            "stageLabel": "",
+            "tags": [],
+            "tagMore": 0,
+            "merged": false,
+            "matchText": "",
+            "matchSource": ""
+          }
+        ],
+        "loading": false,
+        "error": "",
+        "query": "",
+        "filter": "all",
+        "recentOn": false,
+        "mergedOn": false,
+        "stage": "",
+        "stages": [
+          {
+            "id": "",
+            "label": "全部阶段"
+          },
+          {
+            "id": "seed",
+            "label": "想法"
+          },
+          {
+            "id": "growing",
+            "label": "整理中"
+          },
+          {
+            "id": "ready",
+            "label": "可使用"
+          }
+        ],
+        "stageIndex": 0,
+        "panelOpen": false,
+        "panelCount": 0,
+        "activeCount": 3,
+        "mergedCount": 0,
+        "reviewItem": {
+          "id": "demo_1",
+          "excerpt": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+          "time": "3 天前",
+          "supplements": "2 条补充",
+          "stageLabel": "整理中",
+          "tags": [
+            "内容选题",
+            "城市散步"
+          ],
+          "tagMore": 0,
+          "merged": false
+        },
+        "reviewExpanded": false,
+        "reviewError": "",
+        "__webviewId__": 23
+      }
+    }
+  ],
+  "exceptions": [],
+  "console": [],
+  "environment": {
+    "window": {
+      "pixelRatio": 3,
+      "safeArea": {
+        "top": 47,
+        "left": 0,
+        "right": 390,
+        "bottom": 810,
+        "width": 390,
+        "height": 763
+      },
+      "screenWidth": 390,
+      "screenHeight": 844,
+      "screenTop": 0,
+      "windowWidth": 390,
+      "windowHeight": 844,
+      "statusBarHeight": 47
+    }
+  },
+  "newEntryClearedCard": true,
+  "unsavedPreserved": true
+}

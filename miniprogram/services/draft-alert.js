@@ -2,7 +2,7 @@
 function setDraftLeaveAlert(hasDraft) {
   try {
     if (hasDraft && typeof wx.enableAlertBeforeUnload === 'function') {
-      wx.enableAlertBeforeUnload({ message: '这份稿件还没有另存，离开后不会保留。' });
+      wx.enableAlertBeforeUnload({ message: '这份稿件还没有另存，退出小程序后可能丢失。' });
     } else if (!hasDraft && typeof wx.disableAlertBeforeUnload === 'function') {
       wx.disableAlertBeforeUnload();
     }

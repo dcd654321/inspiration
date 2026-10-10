@@ -1,0 +1,173 @@
+[
+  {
+    "name": "01-home",
+    "file": "01-home.png",
+    "page": "pages/capture/index",
+    "label": "改版首页空输入",
+    "steps": "启动注册完成后直达可写首页",
+    "level": "F",
+    "time": "2026-10-07T23:02:44.350Z"
+  },
+  {
+    "name": "02-record-saved",
+    "file": "02-record-saved.png",
+    "page": "pages/capture/index",
+    "label": "首记确认成功",
+    "steps": "合成文字输入→内存store确认→补充/整理/再记首屏动作",
+    "level": "F",
+    "time": "2026-10-07T23:03:14.692Z"
+  },
+  {
+    "name": "03-output",
+    "file": "03-output.png",
+    "page": "pages/output/index",
+    "label": "首记直接成稿",
+    "steps": "首记成功→整理这条→即时可编辑自由稿",
+    "level": "F",
+    "time": "2026-10-07T23:03:18.774Z"
+  },
+  {
+    "name": "04-output-copied",
+    "file": "04-output-copied.png",
+    "page": "pages/output/index",
+    "label": "编辑和复制",
+    "steps": "编辑合成活动稿→复制；非真实保存",
+    "level": "F",
+    "time": "2026-10-07T23:03:20.816Z"
+  },
+  {
+    "name": "05-save-share-confirm",
+    "file": "05-save-share-confirm.png",
+    "page": "pages/output/index",
+    "label": "另存后分享原生确认",
+    "steps": "合成稿→保存并预览分享→原生确认弹窗",
+    "level": "F",
+    "time": "2026-10-07T23:05:53.823Z"
+  },
+  {
+    "name": "06-share-preview",
+    "file": "06-share-preview.png",
+    "page": "pages/share-preview/index",
+    "label": "成稿分享范围核对",
+    "steps": "原生确认→内存另存→直达分享预览；未准备真实token",
+    "level": "F",
+    "time": "2026-10-07T23:06:16.074Z"
+  },
+  {
+    "name": "07-share-return",
+    "file": "07-share-return.png",
+    "page": "pages/output/index",
+    "label": "取消分享返回保留编辑稿",
+    "steps": "分享预览返回→同会话重新核验→恢复已存稿",
+    "level": "F",
+    "time": "2026-10-07T23:06:21.138Z"
+  },
+  {
+    "name": "08-material-select",
+    "file": "08-material-select.png",
+    "page": "pages/material-output/index",
+    "label": "选材成稿选择态",
+    "steps": "进入素材列表，默认无选材，固定计数与动作",
+    "level": "F",
+    "time": "2026-10-07T23:06:29.288Z"
+  },
+  {
+    "name": "09-material-draft",
+    "file": "09-material-draft.png",
+    "page": "pages/material-output/index",
+    "label": "紧凑多素材结果页",
+    "steps": "两段选材→成稿；默认收起格式，复制首屏可见",
+    "level": "F",
+    "time": "2026-10-07T23:09:40.027Z"
+  },
+  {
+    "name": "10-material-resume",
+    "file": "10-material-resume.png",
+    "page": "pages/material-output/index",
+    "label": "原生返回后恢复全文与选材",
+    "steps": "多素材稿→欢迎页→wx.navigateBack返回；两段选材与全文仍在",
+    "level": "F",
+    "time": "2026-10-07T23:10:03.610Z"
+  },
+  {
+    "name": "11-save-unknown",
+    "file": "11-save-unknown.png",
+    "page": "pages/material-output/index",
+    "label": "未知另存反馈和恢复动作首屏可见",
+    "steps": "fixture NETWORK→完整稿冻结；208px只读区、说明、复制/重试",
+    "level": "F",
+    "time": "2026-10-07T23:13:07.073Z"
+  },
+  {
+    "name": "12-save-retry",
+    "file": "12-save-retry.png",
+    "page": "pages/material-output/index",
+    "label": "原稿重试确认成功",
+    "steps": "恢复内存确认→重试同一产物；实际幂等由行为测试证明",
+    "level": "F",
+    "time": "2026-10-07T23:10:07.888Z"
+  },
+  {
+    "name": "13-share-default",
+    "file": "13-share-default.png",
+    "page": "pages/share-preview/index",
+    "label": "私人记录默认仅正文",
+    "steps": "demo_1分享预览；两条补充默认不选",
+    "level": "F",
+    "time": "2026-10-07T23:13:15.681Z"
+  },
+  {
+    "name": "14-share-ready",
+    "file": "14-share-ready.png",
+    "page": "pages/share-preview/index",
+    "label": "合成准备完成且好友按钮可达",
+    "steps": "页面client合成share.create回应；未发送",
+    "level": "F",
+    "time": "2026-10-07T23:13:18.415Z"
+  },
+  {
+    "name": "15-shared-template",
+    "file": "15-shared-template.png",
+    "page": "pages/shared/index",
+    "label": "公开文字与合法用途的接收状态",
+    "steps": "禁用云的隔离工程注入公开白名单页面状态；未真实share.get",
+    "level": "F",
+    "time": "2026-10-07T23:13:58.761Z"
+  },
+  {
+    "name": "16-template-capture",
+    "file": "16-template-capture.png",
+    "page": "pages/capture/index",
+    "label": "接收者承接用途，无旧记录或恢复提示",
+    "steps": "公开白名单页面合成状态→点击接收CTA→实际switchTab；只承接work用途，不复制作者正文",
+    "level": "F",
+    "time": "2026-10-07T23:18:06.770Z"
+  },
+  {
+    "name": "17-shared-unavailable",
+    "file": "17-shared-unavailable.png",
+    "page": "pages/shared/index",
+    "label": "分享失效后仍可开始自己的记录",
+    "steps": "隔离工程注入明确不可用的公开状态；核对失效说明和返回记录入口",
+    "level": "F",
+    "time": "2026-10-07T23:18:20.907Z"
+  },
+  {
+    "name": "18-detail",
+    "file": "18-detail.png",
+    "page": "pages/detail/index",
+    "label": "详情保持原文与补充时间线",
+    "steps": "内存合成记录→查看详情；补充和整理为主操作，AI为文字入口",
+    "level": "F",
+    "time": "2026-10-07T23:18:30.386Z"
+  },
+  {
+    "name": "19-ai-resume",
+    "file": "19-ai-resume.png",
+    "page": "pages/ai-workbench/index",
+    "label": "AI预览同会话导航返回恢复",
+    "steps": "页面AI替身产生明确合成的三段预览→原生进入欢迎页→返回；未调用模型、未采纳保存",
+    "level": "F",
+    "time": "2026-10-07T23:19:23.084Z"
+  }
+]

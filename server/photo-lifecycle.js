@@ -12,7 +12,10 @@ function createPhotoLifecycle({ db, now, removeFiles, validatePhoto, beforeRemov
     const taskId = data.inspirationId + ':' + (photoId ? 'photo:' + photoId : 'all');
     let task = (doc.photoCleanup || []).find((x) => x.id === taskId);
     const target = doc.inspirations.find((x) => x.id === data.inspirationId);
-    if (!target) return { ok: true, data: { version: doc.version, alreadyAbsent: true, deletedPhotos: 0 } };
+    if (!target) {
+      if (data.baseVersion !== doc.version) return fail('CONFLICT');
+      return { ok: true, data: { version: doc.version, alreadyAbsent: true, deletedPhotos: 0 } };
+    }
     if (!task) {
       if (data.baseVersion !== doc.version) return fail('CONFLICT');
       if ((doc.photoCleanup || []).some((x) => x.inspirationId === target.id)) return fail('PHOTO_CLEANUP_PENDING');

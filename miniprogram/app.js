@@ -1,5 +1,4 @@
 const cloudConfig = require('./config/cloud');
-const aiConfig = require('./config/ai');
 const { createCloudOnlyStore } = require('./services/cloud-only-store');
 const { createCaptureDrafts } = require('./services/capture-drafts');
 const { createMemoryStorage } = require('./services/memory-storage');
@@ -8,11 +7,11 @@ const { createReviewService } = require('./services/discovery');
 const { createWxPhotos } = require('./services/wx-photo');
 const { createUsageMetrics } = require('./services/usage-metrics');
 const { getCloudClient } = require('./services/cloud-client');
+const { createSessionDrafts, sameContext } = require('./services/session-drafts');
 
 App({
   globalData: {
     cloudEnabled: cloudConfig.enabled,
-    aiEnabled: aiConfig.enabled,
 
     // 全应用只持有当前会话的内存视图；持久记录以云端确认结果为准。
     // 草稿只在内存里，进程结束即消失——规范没有承诺它跨会话存在（detailed-design §7.6）。
@@ -22,6 +21,7 @@ App({
     cacheScope: '',
     metrics: null,
     drafts: createCaptureDrafts(),
+    sessionDrafts: createSessionDrafts(),
     readyPromise: null,
     accountError: '',
     sessionEpoch: 0,
@@ -82,6 +82,7 @@ App({
     this.globalData.cacheScope = '';
     this.globalData.metrics = null;
     const epoch = ++this.globalData.sessionEpoch;
+    this.globalData.drafts = createCaptureDrafts();
     const transport = createWxTransport({ functionName: cloudConfig.apiFunction });
     const pending = (async () => {
       try {
@@ -100,9 +101,11 @@ App({
         });
         this.globalData.store = store;
         this.globalData.cacheScope = response.data.cacheScope;
-        this.accountDrafts = this.accountDrafts || new Map();
-        if (!this.accountDrafts.has(response.data.cacheScope)) this.accountDrafts.set(response.data.cacheScope, createCaptureDrafts());
-        this.globalData.drafts = this.accountDrafts.get(response.data.cacheScope);
+        const context = { cacheScope: response.data.cacheScope, generation: response.data.generation };
+        if (!sameContext(this.draftOwner, context)) this.accountDrafts = createCaptureDrafts();
+        this.draftOwner = context;
+        this.globalData.drafts = this.accountDrafts;
+        this.globalData.sessionDrafts.bind(context);
         this.globalData.metrics = createUsageMetrics({ storage, cacheScope: response.data.cacheScope });
         this.globalData.review = createReviewService({ storage, cacheScope: response.data.cacheScope });
         try { this.globalData.photos = response.data.photosEnabled === true ? createWxPhotos({ cacheScope: response.data.cacheScope, store, storagePrefix: response.data.storagePrefix, isCurrent: () => epoch === this.globalData.sessionEpoch }) : null; }

@@ -32,6 +32,15 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     operation = next.catch(() => {});
     return next;
   }
+  function serialWrite(work) {
+    const version = snapshot.version, generation = snapshot.generation;
+    return serial(() => {
+      if (!active()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
+      if (snapshot.generation !== generation) return { ok: false, code: 'STALE_GENERATION' };
+      if (snapshot.version !== version) return { ok: false, code: 'CONFLICT' };
+      return work();
+    });
+  }
   async function pull() {
     if (!active()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     let response;
@@ -53,8 +62,8 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     catch (err) { response = { ok: false, code: 'NETWORK' }; }
     if (!active()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     if (!response || !response.ok || !response.data || !Number.isSafeInteger(response.data.version) ||
-        response.data.version < snapshot.version) {
-      // 超时可能发生在服务端提交之后；先拉取并按实际内容核对，不盲目宣布失败或重复写入。
+        response.data.version < snapshot.version || response.data.version > snapshot.version + 1) {
+      // 超时或多次 CAS 的回执都需完整回读，不能只用新版本号升级旧内容。
       const code = response && response.code || 'NETWORK';
       const refreshed = await pull();
       if (refreshed.ok && isConfirmed(snapshot.inspirations)) return { ok: true, synced: true };
@@ -67,7 +76,7 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     return { ok: true, synced: true };
   }
   function saveInspirations(items) {
-    return serial(async () => {
+    return serialWrite(async () => {
       if (!Array.isArray(items) || !items.length || items.length > 21 ||
           items.some((item) => !item || typeof item.id !== 'string' || item.deletedAt) ||
           new Set(items.map((item) => item.id)).size !== items.length) return { ok: false, code: 'INVALID_PAYLOAD' };
@@ -82,11 +91,11 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     });
   }
   function deleteInspiration(id) {
-    return serial(() => send('inspiration.delete', { inspirationId: id }, (rows) => !rows.some((item) => item.id === id),
+    return serialWrite(() => send('inspiration.delete', { inspirationId: id }, (rows) => !rows.some((item) => item.id === id),
       (rows) => rows.filter((item) => item.id !== id).map((item) => item.mergedInto === id ? Object.assign({}, item, { mergedInto: null }) : item)));
   }
   function deletePhoto(inspirationId, photoId) {
-    return serial(() => send('photo.delete', { inspirationId, photoId }, (rows) => {
+    return serialWrite(() => send('photo.delete', { inspirationId, photoId }, (rows) => {
       const item = rows.find((entry) => entry.id === inspirationId);
       return !item || !(item.photos || []).some((photo) => photo.id === photoId);
     }, (rows) => rows.map((item) => item.id === inspirationId ? Object.assign({}, item,

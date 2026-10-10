@@ -1,12 +1,13 @@
 .feedback-categories { display: flex; gap: 10rpx; margin: 36rpx 0 20rpx; }
-.feedback-category { flex: 1; min-height: 76rpx; padding: 0 8rpx; background: var(--surface); border: 2rpx solid var(--line); color: var(--ink-2); font-size: 25rpx; border-radius: 14rpx; }
+.feedback-categories .feedback-category { flex: 1; min-width: 0; min-height: 44px; padding: 8rpx; background: var(--surface); border: 1px solid var(--field-line); color: var(--ink-2); font-size: max(25rpx, 14px); line-height: 1.5; border-radius: 14rpx; }
 .feedback-category::after { border: 0; }
-.feedback-category-on { background: var(--brand-soft); border-color: var(--brand-line); color: var(--brand); font-weight: 600; }
-.feedback-editor { box-sizing: border-box; width: 100%; min-height: 290rpx; padding: 24rpx; background: var(--surface); border: 2rpx solid var(--line); border-radius: 18rpx; font-size: 28rpx; line-height: 1.6; }
-.feedback-count { margin-top: 8rpx; text-align: right; color: var(--ink-3); font-size: 23rpx; }
-.feedback-note { margin: 20rpx 0 32rpx; color: var(--ink-2); font-size: 25rpx; line-height: 1.7; }
-.section-label { margin: 48rpx 0 14rpx; font-size: 30rpx; font-weight: 600; }
+.feedback-categories .feedback-category-on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); font-weight: 600; }
+.feedback-label { margin: 24rpx 0 12rpx; }
+.feedback-editor { box-sizing: border-box; width: 100%; min-height: 160px; padding: 24rpx; background: var(--surface); border: 1px solid var(--field-line); border-radius: 18rpx; font-size: max(28rpx, 16px); line-height: 1.7; }
+.feedback-count { margin-top: 8rpx; text-align: right; color: var(--ink-3); font-size: max(23rpx, 13px); }
+.feedback-note { margin: 20rpx 0 32rpx; color: var(--ink-2); font-size: max(25rpx, 13px); line-height: 1.7; }
+.section-label { margin: 48rpx 0 14rpx; font-size: max(30rpx, 16px); font-weight: 600; }
 .feedback-record { padding: 26rpx; margin-top: 16rpx; background: var(--surface); border-radius: 18rpx; }
-.feedback-record-head { display: flex; justify-content: space-between; color: var(--brand); font-size: 25rpx; font-weight: 600; }
-.feedback-record-body { margin-top: 12rpx; font-size: 27rpx; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-.feedback-record-date { margin-top: 12rpx; color: var(--ink-3); font-size: 23rpx; }
+.feedback-record-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12rpx; color: var(--brand); font-size: max(25rpx, 13px); font-weight: 600; }
+.feedback-record-body { margin-top: 12rpx; font-size: max(27rpx, 16px); line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
+.feedback-record-date { margin-top: 12rpx; color: var(--ink-3); font-size: max(23rpx, 13px); }

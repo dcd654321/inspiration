@@ -5,10 +5,12 @@
   font-size: 27rpx;
   font-size: max(27rpx, 14px);
   color: var(--ink-2);
+  line-height: 1.65;
 }
 
 .output-tools {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8rpx;
   margin: 20rpx 0 4rpx;
@@ -35,9 +37,9 @@
 
 .draft-editor {
   width: 100%;
-  height: 520rpx;
-  height: max(520rpx, 260px);
-  margin-top: 24rpx;
+  height: 560rpx;
+  height: max(560rpx, 280px);
+  margin-top: 12rpx;
   padding: 30rpx;
   box-sizing: border-box;
   background: var(--surface);
@@ -47,8 +49,10 @@
   font-size: 29rpx;
   font-size: max(30rpx, 16px);
   font-weight: 400;
-  line-height: 1.7;
+  line-height: 1.75;
 }
+.draft-label { margin-top: 20rpx; }
+.draft-editor.draft-pending { height: 208px; }
 .draft-count { margin-top: 10rpx; color: var(--ink-3); font-size: max(24rpx, 13px); text-align: right; }
 .count-over { color: var(--danger); }
 .saved-link { margin-top: 16rpx; }
@@ -81,7 +85,7 @@
   flex: 0 0 34rpx;
   height: 34rpx;
   margin-top: 6rpx;
-  border: 2rpx solid var(--line-strong);
+  border: 1px solid var(--field-line);
   border-radius: 8rpx;
   color: #fff;
   font-size: 26rpx;

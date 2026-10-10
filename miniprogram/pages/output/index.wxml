@@ -21,25 +21,29 @@
     <view class="page-title">整理成稿</view>
     <!-- 进入即有可编辑稿件；材料与格式按需调整 -->
     <view class="output-summary">{{summary}}</view>
+    <view wx:if="{{draftRecoveryNotice}}" class="recovery-note" aria-live="polite">{{draftRecoveryNotice}}</view>
     <view class="output-tools">
-      <button class="btn-link" bindtap="onOpenContent" disabled="{{busy}}">调整内容</button>
-      <button class="btn-link" bindtap="onOpenFormat" disabled="{{busy}}">选择格式</button>
+      <button class="btn-link" bindtap="onOpenContent" disabled="{{busy || saveUnknown}}">调整内容</button>
+      <button class="btn-link" bindtap="onOpenFormat" disabled="{{busy || saveUnknown}}">选择格式</button>
       <button class="btn-link" bindtap="onOpenMore" disabled="{{busy}}">更多</button>
     </view>
 
-    <textarea class="draft-editor" value="{{draft}}" maxlength="-1" bindinput="onDraftInput" disabled="{{busy}}" aria-label="编辑稿件" />
+    <view class="field-label draft-label">这份稿件</view>
+    <textarea class="draft-editor {{saveUnknown ? 'draft-pending' : ''}}" value="{{draft}}" maxlength="-1" bindinput="onDraftInput" disabled="{{busy || saveUnknown}}" cursor-spacing="24" aria-label="编辑稿件" />
     <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">
       <text wx:if="{{draft.length > maxLength}}">另存最多{{maxLength}}字符，当前超出{{draft.length - maxLength}}字符。</text>
       <text wx:else>{{draft.length}}字符 · 另存最多{{maxLength}}字符</text>
     </view>
 
     <view class="selection-note">可以直接编辑，原记录不会改变。</view>
-    <view wx:if="{{!savedSame}}" class="selection-note draft-leave-hint">未另存的稿件离开后不保留，请先复制或另存。</view>
-    <button class="btn btn-block main-action" bindtap="onCopyDraft" disabled="{{busy}}">复制稿件</button>
-    <button class="btn btn-quiet btn-block secondary-action" bindtap="onSaveAsNew" disabled="{{busy || !canSaveAs}}">{{busy ? '正在另存…' : (savedSame ? '已另存' : '另存为新灵感')}}</button>
+    <view wx:if="{{!savedSame}}" class="selection-note draft-leave-hint">稿件仅在本次使用中保留，关闭小程序前请复制或另存。</view>
+    <view wx:if="{{sourceStale}}" class="notice notice-warn"><view class="mark"></view><view class="notice-body"><view>素材已变化，当前稿件仍可复制。请重新选择素材后再保存。</view><button class="btn-link" bindtap="onOpenContent" disabled="{{busy}}">重新选择内容</button></view></view>
+    <view wx:if="{{error}}" class="notice {{saveUnknown ? 'notice-warn' : 'notice-err'}}"><view class="mark"></view><text>{{error}}</text></view>
+    <button class="btn btn-block main-action" bindtap="onCopyDraft" disabled="{{busy || !draft.length}}">复制稿件</button>
+    <button class="btn btn-quiet btn-block secondary-action" bindtap="onSaveAsNew" disabled="{{busy || sourceStale || !canSaveAs}}">{{busy ? '正在另存…' : saveUnknown ? '重试确认保存' : (savedSame ? '已另存' : '另存为新灵感')}}</button>
+    <button class="btn btn-plain btn-block secondary-action" bindtap="onShareDraft" disabled="{{busy || saveUnknown || sourceStale || !draft.length}}">{{savedSame ? '分享这份稿件' : '保存并预览分享'}}</button>
     <view wx:if="{{noticeLink}}" class="saved-link"><button class="btn btn-link" bindtap="onOpenSaved">查看新灵感</button></view>
 
-    <view wx:if="{{error}}" class="notice notice-err"><view class="mark"></view><text>{{error}}</text></view>
     <view wx:if="{{notice}}" class="notice notice-success"><view class="mark"></view><text>{{notice}}</text></view>
   </block>
 

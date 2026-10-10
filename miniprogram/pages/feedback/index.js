@@ -12,7 +12,7 @@ const STATUS = { submitted: '已提交', reviewing: '处理中', closed: '已关
 Page({
   data: { reporting: false, category: 'idea', categories: CATEGORIES,
     body: '', trimmedLength: 0, canSubmit: false,
-    busy: false, error: '', notice: '', items: [], loading: false, nextBefore: null },
+    busy: false, error: '', historyError: '', notice: '', items: [], loading: false, nextBefore: null },
   onLoad(options) {
     beginPage(this);
     this.reportToken = options && typeof options.t === 'string' ? options.t : '';
@@ -25,12 +25,12 @@ Page({
       this.submitRequestId = '';
       this.setData({ body: '', trimmedLength: 0, canSubmit: false });
     }
-    this.setData({ busy: false, error: '', notice: '', items: [], nextBefore: null });
+    this.setData({ busy: false, error: '', historyError: '', notice: '', items: [], nextBefore: null });
     await this.load(true);
   },
   onHide() {
     endPage(this);
-    this.setData({ busy: false, loading: false, items: [], nextBefore: null });
+    this.setData({ busy: false, loading: false, historyError: '', items: [], nextBefore: null });
   },
   onUnload() { this.onHide(); },
   onCategory(event) {
@@ -83,12 +83,13 @@ Page({
     if (this.visible === false || (!replace && (this.data.loading || !this.data.nextBefore))) return;
     const version = this.listVersion = (this.listVersion || 0) + 1;
     const before = this.data.nextBefore;
-    this.setData({ loading: true });
+    this.historyReplace = Boolean(replace);
+    this.setData({ loading: true, historyError: '' });
     const account = await readPageAccount(this);
     const isCurrent = () => account.isCurrent() && version === this.listVersion;
     if (!isCurrent()) return;
     if (!account.store) {
-      this.setData({ loading: false, error: '暂时无法确认账户，请稍后重试。' }); return;
+      this.setData({ loading: false, historyError: '暂时无法确认账户，请稍后重试。' }); return;
     }
     if (this.sessionStore && this.sessionStore !== account.store) {
       this.submitRequestId = '';
@@ -103,7 +104,7 @@ Page({
     if (!isCurrent()) return;
     this.setData({ loading: false });
     if (!result.ok) {
-      if (!this.data.notice) this.setData({ error: '反馈记录暂时无法加载。' });
+      this.setData({ historyError: '反馈记录暂时无法加载，请重试。' });
       return;
     }
     const items = result.data.items.map((entry) => Object.assign({}, entry, {
@@ -116,5 +117,6 @@ Page({
       .filter((entry) => { if (seen.has(entry.feedbackId)) return false; seen.add(entry.feedbackId); return true; }),
     nextBefore: result.data.nextBefore });
   },
-  onMore() { return this.load(false); }
+  onMore() { return this.load(false); },
+  onRetryHistory() { if (!this.data.loading) return this.load(this.historyReplace !== false); }
 });

@@ -32,15 +32,7 @@ const ERROR_CODES = {
   INVALID_MERGE_MODE: 'INVALID_MERGE_MODE',
 
   // 图片
-  INVALID_FILE_ID: 'INVALID_FILE_ID',
-
-  // AI 输出契约
-  MISSING_SECTION: 'MISSING_SECTION',
-  TOO_FEW_ITEMS: 'TOO_FEW_ITEMS',
-  TOO_MANY_ITEMS: 'TOO_MANY_ITEMS',
-  EMPTY_ITEM: 'EMPTY_ITEM',
-  ITEM_TOO_LONG: 'ITEM_TOO_LONG',
-  UNSAFE_CONTENT: 'UNSAFE_CONTENT'
+  INVALID_FILE_ID: 'INVALID_FILE_ID'
 };
 
 // 校验错误文案。界面可直接展示，因此不使用「参数非法」这类只有开发者能读懂的措辞。
@@ -62,13 +54,7 @@ const ERROR_MESSAGES = {
   [ERROR_CODES.ALREADY_MERGED]: '这条内容已经合并过了',
   [ERROR_CODES.ALREADY_FOLDED]: '这条补充已经合并进灵感了',
   [ERROR_CODES.INVALID_MERGE_MODE]: '汇总的写入方式不正确',
-  [ERROR_CODES.INVALID_FILE_ID]: '图片标识不正确',
-  [ERROR_CODES.MISSING_SECTION]: 'AI 返回的内容不完整',
-  [ERROR_CODES.TOO_FEW_ITEMS]: 'AI 返回的内容过少',
-  [ERROR_CODES.TOO_MANY_ITEMS]: 'AI 返回的内容过多',
-  [ERROR_CODES.EMPTY_ITEM]: 'AI 返回的内容存在空项',
-  [ERROR_CODES.ITEM_TOO_LONG]: 'AI 返回的内容存在超长项',
-  [ERROR_CODES.UNSAFE_CONTENT]: 'AI 返回的内容不适合展示'
+  [ERROR_CODES.INVALID_FILE_ID]: '图片标识不正确'
 };
 
 function describe(errors) {

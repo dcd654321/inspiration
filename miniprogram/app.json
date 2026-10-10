@@ -8,7 +8,6 @@
     "pages/history/index",
     "pages/output/index",
     "pages/material-output/index",
-    "pages/ai-workbench/index",
     "pages/photo-viewer/index",
     "pages/share-preview/index",
     "pages/shared/index",

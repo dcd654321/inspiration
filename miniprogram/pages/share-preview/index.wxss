@@ -1,14 +1,23 @@
-.section-label { margin-top: 40rpx; font-size: 30rpx; font-weight: 600; }
-.selection-note, .share-rule { margin-top: 12rpx; font-size: 26rpx; line-height: 1.7; color: var(--ink-2); }
+.has-share-footer { padding-bottom: calc(240rpx + env(safe-area-inset-bottom)); }
+.section-label { margin-top: 32rpx; font-size: max(30rpx, 16px); font-weight: 600; }
+.selection-note, .share-rule { margin-top: 12rpx; font-size: max(26rpx, 13px); line-height: 1.7; color: var(--ink-2); }
 .share-option { display: flex; align-items: flex-start; gap: 18rpx; width: 100%; margin-top: 16rpx; padding: 24rpx; text-align: left; background: var(--surface); border: 2rpx solid var(--line); border-radius: 18rpx; }
 .share-option::after { border: 0; }
-.share-option-on { border-color: var(--brand-line); background: var(--brand-soft); }
-.share-check { width: 34rpx; flex: 0 0 34rpx; color: var(--brand); }
-.share-option-text { flex: 1; font-size: 27rpx; line-height: 1.6; white-space: pre-wrap; }
-.share-preview { margin-top: 20rpx; padding: 30rpx; background: var(--surface); border-radius: 20rpx; font-size: 28rpx; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.share-option-on { border-color: var(--brand); background: var(--brand-soft); }
+.share-check { width: 22px; height: 22px; flex: 0 0 22px; box-sizing: border-box; border: 1px solid var(--field-line); border-radius: 6px; color: var(--brand); font-size: 16px; line-height: 20px; text-align: center; }
+.share-option-on .share-check { border-color: var(--brand); }
+.share-option-text { flex: 1; min-width: 0; font-size: max(30rpx, 16px); line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+.share-preview { margin-top: 20rpx; padding: 32rpx; background: var(--surface); border: 1px solid var(--line); border-radius: 20rpx; font-size: max(32rpx, 16px); line-height: 1.75; white-space: pre-wrap; word-break: break-all; }
 .share-rule { padding: 20rpx 0; }
 .share-action { margin-top: 16rpx; }
 .poster-section { margin-top: 38rpx; }
 .poster-scroll { width: 100%; white-space: nowrap; margin: 20rpx 0; }
 .poster-thumb { display: inline-block; width: 280rpx; margin-right: 16rpx; border-radius: 12rpx; }
 .poster-canvas { position: fixed; left: -2000px; top: 0; width: 750px; height: 1000px; }
+.share-footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 8; padding: 24rpx 40rpx calc(24rpx + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--paper); }
+.share-other-ways { display: flex; flex-wrap: wrap; align-items: center; gap: 16rpx; margin-top: 8rpx; }
+.share-other-ways .btn-link { width: auto; margin: 0; }
+.share-purpose { margin-top: 16rpx; color: var(--brand); font-size: max(26rpx, 13px); }
+.preview-clamped { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.share-preview .preview-toggle { width: auto; margin: 16rpx 0 0; padding: 0; }
+.share-footer-note { margin-bottom: 12rpx; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.6; }

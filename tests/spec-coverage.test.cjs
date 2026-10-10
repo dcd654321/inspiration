@@ -28,7 +28,11 @@ const IN_SCOPE = [
   ['repair-ui-interactions', 'ui-interactions'],
   ['refine-editing-and-material-flow', 'experience-refinement'],
   ['enable-ai-workbench', 'ai-workbench-experience'],
-  ['repair-page-session-races', 'page-session-safety']
+  ['repair-page-session-races', 'page-session-safety'],
+  ['optimize-product-experience-20261007', 'product-experience'],
+  ['remove-ai-integration', 'manual-only-product'],
+  ['repair-snapshot-version-safety', 'snapshot-version-safety'],
+  ['repair-capture-continuity', 'capture-continuity']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */
@@ -67,7 +71,7 @@ function readCoverageRows() {
   const rows = [];
   for (const line of lines(fs.readFileSync(coverageFile, 'utf8'))) {
     const m = line.match(
-      /^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(已覆盖|部分覆盖|待验收|待实现)\s*\|\s*(.*?)\s*\|\s*$/
+      /^\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(已覆盖|部分覆盖|待验收|待实现|已撤下)\s*\|\s*(.*?)\s*\|\s*$/
     );
     if (m) rows.push({ requirement: m[1], scenario: m[2], status: m[3], detail: m[4] });
   }

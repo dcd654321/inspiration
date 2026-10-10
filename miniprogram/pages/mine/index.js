@@ -1,9 +1,21 @@
 Page({
   data: {
+    expandedInfo: '',
     privacyNotes: [
       '灵感默认仅你可见。只有你确认分享的文字才会生成分享链接。',
       '照片和修改记录不会加入文字分享。'
+    ],
+    helpNotes: [
+      '在「记录」写下一句话，保存后可到「灵感」查看。',
+      '打开一条灵感，继续补充文字或附上照片。',
+      '在「灵感」选择素材，手动整理成稿，再复制、导出或主动分享。'
     ]
+  },
+
+  onToggleInfo(event) {
+    const section = event && event.currentTarget && event.currentTarget.dataset.section;
+    if (section !== 'privacy' && section !== 'help') return;
+    this.setData({ expandedInfo: this.data.expandedInfo === section ? '' : section });
   },
 
   onShareAppMessage() {

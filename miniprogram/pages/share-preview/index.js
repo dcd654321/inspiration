@@ -1,5 +1,5 @@
 const { currentSupplements } = require('../../services/content-output');
-const { createShareClient, selectedPreview, shareRevision } = require('../../services/sharing');
+const { createShareClient, selectedPreview, shareRevision, chatShareCard, publicTemplate } = require('../../services/sharing');
 const { renderPosters, paginatePoster, MAX_CHARS } = require('../../services/share-poster');
 const { createId } = require('../../core/limits');
 const { beginPage, endPage, pageGuard, readPageAccount } = require('../../services/page-session');
@@ -8,7 +8,8 @@ Page({
   data: {
     ready: false, missing: false, options: [], preview: '', selectedCount: 0,
     error: '', notice: '', busy: false, chatPrepared: false, canRetryPoster: false,
-    posterBusy: false, posterFiles: [], posterReady: false, saving: false, allSaved: false
+    posterBusy: false, posterFiles: [], posterReady: false, saving: false, allSaved: false,
+    templateName: '', previewExpanded: false
   },
 
   async onLoad(query) {
@@ -32,7 +33,8 @@ Page({
     endPage(this);
     this.loadingPage = false;
     this.clearPrepared();
-    this.setData({ ready: false, missing: false, preview: '', options: [], selectedCount: 0 });
+    this.setData({ ready: false, missing: false, preview: '', options: [], selectedCount: 0,
+      templateName: '', previewExpanded: false });
   },
   onUnload() { this.onHide(); },
 
@@ -63,7 +65,8 @@ Page({
   async load() {
     const version = this.loadVersion = (this.loadVersion || 0) + 1;
     this.loadingPage = true;
-    this.setData({ ready: false, preview: '', options: [], selectedCount: 0 });
+    this.setData({ ready: false, preview: '', options: [], selectedCount: 0,
+      templateName: '', previewExpanded: false });
     const pending = readPageAccount(this);
     this.loadingEpoch = getApp().globalData.sessionEpoch;
     const account = await pending;
@@ -77,11 +80,19 @@ Page({
       return;
     }
     const options = currentSupplements(item).map((entry) => ({
-      id: entry.id, content: entry.content, selected: true
+      id: entry.id, content: entry.content, selected: false
     }));
-    this.setData({ ready: true, missing: false, options, selectedCount: options.length,
-      preview: selectedPreview(item, options.map((x) => x.id)),
+    const template = publicTemplate(item.templateId);
+    this.setData({ ready: true, missing: false, options, selectedCount: 0,
+      preview: selectedPreview(item, []), templateName: template && template.id !== 'free' ? template.name : '',
+      previewExpanded: false,
       error: shareRevision(account.store) ? '' : '暂时无法确认内容状态，请返回后重试。' });
+  },
+
+  onTogglePreview() {
+    if (this.visible !== false && this.data.ready && !this.data.missing) {
+      this.setData({ previewExpanded: !this.data.previewExpanded });
+    }
   },
 
   onToggle(event) {
@@ -155,10 +166,9 @@ Page({
 
   onShareAppMessage() {
     if (!this.preparedToken || !this.data.chatPrepared || !this.preparedIsCurrent || !this.preparedIsCurrent()) {
-      return { title: '灵感拾光簿｜让想法慢慢成形', path: '/pages/welcome/index' };
+      return chatShareCard(null, '');
     }
-    return { title: this.preparedPreview.title || '一份文字分享',
-      path: '/pages/shared/index?t=' + this.preparedToken };
+    return chatShareCard(this.preparedPreview, this.preparedToken);
   },
 
   async onMakePoster() {

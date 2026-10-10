@@ -1,0 +1,120 @@
+{
+  "verifiedAt": "2026-10-08T13:53:21.057Z",
+  "fixture": "qa/local/mine-style-20261008",
+  "projectname": "灵感拾光簿-我的页样式样例-20261008",
+  "wsEndpoint": "ws://127.0.0.1:9422",
+  "level": "F",
+  "system": {
+    "brand": "devtools",
+    "model": "iPhone 12/13 (Pro)",
+    "system": "iOS 10.0.1",
+    "platform": "devtools",
+    "benchmarkLevel": -1,
+    "pixelRatio": 3,
+    "screenWidth": 390,
+    "screenHeight": 844,
+    "windowWidth": 390,
+    "windowHeight": 844,
+    "statusBarHeight": 47,
+    "safeArea": {
+      "top": 47,
+      "left": 0,
+      "right": 390,
+      "bottom": 810,
+      "width": 390,
+      "height": 763
+    },
+    "language": "zh_CN",
+    "version": "8.0.5",
+    "fontSizeSetting": 16,
+    "SDKVersion": "3.17.2",
+    "host": {
+      "env": "WeChat"
+    },
+    "enableDebug": false,
+    "mode": "default",
+    "deviceOrientation": "portrait",
+    "bluetoothEnabled": true,
+    "locationEnabled": true,
+    "wifiEnabled": true,
+    "albumAuthorized": true,
+    "cameraAuthorized": true,
+    "locationAuthorized": true,
+    "microphoneAuthorized": true,
+    "notificationAuthorized": true,
+    "notificationAlertAuthorized": true,
+    "notificationBadgeAuthorized": true,
+    "notificationSoundAuthorized": true,
+    "phoneCalendarAuthorized": true,
+    "bluetoothAuthorized": true,
+    "locationReducedAccuracy": true,
+    "devicePixelRatio": 3
+  },
+  "viewport": {
+    "logicalWidth": 390,
+    "logicalHeight": 844
+  },
+  "screenshots": [
+    {
+      "file": "01-mine-default-390.png",
+      "pixelWidth": 363,
+      "pixelHeight": 785
+    },
+    {
+      "file": "02-mine-privacy-390.png",
+      "pixelWidth": 363,
+      "pixelHeight": 785
+    },
+    {
+      "file": "03-mine-help-390.png",
+      "pixelWidth": 363,
+      "pixelHeight": 785
+    },
+    {
+      "file": "04-mine-collapsed-390.png",
+      "pixelWidth": 363,
+      "pixelHeight": 785
+    },
+    {
+      "file": "05-my-shares-navigation-390.png",
+      "pixelWidth": 363,
+      "pixelHeight": 785
+    },
+    {
+      "file": "06-mine-return-390.png",
+      "pixelWidth": 363,
+      "pixelHeight": 785
+    },
+    {
+      "file": "07-mine-final-preview-390.png",
+      "pixelWidth": 363,
+      "pixelHeight": 785
+    }
+  ],
+  "screenshotNote": "Developer Tools simulator screenshot PNGs are 363x785 pixels; app reports 390x844 logical viewport. The screenshot output is scaled and does not represent a separate 363px device. Reference and comparison images are listed separately.",
+  "source": "current production miniprogram/pages/mine and assets/icons; fixture app replaces only app bootstrap and disables cloud",
+  "cloudEnabled": false,
+  "realDevice": false,
+  "productionWrites": false,
+  "shareSent": false,
+  "narrow320Verified": false,
+  "finalPage": "pages/mine/index",
+  "finalExpandedInfo": "",
+  "otherImageAssets": [
+    {
+      "file": "comparison-full.png",
+      "pixelWidth": 756,
+      "pixelHeight": 820
+    },
+    {
+      "file": "comparison-support.png",
+      "pixelWidth": 688,
+      "pixelHeight": 256
+    },
+    {
+      "file": "source-reference.png",
+      "pixelWidth": 409,
+      "pixelHeight": 802
+    }
+  ]
+}

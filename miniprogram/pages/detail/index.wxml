@@ -35,6 +35,7 @@
           auto-height
           disabled="{{pending !== ''}}"
           aria-label="修改正文"
+          cursor-spacing="24"
           bindinput="onEditInput"
         />
         <view wx:if="{{pending === 'text' || editDraft !== text}}" class="draft-hint">{{pending === 'text' ? '正在保存，请稍候。' : editUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
@@ -49,7 +50,7 @@
       </block>
 
       <block wx:else>
-        <view class="origin-text">{{text}}</view>
+        <view class="origin-text"><text selectable="true">{{text}}</text></view>
       </block>
     </view>
 
@@ -58,14 +59,11 @@
       <button class="btn btn-quiet btn-sm" bindtap="onOpenOutput" disabled="{{pending !== '' || editing || editingSupplementId}}">整理成稿</button>
       <button wx:if="{{!merged}}" class="btn btn-plain btn-sm" bindtap="onLocateCompose" disabled="{{pending !== '' || editing || editingSupplementId}}">继续补充</button>
     </view>
-    <view wx:if="{{aiEnabled && !merged}}" class="output-acts output-acts-ai">
-      <button class="btn btn-plain btn-sm" bindtap="onAiExpand" disabled="{{pending !== '' || editing || editingSupplementId}}">AI 扩展想法</button>
-      <button wx:if="{{supplements.length > 1}}" class="btn btn-plain btn-sm" bindtap="onAiSummarize" disabled="{{pending !== '' || editing || editingSupplementId}}">AI 汇总补充</button>
-    </view>
 
     <!-- 补充是详情页的主动作：输入框紧随原文，已有补充在输入框下方 -->
     <view wx:if="{{!editing && !editingSupplementId && !merged}}" class="detail-next">
       <view class="compose">
+        <view class="field-label">继续补充</view>
         <textarea
           class="compose-editor {{(composeFocus || supplementDraft) ? 'compose-tall' : ''}}"
           value="{{supplementDraft}}"
@@ -128,6 +126,7 @@
               auto-height
               disabled="{{pending !== ''}}"
               aria-label="修改补充"
+              cursor-spacing="24"
               bindinput="onSupplementEditInput"
             />
             <view wx:if="{{pending === 'supplementEdit' || supplementEditDraft !== supplementEditOriginal}}" class="draft-hint">{{pending === 'supplementEdit' ? '正在保存，请稍候。' : supplementEditUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
@@ -199,7 +198,7 @@
       <view class="section-head"><text class="k">照片</text><text class="v">{{photos.length}} / 9</text></view>
       <view class="photo-grid"><view wx:for="{{photos}}" wx:key="id" class="photo-cell"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" bindtap="onPreviewPhoto" /><button wx:elif="{{item.failed}}" class="btn-link" bindtap="onReloadPhoto">重新加载照片</button><button wx:else class="btn-link" data-id="{{item.id}}" bindtap="onPreviewPhoto">照片加载中</button><button wx:if="{{photosEnabled && !merged}}" class="btn-link" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy}}">删除照片</button></view></view>
       <button wx:if="{{photosEnabled && !merged}}" class="btn btn-plain btn-block" bindtap="onAddPhoto" disabled="{{photoBusy || pending}}" loading="{{photoBusy}}">添加照片</button>
-      <view class="hint-line">照片仅用于这条灵感，不加入分享或 AI 整理。</view>
+      <view class="hint-line">照片仅用于这条灵感，不加入分享。</view>
     </view>
     <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
 

@@ -9,8 +9,7 @@
     { "name": "linggan_shares", "indexesFile": "indexes/linggan_shares.json" },
     { "name": "linggan_feedback", "indexesFile": "indexes/linggan_feedback.json" },
     { "name": "linggan_usage", "indexesFile": null },
-    { "name": "linggan_rate_limits", "indexesFile": "indexes/linggan_rate_limits.json" },
-    { "name": "linggan_ai_usage", "indexesFile": "indexes/linggan_ai_usage.json" }
+    { "name": "linggan_rate_limits", "indexesFile": "indexes/linggan_rate_limits.json" }
   ],
   "functions": [
     {
@@ -25,19 +24,6 @@
         "LINGGAN_PHOTOS_ENABLED": "false"
       },
       "requiredSecretNames": ["LINGGAN_SHARE_TOKEN_KEY"]
-    },
-    {
-      "name": "linggan_ai",
-      "directory": "cloudfunctions/linggan_ai",
-      "remoteNpmInstall": true,
-      "openapi": ["security.msgSecCheck"],
-      "minimumTimeoutSecondsBeforeEnable": 60,
-      "nonSecretEnvironment": {
-        "LINGGAN_AI_ENABLED": "false",
-        "LINGGAN_AI_DAILY_LIMIT": "20",
-        "LINGGAN_AI_MINUTE_LIMIT": "3"
-      },
-      "requiredSecretNames": []
     },
     {
       "name": "linggan_maintenance",
