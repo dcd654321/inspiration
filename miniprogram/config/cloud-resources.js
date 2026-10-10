@@ -2,7 +2,6 @@
 // 命名不代替访问控制，隔离仍依赖可信身份与数据库/存储权限规则。
 module.exports = {
   apiFunction: 'linggan_api',
-  aiFunction: 'linggan_ai',
   accountCollection: 'linggan_accounts',
   shareCollection: 'linggan_shares',
   feedbackCollection: 'linggan_feedback',

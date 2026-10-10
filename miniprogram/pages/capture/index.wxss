@@ -11,20 +11,32 @@
   border-radius: 26rpx;
 }
 
+.capture-brand { color: var(--ink-2); font-size: max(28rpx, 14px); font-weight: 500; }
+.capture-title { margin-top: 28rpx; font-size: 52rpx; font-size: max(52rpx, 24px); font-weight: 600; line-height: 1.38; letter-spacing: -0.02em; }
+.capture-intro { margin-top: 16rpx; color: var(--ink-2); font-size: max(28rpx, 14px); line-height: 1.7; }
+
 .composer {
   background: var(--surface);
   border-radius: 24rpx;
   padding: 32rpx 32rpx 28rpx;
-  margin-top: 36rpx;
+  margin-top: 28rpx;
 }
 
 .editor {
   width: 100%;
-  min-height: 216rpx;
+  height: 320rpx;
+  height: max(320rpx, 160px);
+  min-height: 160px;
   font-size: 33rpx;
+  font-size: max(33rpx, 16px);
   line-height: 1.75;
   letter-spacing: 0.01em;
   color: var(--ink);
+  margin-top: 16rpx;
+  box-sizing: border-box;
+  padding: 20rpx;
+  border: 1px solid var(--field-line);
+  border-radius: 16rpx;
 }
 
 .editor-ph {
@@ -33,13 +45,34 @@
 
 .foot {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
   margin-top: 28rpx;
 }
 
-.count {
+.foot-hints {
+  flex: 1;
+  min-width: 0;
+}
+
+.hint-draft {
   font-size: 24rpx;
+  font-size: max(24rpx, 13px);
+  color: var(--ink-3);
+}
+
+/* 超限时说清差多少，并保持全文可见——不静默截断粘贴内容 */
+.hint-over {
+  font-size: 24rpx;
+  font-size: max(24rpx, 13px);
+  color: var(--danger);
+}
+
+.count {
+  flex: 0 0 auto;
+  font-size: 24rpx;
+  font-size: max(24rpx, 13px);
   color: var(--ink-3);
 }
 
@@ -47,28 +80,43 @@
   color: var(--warn-ink);
 }
 
+.count-over {
+  color: var(--danger);
+}
+
 .save-btn {
   margin-top: 24rpx;
 }
 
-.save-result {
-  flex: 1;
-  min-width: 0;
-}
-
-.result-link {
-  display: flex;
-  align-items: center;
-  min-height: 88rpx;
-  margin: 6rpx 0 -18rpx;
-  padding: 0;
-  color: var(--brand);
-  background: transparent;
+/* 上一条确认内容的一行摘录，不占用下一条输入位置。 */
+.saved-quote {
   font-size: 27rpx;
-  font-weight: 600;
-  text-align: left;
+  font-size: max(27rpx, 16px);
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin-top: 8rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
-.result-link::after {
-  border: none;
+.hint-copy {
+  font-size: 24rpx;
+  font-size: max(24rpx, 13px);
+  color: var(--ink-3);
+  margin-top: 16rpx;
 }
+
+.capture-result { margin-top: 24rpx; padding: 16rpx 20rpx 4rpx; }
+.capture-result .notice-title { font-size: max(28rpx, 14px); }
+.capture-result .notice-acts { flex-wrap: wrap; gap: 16rpx; margin-top: 0; }
+.capture-result .notice-acts .btn-link { width: auto; margin: 0; padding-left: 0; padding-right: 0; }
+.capture-process { display: flex; align-items: center; justify-content: center; gap: 16rpx; margin-top: 28rpx; font-size: max(26rpx, 13px); color: var(--ink-2); }
+.capture-process text { color: var(--brand); }
+.capture-privacy { margin-top: 8rpx; text-align: center; font-size: max(26rpx, 13px); color: var(--ink-3); }
+.capture-intent { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; margin-top: 20rpx; padding: 4rpx 20rpx; border-left: 3rpx solid var(--brand); background: var(--brand-soft); font-size: max(26rpx, 13px); color: var(--ink-2); }
+.capture-intent text { flex: 1; min-width: 0; }
+.capture-intent .btn-link { width: auto; margin: 0; flex: 0 0 auto; }

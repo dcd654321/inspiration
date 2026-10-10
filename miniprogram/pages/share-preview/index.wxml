@@ -1,36 +1,43 @@
-<view class="page" wx:if="{{ready}}">
-  <view class="page-title">分享这条文字</view>
-  <view class="page-sub">先确认对方会看到什么，再选择分享方式。</view>
+<view class="page share-page {{!missing ? 'has-share-footer' : ''}}" wx:if="{{ready}}">
+  <view class="page-title">分享文字</view>
+  <view class="page-sub">把有用的文字分享给需要的人。</view>
+  <view wx:if="{{templateName}}" class="share-purpose">用途：{{templateName}}</view>
   <view wx:if="{{missing}}" class="notice notice-err">{{error}}</view>
   <block wx:else>
+    <view class="section-label">对方将看到</view>
+    <view class="share-preview"><view class="{{previewExpanded || preview.length <= 180 ? '' : 'preview-clamped'}}"><text selectable="true">{{preview}}</text></view><button wx:if="{{preview.length > 180}}" class="btn-link preview-toggle" bindtap="onTogglePreview">{{previewExpanded ? '收起全文' : '展开完整文字'}}</button></view>
+
+    <view class="section-label">公开范围</view>
+    <view class="selection-note">正文会一并分享；补充由你选择。照片、修改记录和已收起的补充不会加入。</view>
     <view class="section-label">选择补充</view>
-    <view class="selection-note">当前正文会一并分享；照片、修改记录和收起的补充不会加入。</view>
     <view wx:if="{{options.length === 0}}" class="selection-note">这条灵感没有可选的补充。</view>
     <button wx:for="{{options}}" wx:key="id" class="share-option {{item.selected ? 'share-option-on' : ''}}"
-      data-id="{{item.id}}" bindtap="onToggle">
+      data-id="{{item.id}}" bindtap="onToggle" disabled="{{busy || saving}}">
       <text class="share-check">{{item.selected ? '✓' : ''}}</text><text class="share-option-text">{{item.content}}</text>
     </button>
 
-    <view class="section-label">对方将看到</view>
-    <view class="share-preview"><text selectable="true">{{preview}}</text></view>
-    <view class="share-rule">有效期 30 天。拿到分享链接的人都能查看；撤销链接也无法收回已复制的文字或已发布的海报。</view>
+    <view class="share-rule">链接有效期30天，获得链接的人都能查看。撤销链接无法收回已复制的文字或已保存的海报。</view>
 
     <view wx:if="{{error}}" class="notice notice-err"><view class="mark"></view><text>{{error}}</text></view>
     <view wx:if="{{notice}}" class="notice"><view class="mark"></view><text>{{notice}}</text></view>
 
-    <button class="btn btn-block share-action" bindtap="onPrepareChat" disabled="{{busy}}">{{busy ? '准备中…' : '确认，准备发给微信好友'}}</button>
-    <button wx:if="{{chatPrepared}}" class="btn btn-quiet btn-block share-action" open-type="share">选择微信好友</button>
-    <button class="btn btn-plain btn-block share-action" bindtap="onPreparePoster" disabled="{{busy}}">确认，制作朋友圈海报</button>
-    <button wx:if="{{!posterReady && canRetryPoster}}" class="btn btn-plain btn-block share-action" bindtap="onRetryPoster" disabled="{{busy}}">重试生成海报</button>
+    <!-- 同一位置按状态替换：未准备 → 准备中 → 就绪后由用户触发系统分享。
+         准备完成不等于已发送；修改选择会使已准备的结果立即失效。 -->
+    <view class="share-footer">
+      <view class="share-footer-note">公开文字 · 链接有效期30天</view>
+      <button wx:if="{{!chatPrepared}}" class="btn btn-block" bindtap="onPrepareChat" disabled="{{busy || saving}}">{{busy ? '准备中…' : '确认内容并准备分享'}}</button>
+      <button wx:else class="btn btn-block" open-type="share" disabled="{{busy || saving}}">选择微信好友</button>
+    </view>
+    <view class="share-other-ways"><button class="btn-link" bindtap="onMakePoster" disabled="{{busy || saving}}">{{busy && posterBusy ? '制作中…' : (posterReady ? '重新制作海报' : '制作海报')}}</button><button class="btn-link" bindtap="onOpenMyShares" disabled="{{busy || saving}}">查看我的分享</button></view>
 
     <view wx:if="{{posterReady}}" class="poster-section">
       <view class="section-label">海报预览 · {{posterFiles.length}} 张</view>
       <scroll-view scroll-x="true" class="poster-scroll">
         <image wx:for="{{posterFiles}}" wx:key="*this" src="{{item}}" mode="widthFix" class="poster-thumb" />
       </scroll-view>
-      <button class="btn btn-block" bindtap="onSavePosters" disabled="{{saving || allSaved}}">{{saving ? '保存中…' : (allSaved ? '已保存全部海报' : '保存全部海报到相册')}}</button>
+      <button class="btn btn-block" bindtap="onSavePosters" disabled="{{busy || saving || allSaved}}">{{saving ? '保存中…' : (allSaved ? '已保存全部海报' : '保存全部海报到相册')}}</button>
     </view>
-    <button class="btn btn-plain btn-block share-action" bindtap="onOpenMyShares">查看我的分享</button>
     <canvas canvas-id="posterCanvas" class="poster-canvas" width="750" height="1000"></canvas>
   </block>
 </view>
+<view class="page" wx:else><view class="page-title">分享文字</view><view class="page-sub">正在读取可分享的文字…</view></view>

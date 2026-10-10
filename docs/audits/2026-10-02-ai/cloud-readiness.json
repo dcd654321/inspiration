@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-02",
+  "resourceAppid": "wx7ad85943fe81e095",
+  "test": {
+    "environmentId": "cloud1-d8gopnalv908bb47a",
+    "function": { "name": "linggan_ai", "status": "Active", "timeoutSeconds": 3, "runtime": "Nodejs16.13" },
+    "aiResponse": "AI_DISABLED",
+    "quotaIndexes": ["_id_", "_openid_1"],
+    "indexReadRequestId": "03e34958-3505-4eb0-bc2c-e77e485f9641"
+  },
+  "product": {
+    "environmentId": "product-d2g59zty74d7d1ec1",
+    "function": { "name": "linggan_ai", "status": "Active", "timeoutSeconds": 3, "runtime": "Nodejs16.13" },
+    "aiResponse": "not-called",
+    "quotaIndexes": ["_id_", "_openid_1"],
+    "indexReadRequestId": "c7eaea90-3c07-460f-b288-d7d82da72115"
+  },
+  "configurationReadLimit": "official cli info does not expose environment variables or model selection",
+  "finalClientObservation": { "accountReady": true, "aiEnabled": true, "accountError": "", "source": "official automation_evaluate on current real project" },
+  "configurationWriteLimit": "installed WeChat CLI/skill v0.3.9 has no timeout or environment-variable update command; native UI unavailable; cloud console shows login page",
+  "cloudWrites": [],
+  "realModelCallsSucceeded": 0
+}

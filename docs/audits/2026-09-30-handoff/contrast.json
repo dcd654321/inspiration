@@ -1,0 +1,82 @@
+[
+  {
+    "name": "ink/paper",
+    "foreground": "#191A23",
+    "background": "#F7F6F2",
+    "ratio": 16.0,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "secondary/paper",
+    "foreground": "#5F6070",
+    "background": "#F7F6F2",
+    "ratio": 5.72,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "tertiary/paper",
+    "foreground": "#6F6F7B",
+    "background": "#F7F6F2",
+    "ratio": 4.58,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "white/brand",
+    "foreground": "#FFFFFF",
+    "background": "#34377F",
+    "ratio": 10.51,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "brand/soft",
+    "foreground": "#34377F",
+    "background": "#EEEEF8",
+    "ratio": 9.12,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "success",
+    "foreground": "#24604B",
+    "background": "#EDF6F0",
+    "ratio": 6.68,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "danger",
+    "foreground": "#B43C32",
+    "background": "#FBEEEC",
+    "ratio": 5.1,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "warning",
+    "foreground": "#805B1F",
+    "background": "#FDF4E3",
+    "ratio": 5.6,
+    "threshold": 4.5,
+    "passed": true
+  },
+  {
+    "name": "field/white",
+    "foreground": "#858596",
+    "background": "#FFFFFF",
+    "ratio": 3.63,
+    "threshold": 3,
+    "passed": true
+  },
+  {
+    "name": "field/paper",
+    "foreground": "#858596",
+    "background": "#F7F6F2",
+    "ratio": 3.35,
+    "threshold": 3,
+    "passed": true
+  }
+]

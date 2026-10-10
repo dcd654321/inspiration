@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-08T13:53:21.069Z",
+  "scenario": "reLaunch mine; actual element tap privacy; help; help again; leave mine collapsed",
+  "logs": [
+    {
+      "type": "warn",
+      "args": [
+        "wx.getSystemInfoSync is deprecated.Please use wx.getSystemSetting/wx.getAppAuthorizeSetting/wx.getDeviceInfo/wx.getWindowInfo/wx.getAppBaseInfo instead."
+      ]
+    }
+  ],
+  "exceptions": [],
+  "initialCapturesExceptions": []
+}

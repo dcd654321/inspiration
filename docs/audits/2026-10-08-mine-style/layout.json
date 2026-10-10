@@ -1,0 +1,206 @@
+{
+  "at": "2026-10-08T13:51:34.570Z",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "rects": {
+    ".mine-page": [
+      {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 564.484375,
+        "width": 390,
+        "height": 564.484375,
+        "fontSize": "16px",
+        "lineHeight": "25.6px"
+      }
+    ],
+    ".settings-card": [
+      {
+        "left": 18,
+        "right": 372,
+        "top": 103.984375,
+        "bottom": 254.984375,
+        "width": 354,
+        "height": 151,
+        "fontSize": "16px",
+        "lineHeight": "25.6px"
+      },
+      {
+        "left": 18,
+        "right": 372,
+        "top": 274.984375,
+        "bottom": 497.484375,
+        "width": 354,
+        "height": 222.5,
+        "fontSize": "16px",
+        "lineHeight": "25.6px"
+      }
+    ],
+    ".menu-row": [
+      {
+        "left": 34,
+        "right": 356,
+        "top": 140.984375,
+        "bottom": 196.984375,
+        "width": 322,
+        "height": 56,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 356,
+        "top": 196.984375,
+        "bottom": 252.984375,
+        "width": 322,
+        "height": 56,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 356,
+        "top": 311.984375,
+        "bottom": 383.484375,
+        "width": 322,
+        "height": 71.5,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 356,
+        "top": 383.484375,
+        "bottom": 439.484375,
+        "width": 322,
+        "height": 56,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 356,
+        "top": 439.484375,
+        "bottom": 495.484375,
+        "width": 322,
+        "height": 56,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      }
+    ],
+    ".menu-label": [
+      {
+        "left": 34,
+        "right": 328,
+        "top": 156.484375,
+        "bottom": 180.484375,
+        "width": 294,
+        "height": 24,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 328,
+        "top": 212.984375,
+        "bottom": 236.984375,
+        "width": 294,
+        "height": 24,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 328,
+        "top": 324.984375,
+        "bottom": 369.484375,
+        "width": 294,
+        "height": 44.5,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 328,
+        "top": 398.984375,
+        "bottom": 422.984375,
+        "width": 294,
+        "height": 24,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 34,
+        "right": 328,
+        "top": 455.484375,
+        "bottom": 479.484375,
+        "width": 294,
+        "height": 24,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      }
+    ],
+    ".menu-arrow": [
+      {
+        "left": 340,
+        "right": 355,
+        "top": 160.984375,
+        "bottom": 175.984375,
+        "width": 15,
+        "height": 15,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 340,
+        "right": 355,
+        "top": 217.484375,
+        "bottom": 232.484375,
+        "width": 15,
+        "height": 15,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 340,
+        "right": 355,
+        "top": 339.734375,
+        "bottom": 354.734375,
+        "width": 15,
+        "height": 15,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 340,
+        "right": 355,
+        "top": 403.484375,
+        "bottom": 418.484375,
+        "width": 15,
+        "height": 15,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      },
+      {
+        "left": 340,
+        "right": 355,
+        "top": 459.984375,
+        "bottom": 474.984375,
+        "width": 15,
+        "height": 15,
+        "fontSize": "16px",
+        "lineHeight": "24px"
+      }
+    ]
+  },
+  "horizontalOverflow": {
+    "minLeft": 0,
+    "maxRight": 390,
+    "passed": true
+  },
+  "minimumMenuRowHeight": 56,
+  "narrow320Verified": false
+}

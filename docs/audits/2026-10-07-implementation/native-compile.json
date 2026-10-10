@@ -1,0 +1,18 @@
+[
+  {
+    "exe": "wcc.exe",
+    "count": 15,
+    "ok": true,
+    "status": 0,
+    "stderr": "",
+    "compiledBytes": 182078
+  },
+  {
+    "exe": "wcsc.exe",
+    "count": 16,
+    "ok": true,
+    "status": 0,
+    "stderr": "",
+    "compiledBytes": 66613
+  }
+]

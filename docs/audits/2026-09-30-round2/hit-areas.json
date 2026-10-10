@@ -1,0 +1,68 @@
+{
+  "/pages/list/index .add-link": [
+    {
+      "w": 82,
+      "h": 45
+    }
+  ],
+  "/pages/list/index .filter-chip": [
+    {
+      "w": 52,
+      "h": 45
+    },
+    {
+      "w": 68,
+      "h": 45
+    },
+    {
+      "w": 52,
+      "h": 45
+    }
+  ],
+  "/pages/list/index .review-head": [
+    {
+      "w": 318,
+      "h": 49
+    }
+  ],
+  "/pages/detail/index?id=demo_1 .detail-more": [
+    {
+      "w": 48,
+      "h": 45
+    }
+  ],
+  "/pages/detail/index?id=demo_1 .detail-actions .btn": [
+    {
+      "w": 171,
+      "h": 45
+    },
+    {
+      "w": 171,
+      "h": 45
+    }
+  ],
+  "/pages/detail/index?id=demo_1 .compose-foot .btn": [
+    {
+      "w": 89,
+      "h": 45
+    }
+  ],
+  "/pages/mine/index .btn": [
+    {
+      "w": 318,
+      "h": 45
+    },
+    {
+      "w": 318,
+      "h": 45
+    },
+    {
+      "w": 350,
+      "h": 45
+    },
+    {
+      "w": 350,
+      "h": 45
+    }
+  ]
+}

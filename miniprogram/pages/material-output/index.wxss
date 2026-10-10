@@ -1,12 +1,27 @@
 @import "../output/index.wxss";
-.material-page { padding-bottom: calc(420rpx + env(safe-area-inset-bottom)); }
-.material-page .option { font-weight: normal; }
-.material-page .back-select { display: flex; align-items: center; justify-content: flex-start; width: 100%; line-height: 1; font-weight: normal; }
-.material-search { margin-top: 32rpx; min-height: 88rpx; padding: 0 24rpx; border: 2rpx solid var(--line); background: var(--surface); border-radius: 16rpx; font-size: 28rpx; }
+.material-select-page { padding-bottom: 0; }
+.material-page .option { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 72px; box-sizing: border-box; margin: 8px 0 0; padding: 16px; font-weight: normal; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; line-height: 1.6; }
+.material-page .option-selected { background: var(--brand-soft); border-color: var(--brand); }
+.material-page .option::after { border: 0; }
+.option-body { flex: 1; min-width: 0; }
+.option-time { display: block; font-size: max(25rpx, 13px); color: var(--ink-3); line-height: 1.5; }
+.option-content { display: block; margin-top: 6px; font-size: max(30rpx, 16px); color: var(--ink); line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+.material-page .option-check { flex: 0 0 22px; width: 22px; height: 22px; line-height: 22px; margin-top: 2px; font-size: 13px; border-color: var(--field-line); }
+.material-page .option-checked { border-color: var(--brand); }
+.material-page .back-select { display: flex; align-items: center; justify-content: flex-start; width: 100%; padding: 0; background: transparent; color: var(--brand); font-size: max(28rpx, 14px); line-height: 1; font-weight: normal; }
+.back-select::after { border: 0; }
+.result-tools { display: flex; gap: 24px; margin: 8px 0; }
+.material-page .result-tools .back-select { width: auto; margin: 0; min-height: 44px; }
+.section-label { margin-top: 20px; font-size: max(28rpx, 14px); font-weight: 600; color: var(--ink-2); }
+.template-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.template-options .template-option { flex: 0 0 auto; width: auto; margin: 0; padding: 0 12px; min-height: 44px; line-height: 44px; font-size: max(28rpx, 14px); color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; }
+.template-options .template-selected { color: var(--brand); background: var(--brand-soft); border-color: var(--brand); }
+.empty-options { padding: 24px 0; font-size: max(26rpx, 13px); line-height: 1.6; color: var(--ink-3); }
+.material-search { margin-top: 24px; min-height: max(88rpx, 44px); padding: 0 12px; border: 1px solid var(--field-line); background: var(--surface); border-radius: 8px; font-size: max(28rpx, 16px); }
 .material-tools { display: flex; justify-content: space-between; }
 .material-tools .btn-link { width: auto; margin: 0; }
-.material-source { color: var(--ink-3); font-size: 24rpx; margin: 8rpx 0; line-height: 1.5; }
-.material-footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 16rpx 40rpx calc(20rpx + env(safe-area-inset-bottom)); background: var(--paper); border-top: 2rpx solid var(--line); }
+.material-source { display: block; color: var(--ink-3); font-size: max(25rpx, 13px); margin-top: 6px; line-height: 1.5; word-break: break-all; }
+.material-footer { position: sticky; bottom: 0; z-index: 10; margin: 12px -40rpx 0; padding: 12px 40rpx; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: var(--paper); border-top: 1px solid var(--line); }
 .material-footer .selection-note { margin: 0 0 12rpx; }
 .material-footer .btn + .btn { margin-top: 12rpx; }
 .material-footer .notice { margin: 0 0 16rpx; }

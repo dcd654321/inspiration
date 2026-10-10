@@ -1,0 +1,38 @@
+{
+  "source": "Synthetic QA records; real DevTools canvas with existing brand image as synthetic code graphic; no cloud, QR service or album call",
+  "checks": [
+    {
+      "name": "16-history-empty",
+      "path": "pages/history/index"
+    },
+    {
+      "name": "17-material-bottom",
+      "path": "pages/material-output/index"
+    },
+    {
+      "name": "18-native-posters",
+      "path": "pages/share-preview/index"
+    },
+    {
+      "name": "19-share-prepared-bottom",
+      "path": "pages/share-preview/index"
+    },
+    {
+      "name": "20-mine-bottom",
+      "path": "pages/mine/index"
+    },
+    {
+      "name": "02-launch-retry",
+      "path": "pages/launch/index"
+    }
+  ],
+  "exceptions": [],
+  "historyEmpty": {
+    "count": 0
+  },
+  "posters": {
+    "ready": true,
+    "pages": 4,
+    "error": ""
+  }
+}

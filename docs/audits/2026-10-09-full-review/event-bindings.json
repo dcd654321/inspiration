@@ -1,0 +1,72 @@
+[
+  {
+    "route": "pages/launch/index",
+    "count": 1,
+    "missing": []
+  },
+  {
+    "route": "pages/capture/index",
+    "count": 9,
+    "missing": []
+  },
+  {
+    "route": "pages/list/index",
+    "count": 23,
+    "missing": []
+  },
+  {
+    "route": "pages/mine/index",
+    "count": 3,
+    "missing": []
+  },
+  {
+    "route": "pages/detail/index",
+    "count": 56,
+    "missing": []
+  },
+  {
+    "route": "pages/history/index",
+    "count": 4,
+    "missing": []
+  },
+  {
+    "route": "pages/output/index",
+    "count": 32,
+    "missing": []
+  },
+  {
+    "route": "pages/material-output/index",
+    "count": 17,
+    "missing": []
+  },
+  {
+    "route": "pages/photo-viewer/index",
+    "count": 3,
+    "missing": []
+  },
+  {
+    "route": "pages/share-preview/index",
+    "count": 6,
+    "missing": []
+  },
+  {
+    "route": "pages/shared/index",
+    "count": 5,
+    "missing": []
+  },
+  {
+    "route": "pages/my-shares/index",
+    "count": 5,
+    "missing": []
+  },
+  {
+    "route": "pages/feedback/index",
+    "count": 5,
+    "missing": []
+  },
+  {
+    "route": "pages/welcome/index",
+    "count": 1,
+    "missing": []
+  }
+]

@@ -30,13 +30,23 @@ function createCloudConnection({ config, getSdk }) {
 
 let activeSdk;
 let connection;
-function getCloudClient() {
+let connectionGeneration = 0;
+function selectConnection() {
   const sdk = typeof wx !== 'undefined' && wx.cloud;
   if (!connection || sdk !== activeSdk) {
     activeSdk = sdk;
     connection = createCloudConnection({ config: cloudConfig, getSdk: () => sdk });
+    connectionGeneration += 1;
   }
+}
+function getCloudClient() {
+  selectConnection();
   return connection();
 }
 
-module.exports = { createCloudConnection, getCloudClient };
+function getCloudConnectionGeneration() {
+  selectConnection();
+  return connectionGeneration;
+}
+
+module.exports = { createCloudConnection, getCloudClient, getCloudConnectionGeneration };

@@ -1,6 +1,9 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 const { memoryCloudDatabase } = require('./helpers/cloud-db.cjs');
 const { createCloudSharingDb } = require('../server/cloud-sharing-db');
 const { createCloudRateLimiter } = require('../server/rate-limit');
@@ -8,6 +11,34 @@ const { createSharingFeedbackService } = require('../server/sharing-feedback');
 const { createRetentionService, createCloudRetentionDb, createMaintenanceHandler } = require('../server/retention');
 const DAY = 86400000;
 const at = Date.UTC(2026, 8, 27, 6);
+
+test('全量复核：维护函数入口缺密钥和客户端身份拒绝且默认只演练', async () => {
+  const db = memoryCloudDatabase(), token = 'synthetic'.repeat(6), env = {};
+  let identity = {}, collections = 0, initialized;
+  const originalCollection = db.collection;
+  db.collection = function (name) { collections++; return originalCollection.call(this, name); };
+  const exports = {}, filename = path.resolve(__dirname, '../cloudfunctions/linggan_maintenance/index.js');
+  const cloud = { DYNAMIC_CURRENT_ENV: 'dynamic', init: (options) => { initialized = options.env; },
+    database: () => db, getWXContext: () => identity };
+  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+    exports, process: { env }, require(name) {
+      if (name === 'wx-server-sdk') return cloud;
+      if (name === './server/retention') return require('../server/retention');
+      throw Error('Unexpected module ' + name);
+    }
+  }, { filename });
+  assert.equal(initialized, 'dynamic');
+  assert.equal((await exports.main({ token, dryRun: false })).code, 'FORBIDDEN');
+  assert.equal(collections, 0);
+  env.LINGGAN_MAINTENANCE_TOKEN = token;
+  identity = { FROM_OPENID: 'synthetic_user' };
+  assert.equal((await exports.main({ token, dryRun: false })).code, 'FORBIDDEN');
+  assert.equal(collections, 0);
+  identity = {};
+  const result = await exports.main({ token, dryRun: false });
+  assert.equal(result.ok, true); assert.equal(result.data.dryRun, true);
+  assert.equal(collections, 5);
+});
 function share(id, owner = 'owner', createdAt = at) {
   return { _id: id, ownerAccountKey: owner, requestId: id, tokenHash: id, createdAt,
     expiresAt: at + 30 * DAY, revokedAt: null, payloadPurgedAt: null, sourceInspirationId: 'idea',
@@ -105,6 +136,19 @@ test('保留期清理：默认演练无写入，执行只清到期内容并保�
   assert.equal(db.rows('linggan_rate_limits').length, 1);
   assert.equal((await service.run({ dryRun: false })).counts.shares.changed, 0);
   assert.equal(JSON.stringify(result).includes('private'), false);
+});
+
+test('移除 AI 后维护仅扫描非 AI 集合并保留远端历史配额', async () => {
+  const db = memoryCloudDatabase();
+  const historicalUsage = { _id: 'legacy_ai_quota', expiresAt: at - DAY, used: 2 };
+  db.seed('linggan_ai_usage', [historicalUsage]);
+  const scanned = [];
+  const collection = db.collection;
+  db.collection = function (name) { scanned.push(name); return collection.call(this, name); };
+  const result = await createRetentionService({ db: createCloudRetentionDb(db), now: () => at }).run({ dryRun: false });
+  assert.deepEqual(Object.keys(result.counts), ['shares', 'feedback', 'rates']);
+  assert.deepEqual(new Set(scanned), new Set(['linggan_shares', 'linggan_feedback', 'linggan_rate_limits']));
+  assert.deepEqual(db.rows('linggan_ai_usage'), [historicalUsage]);
 });
 
 test('保留期清理：扫描后状态变化不误删，失败记录下次可重试', async () => {

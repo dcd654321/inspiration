@@ -1,0 +1,476 @@
+{
+  "at": "2026-10-09T14:12:43.759Z",
+  "synthetic": true,
+  "cloud": false,
+  "productionWrite": false,
+  "physicalKeyboardVerified": false,
+  "steps": [
+    {
+      "name": "01-empty",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 0,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 278.484375,
+          "bottom": 444.484375,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 491.28125,
+          "bottom": 540.28125,
+          "width": 318,
+          "height": 49
+        },
+        null
+      ]
+    },
+    {
+      "name": "02-first-input",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "第一条：周末去公园散步。",
+        "maxLength": 2000,
+        "canSave": true,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": true,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 1,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 278.484375,
+          "bottom": 444.484375,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 496.078125,
+          "bottom": 545.078125,
+          "width": 318,
+          "height": 49
+        },
+        null
+      ]
+    },
+    {
+      "name": "03-first-confirmed",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "insp_mv11oy3c_1i3ftv6h",
+        "lastSavedExcerpt": "第一条：周末去公园散步。",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 0,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 278.484375,
+          "bottom": 444.484375,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 491.28125,
+          "bottom": 540.28125,
+          "width": 318,
+          "height": 49
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 552.28125,
+          "bottom": 659.875,
+          "width": 318,
+          "height": 107.59375
+        }
+      ]
+    },
+    {
+      "name": "04-second-input",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "第二条：给散步路线补一处休息点。",
+        "maxLength": 2000,
+        "canSave": true,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": true,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 1,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 278.484375,
+          "bottom": 444.484375,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 496.078125,
+          "bottom": 545.078125,
+          "width": 318,
+          "height": 49
+        },
+        null
+      ]
+    },
+    {
+      "name": "05-second-confirmed",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "insp_mv11p0b9_u4i56ll0",
+        "lastSavedExcerpt": "第二条：给散步路线补一处休息点。",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 0,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 278.484375,
+          "bottom": 444.484375,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 491.28125,
+          "bottom": 540.28125,
+          "width": 318,
+          "height": 49
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 552.28125,
+          "bottom": 659.875,
+          "width": 318,
+          "height": 107.59375
+        }
+      ]
+    },
+    {
+      "name": "06-return-confirmed",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "insp_mv11p0b9_u4i56ll0",
+        "lastSavedExcerpt": "第二条：给散步路线补一处休息点。",
+        "draftRecoveryNotice": "已接续这次已记下的想法。",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 0,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 308.578125,
+          "bottom": 474.578125,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 521.375,
+          "bottom": 570.375,
+          "width": 318,
+          "height": 49
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 582.375,
+          "bottom": 689.96875,
+          "width": 318,
+          "height": 107.59375
+        }
+      ]
+    },
+    {
+      "name": "07-record-another",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": true,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 1,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 278.484375,
+          "bottom": 444.484375,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 491.28125,
+          "bottom": 540.28125,
+          "width": 318,
+          "height": 49
+        },
+        null
+      ]
+    },
+    {
+      "name": "08-save-unknown",
+      "route": "pages/capture/index",
+      "state": {
+        "draft": "第三条：未确认时保留这段文字。",
+        "maxLength": 2000,
+        "canSave": true,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": true,
+        "status": "unknown",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 7
+      },
+      "editorVisible": true,
+      "nativeFocus": 1,
+      "disabled": false,
+      "layout": [
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 278.484375,
+          "bottom": 444.484375,
+          "width": 318,
+          "height": 166
+        },
+        {
+          "id": "",
+          "dataset": {},
+          "left": 36,
+          "right": 354,
+          "top": 644.875,
+          "bottom": 693.875,
+          "width": 318,
+          "height": 49
+        },
+        null
+      ]
+    }
+  ],
+  "exceptions": [],
+  "console": [],
+  "environment": {
+    "window": {
+      "pixelRatio": 3,
+      "safeArea": {
+        "top": 47,
+        "left": 0,
+        "right": 390,
+        "bottom": 810,
+        "width": 390,
+        "height": 763
+      },
+      "screenWidth": 390,
+      "screenHeight": 844,
+      "screenTop": 0,
+      "windowWidth": 390,
+      "windowHeight": 844,
+      "statusBarHeight": 47
+    },
+    "cloud": false
+  },
+  "confirmedItems": [
+    {
+      "id": "insp_mv11oy3c_1i3ftv6h",
+      "text": "第一条：周末去公园散步。"
+    },
+    {
+      "id": "insp_mv11p0b9_u4i56ll0",
+      "text": "第二条：给散步路线补一处休息点。"
+    }
+  ],
+  "ok": true,
+  "unknownActions": {
+    "layout": [
+      {
+        "id": "",
+        "dataset": {},
+        "left": 36,
+        "right": 354,
+        "top": 481.875,
+        "bottom": 530.875,
+        "width": 318,
+        "height": 49
+      }
+    ],
+    "label": "重试保存"
+  }
+}

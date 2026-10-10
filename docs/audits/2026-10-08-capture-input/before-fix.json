@@ -1,0 +1,43 @@
+{
+  "steps": [],
+  "exceptions": [],
+  "logs": [],
+  "boundary": {
+    "fixture": true,
+    "cloud": false,
+    "keyboardNotProven": true
+  },
+  "before": {
+    "route": "pages/capture/index",
+    "draft": "",
+    "maxLength": 2000,
+    "canSave": false,
+    "overBy": 0,
+    "nearLimit": false,
+    "saving": false,
+    "inputFocus": false,
+    "status": "",
+    "errorText": "",
+    "copyNotice": "",
+    "lastSavedId": "",
+    "lastSavedExcerpt": "",
+    "draftRecoveryNotice": "",
+    "templateIntentId": "",
+    "templateIntentLabel": "",
+    "lastSavedTemplateId": "",
+    "__webviewId__": 10,
+    "state": {
+      "visible": true,
+      "viewVersion": 1
+    }
+  },
+  "editorBefore": {
+    "focus": 0,
+    "disabled": false
+  },
+  "afterTap": {
+    "focus": 0,
+    "disabled": false,
+    "inputFocus": false
+  }
+}

@@ -1,124 +1,131 @@
-.mode-tabs {
-  display: flex;
-  gap: 12rpx;
-  margin-top: 36rpx;
-  padding: 8rpx;
-  background: #eeede8;
-  border-radius: 18rpx;
-}
+/* 整理成稿：进入即有可编辑稿件，工具行与结果区都保持安静 */
 
-.mode-tab {
-  flex: 1;
-  min-height: 80rpx;
-  margin: 0;
-  padding: 0 16rpx;
-  border: 0;
-  background: transparent;
+.output-summary {
+  margin-top: 14rpx;
+  font-size: 27rpx;
+  font-size: max(27rpx, 14px);
   color: var(--ink-2);
-  font-size: 28rpx;
-  line-height: 1;
-}
-.mode-tab::after { border: 0; }
-.mode-tab-active {
-  background: var(--surface);
-  color: var(--brand);
-  font-weight: 600;
-  border-radius: 12rpx;
-  box-shadow: 0 4rpx 16rpx rgba(25, 26, 35, 0.06);
+  line-height: 1.65;
 }
 
-.section-label {
-  margin-top: 44rpx;
-  font-size: 30rpx;
-  font-weight: 600;
+.output-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8rpx;
+  margin: 20rpx 0 4rpx;
 }
+
+.output-tools .btn-link {
+  width: auto;
+  margin: 0;
+  padding: 0 14rpx;
+  display: inline-flex;
+  align-items: center;
+}
+
 .selection-note {
   margin-top: 10rpx;
   font-size: 25rpx;
+  font-size: max(25rpx, 13px);
   line-height: 1.65;
   color: var(--ink-3);
 }
-.empty-options {
-  padding: 48rpx 0;
-  font-size: 27rpx;
+
+.main-action { margin-top: 28rpx; }
+.secondary-action { margin-top: 16rpx; }
+
+.draft-editor {
+  width: 100%;
+  height: 560rpx;
+  height: max(560rpx, 280px);
+  margin-top: 12rpx;
+  padding: 30rpx;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 2rpx solid var(--field-line);
+  border-radius: 18rpx;
+  color: var(--ink);
+  font-size: 29rpx;
+  font-size: max(30rpx, 16px);
+  font-weight: 400;
+  line-height: 1.75;
+}
+.draft-label { margin-top: 20rpx; }
+.draft-editor.draft-pending { height: 208px; }
+.draft-count { margin-top: 10rpx; color: var(--ink-3); font-size: max(24rpx, 13px); text-align: right; }
+.count-over { color: var(--danger); }
+.saved-link { margin-top: 16rpx; }
+.saved-link .btn-link { width: auto; margin: 0; }
+
+/* 面板里的说明与滚动区 */
+.sheet-hint {
+  padding: 20rpx 40rpx 0;
+  font-size: 25rpx;
+  font-size: max(25rpx, 13px);
+  line-height: 1.65;
   color: var(--ink-3);
 }
-.option {
+
+.sheet-scroll {
+  max-height: 56vh;
+  flex: 0 1 auto;
+  min-height: 0;
+  margin-top: 16rpx;
+}
+
+/* 内容选择项：与补充操作面板同一样式，左侧多一个勾选框 */
+.sheet .option-item {
   display: flex;
   align-items: flex-start;
   gap: 20rpx;
-  width: 100%;
-  min-height: 100rpx;
-  margin: 24rpx 0 0;
-  padding: 24rpx;
-  text-align: left;
-  background: var(--surface);
-  border: 2rpx solid var(--line);
-  border-radius: 18rpx;
 }
-.option::after { border: 0; }
+
 .option-check {
   flex: 0 0 34rpx;
   height: 34rpx;
-  border: 2rpx solid var(--line-strong);
+  margin-top: 6rpx;
+  border: 1px solid var(--field-line);
   border-radius: 8rpx;
   color: #fff;
   font-size: 26rpx;
   line-height: 34rpx;
   text-align: center;
 }
-.option-checked { background: var(--brand); border-color: var(--brand); }
-.option-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.option-time { color: var(--ink-3); font-size: 23rpx; }
-.option-content { color: var(--ink); font-size: 28rpx; line-height: 1.55; white-space: pre-wrap; }
-.main-action { margin-top: 36rpx; }
-.secondary-action { margin-top: 16rpx; }
 
-.back-select {
-  min-height: 88rpx;
-  margin: 28rpx 0 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: var(--brand);
-  font-size: 27rpx;
-  text-align: left;
-}
-.back-select::after { border: 0; }
-.draft-editor {
-  width: 100%;
-  height: 520rpx;
-  margin-top: 24rpx;
-  padding: 30rpx;
-  box-sizing: border-box;
-  background: var(--surface);
-  border: 2rpx solid var(--line);
-  border-radius: 18rpx;
-  color: var(--ink);
+.option-checked { background: var(--brand); border-color: var(--brand); }
+
+.option-text {
+  flex: 1;
+  min-width: 0;
   font-size: 29rpx;
-  line-height: 1.7;
+  font-size: max(30rpx, 16px);
+  font-weight: 400;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
-.draft-count { margin-top: 10rpx; color: var(--ink-3); font-size: 24rpx; text-align: right; }
-.count-over { color: var(--danger); }
-.saved-link { margin-top: 16rpx; }
+
+/* 格式选择 */
+.format-options { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 24rpx 40rpx 0; }
+.format-options .template-option { width: auto; flex: 0 0 auto; margin: 0; padding: 0 22rpx; min-height: max(88rpx, 44px); line-height: max(88rpx, 44px); font-size: max(28rpx, 14px); background: var(--surface); color: var(--ink-2); border: 1rpx solid var(--line); border-radius: 18rpx; }
+.template-option::after { border: 0; }
+.format-options .template-selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
+
+/* 留档 */
 .archive-preview {
-  max-height: 720rpx;
-  overflow-y: auto;
-  margin-top: 24rpx;
   padding: 30rpx;
   background: var(--surface);
   border: 2rpx solid var(--line);
   border-radius: 18rpx;
   color: var(--ink-2);
   font-size: 25rpx;
+  font-size: max(30rpx, 16px);
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-all;
 }
-.template-options { display: flex; flex-wrap: wrap; gap: 16rpx; margin: 18rpx 0; }
-.template-options .template-option { width: auto; flex: 0 0 auto; margin: 0; padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; font-size: 26rpx; background: var(--surface); color: var(--ink-2); border: 1rpx solid var(--line); border-radius: 18rpx; }
-.template-option::after { border: 0; }
-.template-options .template-selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
 
-.page .option { width: 100%; margin: 24rpx 0 0; box-sizing: border-box; }
-.page .mode-tab { width: auto; margin: 0; display: flex; align-items: center; justify-content: center; }
+.archive-acts { padding: 0 40rpx; }
+.archive-acts .btn-block { margin-top: 16rpx; }
+.archive-acts .main-action { margin-top: 24rpx; }

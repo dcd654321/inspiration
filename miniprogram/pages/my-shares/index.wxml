@@ -1,19 +1,25 @@
 <view class="page">
   <view class="page-title">我的分享</view>
-  <view class="page-sub">这里记录你创建的分享，不代表已发送给谁或已发朋友圈。</view>
+  <view class="page-sub">你创建的分享会列在这里。</view>
   <view wx:if="{{error}}" class="notice notice-err"><text>{{error}}</text></view>
-  <button wx:if="{{error}}" class="btn btn-plain btn-block" bindtap="onRetry">重新加载</button>
+  <button wx:if="{{error}}" class="btn btn-plain btn-block" bindtap="onRetry" disabled="{{loading}}">重新加载</button>
   <view wx:if="{{loading}}" class="myshares-state">正在加载…</view>
-  <view wx:elif="{{items.length === 0 && !error}}" class="myshares-state">还没有创建过内容分享。打开一条灵感，就可以选择文字分享。</view>
+  <block wx:elif="{{items.length === 0 && !error}}">
+    <view class="myshares-state">
+      <view>还没有分享记录</view>
+      <view>打开一条灵感，选择「分享文字」即可开始。</view>
+    </view>
+    <button class="btn btn-quiet btn-block" bindtap="onOpenList">查看我的灵感</button>
+  </block>
   <view wx:for="{{items}}" wx:key="shareId" class="myshares-card">
     <view class="myshares-top"><text class="myshares-status">{{item.statusText}}</text><text>{{item.channelText}}</text></view>
     <view class="myshares-title">{{item.title}}</view>
     <view wx:if="{{item.preview}}" class="myshares-preview">{{item.preview}}</view>
     <view class="myshares-date">创建于 {{item.date}}</view>
     <view class="myshares-actions">
-      <button class="btn btn-plain btn-sm" data-source="{{item.sourceInspirationId}}" bindtap="onReshare">重新分享</button>
+      <button class="btn btn-plain btn-sm" data-source="{{item.sourceInspirationId}}" bindtap="onReshare" disabled="{{busy}}">重新分享</button>
       <button wx:if="{{item.status === 'active'}}" class="btn btn-plain btn-sm" data-id="{{item.shareId}}" bindtap="onRevoke" disabled="{{busy}}">撤销链接</button>
     </view>
   </view>
-  <button wx:if="{{nextBefore}}" class="btn btn-plain btn-block" bindtap="onMore">加载更多</button>
+  <button wx:if="{{nextBefore}}" class="btn btn-plain btn-block" bindtap="onMore" disabled="{{loading}}">加载更多</button>
 </view>

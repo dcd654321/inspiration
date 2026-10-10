@@ -1,45 +1,46 @@
-<view class="page">
+<view class="page mine-page">
   <view class="profile-head">
     <image class="profile-mark" src="/assets/brand-mark.png" mode="aspectFit" />
     <view>
       <view class="page-title">我的</view>
-      <view class="page-sub">记录当下的想法，随时补充完善。</view>
+      <view class="page-sub">记下、补充，再整理成可用稿。</view>
     </view>
   </view>
 
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">从记录到使用</text></view>
-  <view class="panel use-panel">
-    <view class="use-copy">在灵感详情中继续补充；需要使用时，可以整理、复制文字，或生成 TXT 文件留存。</view>
-    <button class="btn btn-quiet btn-block" bindtap="onOpenList">查看我的灵感</button>
+  <view class="settings-card">
+    <view class="group-label">一起进步</view>
+    <button class="menu-row" open-type="share" hover-class="menu-row-hover">
+      <text class="menu-label">分享小程序</text>
+      <image class="menu-arrow" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
+    </button>
+    <button class="menu-row" bindtap="onOpenMyShares" hover-class="menu-row-hover">
+      <text class="menu-label">我的分享</text>
+      <image class="menu-arrow" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
+    </button>
   </view>
 
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">分享</text></view>
-  <view class="panel use-panel">
-    <view class="use-copy">分享小程序不会带出你的记录。分享单条内容时，你会先看到对方能读到的文字。</view>
-    <button class="btn btn-quiet btn-block" open-type="share">分享小程序</button>
-    <button class="btn btn-plain btn-block" bindtap="onOpenMyShares">我的分享</button>
-  </view>
-
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">反馈</text></view>
-  <button class="btn btn-plain btn-block" bindtap="onOpenFeedback">给我们提建议</button>
-  <button class="btn btn-plain btn-block" open-type="feedback">向微信反馈</button>
-
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">数据与隐私</text></view>
-  <view class="panel privacy-panel">
-    <view class="privacy-item" wx:for="{{privacyNotes}}" wx:key="*this">
-      <view class="privacy-dot"></view>
-      <text>{{item}}</text>
+  <view class="settings-card">
+    <view class="group-label">数据与支持</view>
+    <button class="menu-row" bindtap="onToggleInfo" data-section="privacy" hover-class="menu-row-hover" aria-expanded="{{expandedInfo === 'privacy'}}">
+      <view class="menu-label">
+        <view>数据与隐私</view>
+        <view class="menu-sub">记录与分享范围</view>
+      </view>
+      <image class="menu-arrow {{expandedInfo === 'privacy' ? 'menu-arrow-open' : ''}}" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
+    </button>
+    <view class="info-content" wx:if="{{expandedInfo === 'privacy'}}">
+      <view class="info-note" wx:for="{{privacyNotes}}" wx:key="*this">{{item}}</view>
     </view>
-  </view>
-
-  <block wx:if="{{usageAvailable}}">
-    <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">本次使用统计</text></view>
-    <view class="panel privacy-panel"><view class="use-copy">可选统计本次打开期间的动作次数，不含内容或搜索词；关闭或退出后清空，不会写入设备。</view><switch checked="{{usageEnabled}}" bindchange="onUsageSetting" aria-label="开启本次使用统计" color="#34377f" /><button wx:if="{{usageEnabled}}" class="btn btn-plain btn-block" bindtap="onViewUsage">查看使用统计</button><block wx:if="{{usageVisible}}"><text class="remote-text" selectable="true">{{usageReport}}</text><button class="btn btn-plain btn-block" bindtap="onCopyUsage">复制统计</button></block><view wx:if="{{usageError}}" class="notice notice-err">{{usageError}}</view></view>
-  </block>
-
-  <view class="section-head" style="margin: 52rpx 0 18rpx"><text class="k">关于</text></view>
-  <view class="panel about-panel">
-    <view class="about-title">灵感拾光簿</view>
-    <view class="about-copy">记下突然想到的事，之后补充、修改，回看想法怎样一步步成形。</view>
+    <button class="menu-row" bindtap="onToggleInfo" data-section="help" hover-class="menu-row-hover" aria-expanded="{{expandedInfo === 'help'}}">
+      <text class="menu-label">使用帮助</text>
+      <image class="menu-arrow {{expandedInfo === 'help' ? 'menu-arrow-open' : ''}}" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
+    </button>
+    <view class="info-content" wx:if="{{expandedInfo === 'help'}}">
+      <view class="info-note" wx:for="{{helpNotes}}" wx:key="*this">{{item}}</view>
+    </view>
+    <button class="menu-row" open-type="feedback" hover-class="menu-row-hover">
+      <text class="menu-label">意见与问题反馈</text>
+      <image class="menu-arrow" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
+    </button>
   </view>
 </view>

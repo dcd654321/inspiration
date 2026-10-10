@@ -1,0 +1,66 @@
+[
+  {
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": [],
+    "width": "320"
+  },
+  {
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": [],
+    "width": "375"
+  },
+  {
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": [],
+    "width": "390"
+  },
+  {
+    "overflow": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "undersized": [],
+    "width": "430"
+  },
+  {
+    "disabled": true,
+    "state": "pending",
+    "text": "正在记下…"
+  },
+  {
+    "capture": "尚未确认保存内容还在，请联网后重试。复制未保存内容",
+    "list": "我的灵感记一条暂时无法读取灵感请检查网络后重新读取。重新读取",
+    "state": "error"
+  },
+  {
+    "searchCount": 0,
+    "state": "empty",
+    "text": "我的灵感记一条还没有灵感从一个想法开始，之后再补充。记下第一个想法"
+  },
+  {
+    "padding": "16px",
+    "theme": "theme-b",
+    "titleFont": "22px"
+  }
+]

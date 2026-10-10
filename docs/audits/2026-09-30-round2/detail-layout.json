@@ -1,0 +1,76 @@
+[
+  {
+    "id": "",
+    "dataset": {},
+    "left": 20,
+    "right": 370,
+    "top": 49,
+    "bottom": 120.625,
+    "width": 350,
+    "height": 71.625
+  },
+  {
+    "id": "",
+    "dataset": {},
+    "left": 20,
+    "right": 370,
+    "top": 134.625,
+    "bottom": 179.625,
+    "width": 350,
+    "height": 45
+  },
+  {
+    "id": "",
+    "dataset": {},
+    "left": 20,
+    "right": 370,
+    "top": 195.625,
+    "bottom": 339.625,
+    "width": 350,
+    "height": 144
+  },
+  {
+    "id": "",
+    "dataset": {
+      "id": "demo_s1"
+    },
+    "left": 20,
+    "right": 370,
+    "top": 391.015625,
+    "bottom": 500.609375,
+    "width": 350,
+    "height": 109.59375
+  },
+  {
+    "id": "",
+    "dataset": {
+      "id": "demo_s2"
+    },
+    "left": 20,
+    "right": 370,
+    "top": 500.609375,
+    "bottom": 610.203125,
+    "width": 350,
+    "height": 109.59375
+  },
+  {
+    "id": "",
+    "dataset": {},
+    "left": 20,
+    "right": 370,
+    "top": 624.203125,
+    "bottom": 695.203125,
+    "width": 350,
+    "height": 71
+  },
+  {
+    "id": "",
+    "dataset": {},
+    "left": 20,
+    "right": 370,
+    "top": 713.203125,
+    "bottom": 842.984375,
+    "width": 350,
+    "height": 129.78125
+  }
+]

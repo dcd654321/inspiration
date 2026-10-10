@@ -1,0 +1,42 @@
+{
+  "synthetic": true,
+  "cloud": false,
+  "saved": {
+    "draft": "",
+    "maxLength": 2000,
+    "canSave": false,
+    "overBy": 0,
+    "nearLimit": false,
+    "saving": false,
+    "inputFocus": false,
+    "status": "",
+    "errorText": "",
+    "copyNotice": "",
+    "lastSavedId": "insp_mv05c147_tyyk26bc",
+    "lastSavedExcerpt": "全量审查合成记录：核对跨页再次记录入口。",
+    "draftRecoveryNotice": "",
+    "templateIntentId": "",
+    "templateIntentLabel": "",
+    "lastSavedTemplateId": "",
+    "__webviewId__": 22
+  },
+  "afterAdd": {
+    "draft": "",
+    "maxLength": 2000,
+    "canSave": false,
+    "overBy": 0,
+    "nearLimit": false,
+    "saving": false,
+    "inputFocus": false,
+    "status": "",
+    "errorText": "",
+    "copyNotice": "",
+    "lastSavedId": "insp_mv05c147_tyyk26bc",
+    "lastSavedExcerpt": "全量审查合成记录：核对跨页再次记录入口。",
+    "draftRecoveryNotice": "已接续这次已记下的想法。",
+    "templateIntentId": "",
+    "templateIntentLabel": "",
+    "lastSavedTemplateId": "",
+    "__webviewId__": 22
+  }
+}

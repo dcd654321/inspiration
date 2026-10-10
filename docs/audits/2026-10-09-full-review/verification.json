@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-09T05:44:19.735Z",
+  "remoteOperations": false,
+  "results": [
+    {
+      "name": "tests",
+      "code": 0,
+      "ok": true,
+      "tests": 464,
+      "pass": 464
+    },
+    {
+      "name": "cloud-copy",
+      "code": 0,
+      "ok": true
+    },
+    {
+      "name": "check",
+      "code": 0,
+      "ok": true,
+      "checks": 271
+    },
+    {
+      "name": "openspec",
+      "code": 0,
+      "ok": true,
+      "passed": 15,
+      "failed": 0
+    },
+    {
+      "name": "native-compile",
+      "code": 0,
+      "ok": true
+    },
+    {
+      "name": "event-bindings",
+      "code": 0,
+      "ok": true
+    },
+    {
+      "name": "diff",
+      "code": 0,
+      "ok": true
+    }
+  ]
+}

@@ -58,10 +58,11 @@ test('输出页可选择、编辑、复制，并另存独立灵感', async () =>
 
   try {
     global.Page = (page) => { definition = page; };
-    global.getApp = () => ({ ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: {
+    const app = { ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: {
       getInspiration: () => original,
       async saveInspiration(item) { saved = item; return { ok: true, synced: true }; }
-    } } });
+    } } };
+    global.getApp = () => app;
     global.wx = {
       setClipboardData({ data, success }) { clipboard = data; success(); },
       navigateTo() {}
@@ -75,9 +76,14 @@ test('输出页可选择、编辑、复制，并另存独立灵感', async () =>
 
     await page.onLoad({ id: original.id });
     assert.strictEqual(page.data.options.length, 2);
+    // 进入即有可编辑的自由稿，补充默认全选——看结果不必先做选择
+    assert.strictEqual(page.data.draft, '当前正文\n\n第一条补充\n\n第二条补充');
+    assert.strictEqual(page.data.summary, '正文 + 2条补充');
     page.onToggleSupplement({ currentTarget: { dataset: { id: 'sup_a' } } });
-    page.onGenerate();
+    page.onApply();
+    // 未编辑过：应用选择直接替换，不走确认
     assert.strictEqual(page.data.draft, '当前正文\n\n第二条补充');
+    assert.strictEqual(page.data.summary, '正文 + 1条补充');
     page.onDraftInput({ detail: { value: '整理后的可用文字' } });
     page.onCopyDraft();
     assert.strictEqual(clipboard, '整理后的可用文字');
@@ -86,6 +92,12 @@ test('输出页可选择、编辑、复制，并另存独立灵感', async () =>
     assert.strictEqual(saved.text, '整理后的可用文字');
     assert.strictEqual(original.text, '当前正文');
     assert.strictEqual(page.data.savedId, saved.id);
+    assert.strictEqual(page.data.notice, '已另存为新灵感');
+    // 同一稿件重复点击不得新增第二条
+    const firstSaved = saved;
+    await page.onSaveAsNew();
+    assert.strictEqual(saved, firstSaved);
+    assert.strictEqual(page.data.notice, '这份稿件已另存，可以直接查看。');
   } finally {
     delete require.cache[pagePath];
     for (const [key, value] of Object.entries(previous)) {
@@ -147,7 +159,8 @@ test('复制失败与 TXT 生成失败均保留页面内容和可复制入口', 
   let definition;
   try {
     global.Page = (page) => { definition = page; };
-    global.getApp = () => ({ ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } });
+    const app = { ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } };
+    global.getApp = () => app;
     global.wx = {
       env: { USER_DATA_PATH: '/mock' },
       setClipboardData({ fail }) { fail(); },
@@ -184,7 +197,8 @@ test('TXT 只在主动点击后生成，再次点击才请求发送，离开页�
   let removed;
   try {
     global.Page = (page) => { definition = page; };
-    global.getApp = () => ({ ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } });
+    const app = { ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } };
+    global.getApp = () => app;
     global.wx = {
       env: { USER_DATA_PATH: '/mock' },
       getFileSystemManager() { return {
@@ -220,16 +234,18 @@ test('TXT 只在主动点击后生成，再次点击才请求发送，离开页�
   }
 });
 
-test('详情页可分别复制正文、正文与补充、单条补充，原记录不变', () => {
+test('详情页可分别复制正文、正文与补充、单条补充，原记录不变', async () => {
   const pagePath = require.resolve('../miniprogram/pages/detail/index');
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;
   let actionSheet;
   const copied = [];
   const original = sample();
+  const store = { getInspiration: () => original };
+  const app = { globalData: { store, sessionEpoch: 1 }, ensureReady: async () => store };
   try {
     global.Page = (page) => { definition = page; };
-    global.getApp = () => ({ globalData: { store: { getInspiration: () => original } } });
+    global.getApp = () => app;
     global.wx = {
       showActionSheet(options) { actionSheet = options; },
       setClipboardData(options) { copied.push(options.data); options.success(); },
@@ -245,6 +261,7 @@ test('详情页可分别复制正文、正文与补充、单条补充，原记�
       }),
       setData(next) { Object.assign(this.data, next); }
     });
+    await page.onLoad({ id: original.id });
     page.onCopyContent();
     actionSheet.success({ tapIndex: 0 });
     page.onCopyContent();
@@ -264,13 +281,14 @@ test('详情页可分别复制正文、正文与补充、单条补充，原记�
   }
 });
 
-test('发送 TXT 取消或失败时不报告已发送', () => {
+test('发送 TXT 取消或失败时不报告已发送', async () => {
   const pagePath = require.resolve('../miniprogram/pages/output/index');
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;
   try {
     global.Page = (page) => { definition = page; };
-    global.getApp = () => ({ globalData: { store: { getInspiration: sample } } });
+    const app = { ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } };
+    global.getApp = () => app;
     global.wx = { shareFileMessage({ fail }) { fail({ errMsg: 'cancel' }); } };
     delete require.cache[pagePath];
     require(pagePath);
@@ -278,6 +296,8 @@ test('发送 TXT 取消或失败时不报告已发送', () => {
       data: Object.assign({}, definition.data, { txtPath: '/mock/archive.txt' }),
       setData(next) { Object.assign(this.data, next); }
     });
+    await page.onLoad({ id: 'ins_sample' });
+    page.setData({ txtPath: '/mock/archive.txt' });
     page.onShareTxt();
     assert.match(page.data.error, /未发送/);
     assert.ok(!page.data.notice.includes('已发送'));
@@ -298,7 +318,8 @@ test('写 TXT 时离开页面仍会在写入完成后清理临时文件', async 
   let removed;
   try {
     global.Page = (page) => { definition = page; };
-    global.getApp = () => ({ ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } });
+    const app = { ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } };
+    global.getApp = () => app;
     global.wx = {
       env: { USER_DATA_PATH: '/mock' },
       getFileSystemManager() { return {
@@ -330,7 +351,8 @@ test('详情页提供三种复制路径和整理入口', () => {
   const detail = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/detail/index.wxml'), 'utf8');
   const output = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/output/index.wxml'), 'utf8');
   const app = JSON.parse(fs.readFileSync(path.join(__dirname, '../miniprogram/app.json'), 'utf8'));
-  assert.match(detail, /bindtap="onCopyContent"/);
+  // 复制全文（可选范围）在「更多」面板里，单条补充复制在操作面板里
+  assert.match(detail, /bindtap="onMoreCopy"/);
   assert.match(detail, /bindtap="onSheetCopy"/);
   assert.match(detail, /bindtap="onOpenOutput"/);
   assert.match(output, /bindtap="onCopyDraft"/);

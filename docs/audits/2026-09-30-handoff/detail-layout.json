@@ -1,0 +1,68 @@
+[
+  [
+    {
+      "id": "",
+      "dataset": {},
+      "left": 20,
+      "right": 370,
+      "top": 49.1875,
+      "bottom": 201.8125,
+      "width": 350,
+      "height": 152.625
+    },
+    {
+      "id": "",
+      "dataset": {},
+      "left": 20,
+      "right": 370,
+      "top": 201.8125,
+      "bottom": 410.203125,
+      "width": 350,
+      "height": 208.390625
+    },
+    {
+      "id": "",
+      "dataset": {},
+      "left": 20,
+      "right": 370,
+      "top": 445.203125,
+      "bottom": 547.59375,
+      "width": 350,
+      "height": 102.390625
+    },
+    {
+      "id": "",
+      "dataset": {},
+      "left": 20,
+      "right": 370,
+      "top": 565.59375,
+      "bottom": 695.375,
+      "width": 350,
+      "height": 129.78125
+    },
+    {
+      "id": "",
+      "dataset": {
+        "id": "demo_s1"
+      },
+      "left": 20,
+      "right": 370,
+      "top": 744.765625,
+      "bottom": 854.359375,
+      "width": 350,
+      "height": 109.59375
+    },
+    {
+      "id": "",
+      "dataset": {
+        "id": "demo_s2"
+      },
+      "left": 20,
+      "right": 370,
+      "top": 854.359375,
+      "bottom": 963.953125,
+      "width": 350,
+      "height": 109.59375
+    }
+  ]
+]

@@ -9,6 +9,9 @@ const { createProtocol } = require('../server/protocol');
 const { createRepository } = require('../server/repository');
 const { paginatePoster } = require('../miniprogram/services/share-poster');
 const { selectedPreview, shareRevision } = require('../miniprogram/services/sharing');
+const { chatShareCard } = require('../miniprogram/services/sharing');
+const { validRecord } = require('../server/record-validation');
+const { createInspiration } = require('../miniprogram/core/inspiration');
 
 function fixture() {
   let clock = Date.UTC(2026, 8, 24, 6, 0, 0);
@@ -89,6 +92,69 @@ test('另一个账户凭有效令牌只读快照，不得到所有者身份或�
   assert.deepEqual(Object.keys(viewed.data).sort(), ['body', 'createdAt', 'expiresAt', 'title']);
   assert.equal(JSON.stringify(viewed.data).includes('owner'), false);
   assert.equal(JSON.stringify(viewed.data).includes('secret-photo'), false);
+});
+
+test('成稿用途仅从已确认记录复制合法枚举，分享请求不能伪造用途正文或身份', async () => {
+  const f = fixture();
+  f.accounts.get('owner').inspirations[0].templateId = 'work';
+  const created = await f.service.createShare('owner', f.payload, 'req_template_001');
+  assert.equal(created.ok, true);
+  assert.equal(created.data.preview.templateId, 'work');
+  assert.equal(f.shares[0].snapshot.templateId, 'work');
+  f.accounts.get('owner').inspirations[0].templateId = 'action';
+  const read = await f.service.getShare('reader', { token: created.data.token });
+  assert.deepEqual(Object.keys(read.data).sort(), ['body', 'createdAt', 'expiresAt', 'templateId', 'title']);
+  assert.equal(read.data.templateId, 'work');
+  for (const extra of [{ templateId: 'social' }, { body: '任意私有正文' }, { accountKey: 'another' }, { title: '伪造标题' }]) {
+    const invalid = await f.service.createShare('owner', { ...f.payload, ...extra }, 'req_template_002');
+    assert.equal(invalid.code, 'INVALID_PAYLOAD');
+  }
+  assert.equal(f.shares.length, 1);
+  const item = f.accounts.get('owner').inspirations[0];
+  item.templateId = 'unexpected';
+  assert.equal(Object.hasOwn(makeSnapshot(item, [], 'chat'), 'templateId'), false);
+  delete item.templateId;
+  assert.equal(Object.hasOwn(makeSnapshot(item, [], 'chat'), 'templateId'), false);
+});
+
+test('用途字段允许五种模板且基础记录保持形状，非法用途无法进入账户快照', () => {
+  const record = createInspiration({ text: '可编辑结果', id: 'result_1', now: 1000 });
+  assert.equal(Object.hasOwn(record, 'templateId'), false);
+  assert.equal(validRecord(record), true);
+  for (const templateId of ['free', 'social', 'video', 'work', 'action']) {
+    assert.equal(validRecord({ ...record, templateId }), true);
+  }
+  for (const templateId of ['', 'other', 'Social', null, 0, {}, ['work']]) {
+    assert.equal(validRecord({ ...record, templateId }), false);
+  }
+});
+
+test('分享公共读取仍拒绝无受信身份和错误来源，读者无需准备私人快照', async () => {
+  const f = fixture();
+  const created = await f.service.createShare('owner', f.payload, 'req_public_001');
+  f.accounts.delete('reader');
+  let pulls = 0;
+  const protocol = createProtocol({ now: f.now, sharing: f.service,
+    repository: { async pull() { pulls += 1; throw Error('PRIVATE_PULL_FAILED'); } } });
+  const event = { action: 'share.get', payload: { token: created.data.token }, requestId: 'req_reader_001' };
+  assert.equal((await protocol.handle(null, { ...event, accountKey: 'reader', openid: 'forged' })).code, 'UNAUTHENTICATED');
+  assert.equal((await protocol.handle({ accountKey: 'reader', sourceAllowed: false }, event)).code, 'FORBIDDEN_SOURCE');
+  const result = await protocol.handle({ accountKey: 'reader' }, event);
+  assert.equal(result.ok, true);
+  assert.equal(result.data.body, '原文\n第二行\n\n可见补充');
+  assert.equal(pulls, 0);
+  assert.equal(f.accounts.has('reader'), false);
+});
+
+test('聊天卡片只用确认标题与合法用途，品牌封面不含私人照片', () => {
+  const token = 'A'.repeat(28);
+  const card = chatShareCard({ title: '周末活动提纲', body: '已经审核的正文', templateId: 'work', photos: ['private-photo'] }, token);
+  assert.equal(card.title, '周末活动提纲｜工作提纲');
+  assert.equal(card.path, '/pages/shared/index?t=' + token);
+  assert.equal(card.imageUrl, '/assets/share-card.png');
+  assert.doesNotMatch(JSON.stringify(card), /private-photo|已经审核的正文|owner|openid/);
+  assert.equal(chatShareCard({ title: '通用正文', templateId: 'unknown' }, token).title, '通用正文');
+  assert.equal(chatShareCard(null, '').path, '/pages/welcome/index');
 });
 
 test('分享创建后改原文不改旧快照；源删除、代际变化、到期均阻止新读取', async () => {

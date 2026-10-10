@@ -11,6 +11,7 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
   const previous = { App: global.App, wx: global.wx };
   const data = new Map();
   let account = A;
+  let generation = 1;
   let definition;
   let networkListener;
   let retryCount = 0;
@@ -24,7 +25,7 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
         async callFunction({ data: request }) {
           assert.equal(request.action, 'snapshot.pull');
           return { result: { ok: true, data: {
-            cacheScope: account, generation: 1, version: account === A ? 1 : 0,
+            cacheScope: account, generation, version: account === A ? 1 : 0,
             inspirations: account === A ? [{ id: 'a', text: 'A 的内容', updatedAt: 1, deletedAt: null, mergedInto: null }] : []
           } } };
         }
@@ -64,7 +65,12 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
     assert.equal(app.globalData.drafts.get('a'), '', 'B 不读取 A 的内存草稿');
     app.globalData.drafts.set('a', 'B 的草稿');
     app.onHide(); account = A; app.onShow(); await app.ensureReady();
-    assert.equal(app.globalData.drafts.get('a'), 'A 尚未提交的补充', '同会话回到 A 保留自己的草稿');
+    assert.equal(app.globalData.drafts.get('a'), '', '切换确认账户会清除旧分区，不无限保留账户草稿');
+    app.globalData.drafts.set('a', 'A 本次未提交的补充');
+    app.onHide(); app.onShow(); await app.ensureReady();
+    assert.equal(app.globalData.drafts.get('a'), 'A 本次未提交的补充', '同账户重新确认后接续当前草稿');
+    generation = 2; app.onHide(); app.onShow(); await app.ensureReady();
+    assert.equal(app.globalData.drafts.get('a'), '', '账户清理后新代际不恢复旧补充草稿');
     assert.equal(data.get('linggan:v1:snapshot').inspirations[0].text, '归属未明');
     assert.equal(localReads, 0, '切换账户也不访问旧测试缓存');
   } finally {

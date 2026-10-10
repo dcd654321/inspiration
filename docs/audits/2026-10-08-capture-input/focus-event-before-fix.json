@@ -1,0 +1,6 @@
+{
+  "method": "trigger bound focus event (not physical keyboard)",
+  "inputFocus": false,
+  "nativeFocus": 0,
+  "disabled": false
+}

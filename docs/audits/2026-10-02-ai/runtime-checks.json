@@ -1,0 +1,91 @@
+{
+  "environment": {
+    "brand": "devtools",
+    "model": "iPhone 12/13 (Pro)",
+    "system": "iOS 10.0.1",
+    "platform": "devtools",
+    "benchmarkLevel": -1,
+    "pixelRatio": 3,
+    "screenWidth": 390,
+    "screenHeight": 844,
+    "windowWidth": 390,
+    "windowHeight": 844,
+    "statusBarHeight": 47,
+    "safeArea": {
+      "top": 47,
+      "left": 0,
+      "right": 390,
+      "bottom": 810,
+      "width": 390,
+      "height": 763
+    },
+    "language": "zh_CN",
+    "version": "8.0.5",
+    "fontSizeSetting": 16,
+    "SDKVersion": "3.17.2",
+    "host": {
+      "env": "WeChat"
+    },
+    "enableDebug": false,
+    "mode": "default",
+    "deviceOrientation": "portrait",
+    "bluetoothEnabled": true,
+    "locationEnabled": true,
+    "wifiEnabled": true,
+    "albumAuthorized": true,
+    "cameraAuthorized": true,
+    "locationAuthorized": true,
+    "microphoneAuthorized": true,
+    "notificationAuthorized": true,
+    "notificationAlertAuthorized": true,
+    "notificationBadgeAuthorized": true,
+    "notificationSoundAuthorized": true,
+    "phoneCalendarAuthorized": true,
+    "bluetoothAuthorized": true,
+    "locationReducedAccuracy": true,
+    "devicePixelRatio": 3
+  },
+  "source": {
+    "enabled": true,
+    "canGenerate": true
+  },
+  "preview": {
+    "acceptedCount": 4,
+    "mode": "append"
+  },
+  "footerButtons": [
+    {
+      "text": "复制所选",
+      "size": {
+        "width": 120.671875,
+        "height": 45
+      },
+      "offset": {
+        "left": 20,
+        "top": 662
+      }
+    },
+    {
+      "text": "保存所选 4 条",
+      "size": {
+        "width": 221.328125,
+        "height": 45
+      },
+      "offset": {
+        "left": 148.671875,
+        "top": 662
+      }
+    }
+  ],
+  "unknown": {
+    "saveUnknown": true,
+    "preview": true,
+    "disabled": "true"
+  },
+  "completed": true,
+  "summary": {
+    "mode": "append",
+    "canAccept": true
+  },
+  "fallback": "AI 暂时无法使用。可以稍后重试，或先手动整理。"
+}

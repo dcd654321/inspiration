@@ -1,0 +1,575 @@
+{
+  "at": "2026-10-09T05:28:37.139Z",
+  "level": "F",
+  "cloud": false,
+  "steps": [
+    {
+      "name": "01-launch",
+      "route": "/pages/launch/index",
+      "actualRoute": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 8
+      }
+    },
+    {
+      "name": "02-capture",
+      "route": "/pages/capture/index",
+      "actualRoute": "pages/capture/index",
+      "state": {
+        "draft": "",
+        "maxLength": 2000,
+        "canSave": false,
+        "overBy": 0,
+        "nearLimit": false,
+        "saving": false,
+        "inputFocus": false,
+        "status": "",
+        "errorText": "",
+        "copyNotice": "",
+        "lastSavedId": "",
+        "lastSavedExcerpt": "",
+        "draftRecoveryNotice": "",
+        "templateIntentId": "",
+        "templateIntentLabel": "",
+        "lastSavedTemplateId": "",
+        "__webviewId__": 9
+      }
+    },
+    {
+      "name": "03-list",
+      "route": "/pages/list/index",
+      "actualRoute": "pages/list/index",
+      "state": {
+        "items": [
+          {
+            "id": "demo_1",
+            "excerpt": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+            "time": "3 天前",
+            "supplements": "2 条补充",
+            "stageLabel": "整理中",
+            "tags": [
+              "内容选题",
+              "城市散步"
+            ],
+            "tagMore": 0,
+            "merged": false,
+            "matchText": "",
+            "matchSource": ""
+          },
+          {
+            "id": "demo_2",
+            "excerpt": "做一个方便回顾旧想法的小工具，让记录之后的整理更加自然。",
+            "time": "5 天前",
+            "supplements": "",
+            "stageLabel": "",
+            "tags": [],
+            "tagMore": 0,
+            "merged": false,
+            "matchText": "",
+            "matchSource": ""
+          }
+        ],
+        "loading": false,
+        "error": "",
+        "query": "",
+        "filter": "all",
+        "recentOn": false,
+        "mergedOn": false,
+        "stage": "",
+        "stages": [
+          {
+            "id": "",
+            "label": "全部阶段"
+          },
+          {
+            "id": "seed",
+            "label": "想法"
+          },
+          {
+            "id": "growing",
+            "label": "整理中"
+          },
+          {
+            "id": "ready",
+            "label": "可使用"
+          }
+        ],
+        "stageIndex": 0,
+        "panelOpen": false,
+        "panelCount": 0,
+        "activeCount": 2,
+        "mergedCount": 0,
+        "reviewItem": {
+          "id": "demo_1",
+          "excerpt": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+          "time": "3 天前",
+          "supplements": "2 条补充",
+          "stageLabel": "整理中",
+          "tags": [
+            "内容选题",
+            "城市散步"
+          ],
+          "tagMore": 0,
+          "merged": false
+        },
+        "reviewExpanded": false,
+        "reviewError": "",
+        "__webviewId__": 10
+      }
+    },
+    {
+      "name": "04-detail",
+      "route": "/pages/detail/index?id=demo_1",
+      "actualRoute": "pages/detail/index",
+      "state": {
+        "ready": true,
+        "missing": false,
+        "loadError": false,
+        "text": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+        "time": "3 天前",
+        "editing": false,
+        "editDraft": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+        "editError": "",
+        "editUnknown": false,
+        "canSaveEdit": false,
+        "textMax": 2000,
+        "supplements": [
+          {
+            "id": "demo_s1",
+            "content": "每条路线控制在两小时内，补充休息点和雨天替代安排。",
+            "time": "3 天前",
+            "label": "这条补充 · 2026-10-06 13:28",
+            "isAi": false,
+            "editMax": 1000,
+            "sources": [],
+            "hiddenLabel": "已合并"
+          },
+          {
+            "id": "demo_s2",
+            "content": "先从自己熟悉的三个街区开始，照片仅留作个人参考。",
+            "time": "3 天前",
+            "label": "这条补充 · 2026-10-06 13:28",
+            "isAi": false,
+            "editMax": 1000,
+            "sources": [],
+            "hiddenLabel": "已合并"
+          }
+        ],
+        "supplementDraft": "",
+        "supplementMax": 1000,
+        "supplementError": "",
+        "supplementUnknown": false,
+        "canAddSupplement": false,
+        "composeFocus": false,
+        "composeRequestedFocus": false,
+        "longText": false,
+        "floatVisible": false,
+        "hidden": [],
+        "hiddenExpanded": false,
+        "moreVisible": false,
+        "sheetVisible": false,
+        "sheetTargetId": "",
+        "sheetTargetLabel": "",
+        "sheetIsHidden": false,
+        "editingSupplementId": "",
+        "supplementEditDraft": "",
+        "supplementEditOriginal": "",
+        "supplementEditError": "",
+        "supplementEditUnknown": false,
+        "canSaveSupplementEdit": false,
+        "confirmVisible": false,
+        "confirmKind": "supplement",
+        "confirmTitle": "",
+        "confirmBody": "",
+        "confirmQuote": "",
+        "confirmQuoteTime": "",
+        "historyCount": 0,
+        "isAi": false,
+        "merged": false,
+        "provenance": [],
+        "tagsDraft": "内容选题，城市散步",
+        "stageIndex": 1,
+        "stages": [
+          {
+            "id": "seed",
+            "label": "想法"
+          },
+          {
+            "id": "growing",
+            "label": "整理中"
+          },
+          {
+            "id": "ready",
+            "label": "可使用"
+          }
+        ],
+        "orgOpen": false,
+        "orgSummary": "整理中 · 内容选题、城市散步",
+        "photosEnabled": false,
+        "photos": [
+          {
+            "id": "demo_p",
+            "src": "",
+            "failed": true
+          }
+        ],
+        "photoError": "",
+        "photoBusy": false,
+        "provenanceSupplementId": "",
+        "supplementEditMax": 1000,
+        "error": "",
+        "pending": "",
+        "__webviewId__": 11
+      }
+    },
+    {
+      "name": "05-history",
+      "route": "/pages/history/index?id=demo_1",
+      "actualRoute": "pages/history/index",
+      "state": {
+        "ready": true,
+        "missing": false,
+        "readError": false,
+        "versions": [],
+        "versionCount": 0,
+        "current": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+        "__webviewId__": 12
+      }
+    },
+    {
+      "name": "06-output",
+      "route": "/pages/output/index?id=demo_1",
+      "actualRoute": "pages/output/index",
+      "state": {
+        "ready": true,
+        "missing": false,
+        "readError": false,
+        "phase": "edit",
+        "sheetScrollHeight": 0,
+        "options": [
+          {
+            "id": "demo_s1",
+            "content": "每条路线控制在两小时内，补充休息点和雨天替代安排。",
+            "time": "2026-10-06 13:28",
+            "selected": true
+          },
+          {
+            "id": "demo_s2",
+            "content": "先从自己熟悉的三个街区开始，照片仅留作个人参考。",
+            "time": "2026-10-06 13:28",
+            "selected": true
+          }
+        ],
+        "stagedOptions": [],
+        "stagedTemplateId": "free",
+        "selectedCount": 2,
+        "draft": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。\n\n每条路线控制在两小时内，补充休息点和雨天替代安排。\n\n先从自己熟悉的三个街区开始，照片仅留作个人参考。",
+        "draftEdited": false,
+        "canSaveAs": true,
+        "savedSame": false,
+        "templateId": "free",
+        "templates": [
+          {
+            "id": "free",
+            "name": "自由稿"
+          },
+          {
+            "id": "social",
+            "name": "社交内容"
+          },
+          {
+            "id": "video",
+            "name": "短视频脚本"
+          },
+          {
+            "id": "work",
+            "name": "工作提纲"
+          },
+          {
+            "id": "action",
+            "name": "行动清单"
+          }
+        ],
+        "summary": "正文 + 2条补充",
+        "maxLength": 2000,
+        "archive": "灵感文字留档\n生成时间：2026-10-09 13:29\n记录时间：2026-10-05 13:28\n最近修改：2026-10-06 13:28\n\n【当前正文】\n整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。\n\n【原文修改记录】\n无\n\n【补充】\n\n1. 2026-10-06 13:28\n每条路线控制在两小时内，补充休息点和雨天替代安排。\n修改记录：\n无\n\n2. 2026-10-06 13:28\n先从自己熟悉的三个街区开始，照片仅留作个人参考。\n修改记录：\n无",
+        "txtPath": "",
+        "error": "",
+        "notice": "",
+        "noticeLink": false,
+        "savedId": "",
+        "savedDraft": "",
+        "busy": false,
+        "saveUnknown": false,
+        "sourceStale": false,
+        "draftRecoveryNotice": "",
+        "__webviewId__": 13
+      }
+    },
+    {
+      "name": "07-material-selection",
+      "route": "/pages/material-output/index",
+      "actualRoute": "pages/material-output/index",
+      "state": {
+        "ready": true,
+        "phase": "select",
+        "options": [
+          {
+            "inspirationId": "demo_1",
+            "sourceText": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+            "key": "demo_1:text",
+            "kind": "正文",
+            "content": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+            "createdAt": 1791178112205,
+            "selected": false,
+            "order": 0,
+            "time": "2026-10-05 13:28"
+          },
+          {
+            "inspirationId": "demo_1",
+            "sourceText": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+            "key": "demo_1:supplement:demo_s1",
+            "kind": "补充",
+            "content": "每条路线控制在两小时内，补充休息点和雨天替代安排。",
+            "createdAt": 1791264512205,
+            "selected": false,
+            "order": 0,
+            "time": "2026-10-06 13:28"
+          },
+          {
+            "inspirationId": "demo_1",
+            "sourceText": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+            "key": "demo_1:supplement:demo_s2",
+            "kind": "补充",
+            "content": "先从自己熟悉的三个街区开始，照片仅留作个人参考。",
+            "createdAt": 1791264512205,
+            "selected": false,
+            "order": 0,
+            "time": "2026-10-06 13:28"
+          },
+          {
+            "inspirationId": "demo_2",
+            "sourceText": "做一个方便回顾旧想法的小工具，让记录之后的整理更加自然。",
+            "key": "demo_2:text",
+            "kind": "正文",
+            "content": "做一个方便回顾旧想法的小工具，让记录之后的整理更加自然。",
+            "createdAt": 1791091712205,
+            "selected": false,
+            "order": 0,
+            "time": "2026-10-04 13:28"
+          }
+        ],
+        "total": 4,
+        "query": "",
+        "selectedOnly": false,
+        "selectedCount": 0,
+        "sourceCount": 0,
+        "templates": [
+          {
+            "id": "free",
+            "name": "自由稿"
+          },
+          {
+            "id": "social",
+            "name": "社交内容"
+          },
+          {
+            "id": "video",
+            "name": "短视频脚本"
+          },
+          {
+            "id": "work",
+            "name": "工作提纲"
+          },
+          {
+            "id": "action",
+            "name": "行动清单"
+          }
+        ],
+        "templateId": "free",
+        "draft": "",
+        "draftEdited": false,
+        "maxLength": 2000,
+        "savedId": "",
+        "savedDraft": "",
+        "busy": false,
+        "error": "",
+        "notice": "",
+        "saveUnknown": false,
+        "sourceStale": false,
+        "draftRecoveryNotice": "",
+        "showFormats": false,
+        "__webviewId__": 14
+      }
+    },
+    {
+      "name": "08-photo-error",
+      "route": "/pages/photo-viewer/index?id=demo_1&photo=demo_p",
+      "actualRoute": "pages/photo-viewer/index",
+      "state": {
+        "photos": [
+          {
+            "id": "demo_p",
+            "src": "",
+            "failed": true
+          }
+        ],
+        "current": 0,
+        "error": "照片未加载",
+        "loading": false,
+        "__webviewId__": 15
+      }
+    },
+    {
+      "name": "09-share-preview",
+      "route": "/pages/share-preview/index?id=demo_1",
+      "actualRoute": "pages/share-preview/index",
+      "state": {
+        "ready": true,
+        "missing": false,
+        "options": [
+          {
+            "id": "demo_s1",
+            "content": "每条路线控制在两小时内，补充休息点和雨天替代安排。",
+            "selected": false
+          },
+          {
+            "id": "demo_s2",
+            "content": "先从自己熟悉的三个街区开始，照片仅留作个人参考。",
+            "selected": false
+          }
+        ],
+        "preview": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+        "selectedCount": 0,
+        "error": "",
+        "notice": "",
+        "busy": false,
+        "chatPrepared": false,
+        "canRetryPoster": false,
+        "posterBusy": false,
+        "posterFiles": [],
+        "posterReady": false,
+        "saving": false,
+        "allSaved": false,
+        "templateName": "",
+        "previewExpanded": false,
+        "__webviewId__": 16
+      }
+    },
+    {
+      "name": "10-shared-read-error",
+      "route": "/pages/shared/index?t=offlineSampleToken0000000000",
+      "actualRoute": "pages/shared/index",
+      "state": {
+        "loading": false,
+        "unavailable": false,
+        "error": "请检查网络后重试。",
+        "title": "",
+        "body": "",
+        "date": "",
+        "templateName": "",
+        "startLabel": "也整理我的想法",
+        "hasTemplate": false,
+        "__webviewId__": 17
+      }
+    },
+    {
+      "name": "11-my-shares-read-error",
+      "route": "/pages/my-shares/index",
+      "actualRoute": "pages/my-shares/index",
+      "state": {
+        "items": [],
+        "loading": false,
+        "busy": false,
+        "error": "分享记录暂时无法加载。",
+        "nextBefore": null,
+        "__webviewId__": 18
+      }
+    },
+    {
+      "name": "12-feedback",
+      "route": "/pages/feedback/index",
+      "actualRoute": "pages/feedback/index",
+      "state": {
+        "reporting": false,
+        "category": "idea",
+        "categories": [
+          {
+            "value": "idea",
+            "label": "功能建议"
+          },
+          {
+            "value": "bug",
+            "label": "使用问题"
+          },
+          {
+            "value": "other",
+            "label": "其他意见"
+          }
+        ],
+        "body": "",
+        "trimmedLength": 0,
+        "canSubmit": false,
+        "busy": false,
+        "error": "",
+        "historyError": "反馈记录暂时无法加载，请重试。",
+        "notice": "",
+        "items": [],
+        "loading": false,
+        "nextBefore": null,
+        "__webviewId__": 19
+      }
+    },
+    {
+      "name": "13-welcome",
+      "route": "/pages/welcome/index",
+      "actualRoute": "pages/welcome/index",
+      "state": {
+        "__webviewId__": 20
+      }
+    },
+    {
+      "name": "14-mine",
+      "route": "/pages/mine/index",
+      "actualRoute": "pages/mine/index",
+      "state": {
+        "expandedInfo": "",
+        "privacyNotes": [
+          "灵感默认仅你可见。只有你确认分享的文字才会生成分享链接。",
+          "照片和修改记录不会加入文字分享。"
+        ],
+        "helpNotes": [
+          "在「记录」写下一句话，保存后可到「灵感」查看。",
+          "打开一条灵感，继续补充文字或附上照片。",
+          "在「灵感」选择素材，手动整理成稿，再复制、导出或主动分享。"
+        ],
+        "__webviewId__": 21
+      }
+    }
+  ],
+  "exceptions": [],
+  "console": [
+    {
+      "type": "info",
+      "args": [
+        "Lazy code loading is enabled. Only injecting required components."
+      ]
+    }
+  ]
+}

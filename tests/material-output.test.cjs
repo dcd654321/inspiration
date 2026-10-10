@@ -145,9 +145,9 @@ test('选材稿另存独立记录且同稿不重复保存，失败和超长不�
     const before = JSON.stringify(state.items);
     page.onToggle(event('ins_b:text')); page.onGenerate();
     state.savedResult = { ok: false }; await page.onSave();
-    assert.match(page.data.error, /另存未完成/); assert.equal(page.data.savedId, ''); assert.equal(page.data.draft, '正文乙');
+    assert.match(page.data.error, /尚未确认另存/); assert.equal(page.data.savedId, ''); assert.equal(page.data.draft, '正文乙');
     state.savedResult = { ok: true, synced: false }; await page.onSave();
-    assert.match(page.data.error, /另存未完成/); assert.equal(page.data.savedId, '');
+    assert.match(page.data.error, /尚未确认另存/); assert.equal(page.data.savedId, '');
     state.savedResult = { ok: true, synced: true }; await page.onSave();
     assert.match(page.data.notice, /已另存/); assert.ok(page.data.savedId);
     assert.equal(state.saves[0].id, state.saves[1].id); assert.equal(state.saves[1].id, state.saves[2].id);
@@ -212,7 +212,8 @@ test('所有私人工作页禁止索引且选材入口不调用分享或模型',
     assert.equal(rule.action, page === 'pages/welcome/index' ? 'allow' : 'disallow', page);
   }
   const source = fs.readFileSync(path.join(root, 'pages/material-output/index.js'), 'utf8');
-  assert.doesNotMatch(source, /wx\.cloud|onShare|require\([^\n]*ai/);
+  assert.doesNotMatch(source, /wx\.cloud|onShareAppMessage|require\([^\n]*ai/);
+  assert.match(source, /shareConfirmedDraft/); // 只有明确的已确认结果分享，不在选材/生成时发起。
   assert.match(fs.readFileSync(path.join(root, 'pages/list/index.wxml'), 'utf8'), /bindtap="onMaterialOutput"/);
   assert.ok(app.pages.includes('pages/material-output/index'));
 });
@@ -220,6 +221,6 @@ test('所有私人工作页禁止索引且选材入口不调用分享或模型',
 test('选材读取失败独立显示重试，选材错误在固定操作区可见', () => {
   const wxml = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/material-output/index.wxml'), 'utf8');
   assert.match(wxml, /wx:elif="\{\{error && !total\}\}"/);
-  assert.ok(wxml.indexOf('error && !total') < wxml.indexOf('没有符合条件的素材'));
+  assert.ok(wxml.indexOf('error && !total') < wxml.indexOf('没有找到匹配的素材'));
   assert.match(wxml, /class="material-footer"><view wx:if="\{\{error\}\}"/);
 });

@@ -76,7 +76,7 @@ test('用途模板完整保留选中素材，不带历史照片且不改写原�
   assert.equal(JSON.stringify(source), original);
 });
 
-test('重新生成使用稿先确认，取消保留编辑并可返回旧稿', async () => {
+test('重新生成稿件先确认，取消保留编辑并回到原稿', async () => {
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition, confirm;
   const source = item('a', '原文');
@@ -90,18 +90,26 @@ test('重新生成使用稿先确认，取消保留编辑并可返回旧稿', as
     delete require.cache[target]; require(target);
     const page = Object.assign({}, definition, { data: structuredClone(definition.data), setData(value) { Object.assign(this.data, value); } });
     await page.onLoad({ id: 'a' });
-    page.onGenerate();
+    // 进入即有自由稿，不用先点生成
+    assert.equal(page.data.draft, '原文');
+    assert.equal(page.data.phase, 'edit');
     page.onDraftInput({ detail: { value: '用户精心修改的稿件' } });
-    page.onBackToSelection();
-    page.onTemplateChange({ currentTarget: { dataset: { template: 'work' } } });
-    page.onGenerate();
+    // 换格式：手工改过 → 先确认；取消保留当前文字与面板
+    page.onOpenFormat();
+    page.onTemplateSelect({ currentTarget: { dataset: { template: 'work' } } });
+    page.onApply();
     assert.equal(page.data.draft, '用户精心修改的稿件');
     confirm({ confirm: false });
-    page.onResumeDraft();
-    assert.equal(page.data.phase, 'edit');
     assert.equal(page.data.draft, '用户精心修改的稿件');
-    page.onGenerate(); confirm({ confirm: true });
+    assert.equal(page.data.phase, 'format');
+    page.onClosePanel();
+    assert.equal(page.data.phase, 'edit');
+    // 确认替换才生效；来源记录全程不变
+    page.onOpenFormat();
+    page.onTemplateSelect({ currentTarget: { dataset: { template: 'work' } } });
+    page.onApply(); confirm({ confirm: true });
     assert.match(page.data.draft, /【背景与材料】/);
+    assert.equal(page.data.phase, 'edit');
     assert.equal(source.text, '原文');
   } finally {
     delete require.cache[target];

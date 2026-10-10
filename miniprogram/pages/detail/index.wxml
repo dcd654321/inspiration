@@ -1,18 +1,31 @@
 <view class="page" wx:if="{{ready}}">
-  <block wx:if="{{missing}}">
+  <!-- 读取失败与「确认不存在」分开：网络问题不能说成灵感已被删除 -->
+  <block wx:if="{{loadError}}">
+    <view class="empty">
+      <view class="et">暂时无法读取灵感</view>
+      <view class="ed">{{error || '请稍后重试。'}}</view>
+    </view>
+    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onRetryLoad">重新读取</button>
+    <button class="btn btn-quiet btn-block" style="margin-top: 20rpx" bindtap="onBackToList">返回灵感列表</button>
+  </block>
+
+  <block wx:elif="{{missing}}">
     <view class="empty">
       <view class="et">找不到这条灵感</view>
-      <view class="ed">{{error || '这条灵感不存在或已经删除。'}}</view>
+      <view class="ed">它可能已被删除，可以返回列表查找其他记录。</view>
     </view>
-    <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onBackToList">返回灵感列表</button>
+    <button class="btn btn-block" style="margin-top: 32rpx" bindtap="onBackToList">返回灵感列表</button>
   </block>
 
   <block wx:else>
-    <view class="stamp">{{time}}</view>
+    <view class="detail-head">
+      <view class="stamp">{{time}}</view>
+      <button class="detail-more" bindtap="onOpenMore" disabled="{{pending !== '' || editing || editingSupplementId}}" aria-label="更多操作">更多</button>
+    </view>
     <view wx:if="{{isAi}}" class="notice">AI 汇总内容，请核对后使用。</view>
     <view wx:if="{{merged}}" class="notice">此条灵感已合并，内容仍完整保留。<button class="btn-link" bindtap="onRestoreInspiration" disabled="{{pending}}">恢复为独立灵感</button></view>
 
-    <!-- 原文：可以直接编辑。不放进卡片，字号最大——它是锚点 -->
+    <!-- 原文：不放进卡片，字号最大——它是锚点。编辑入口在「更多」里 -->
     <view class="origin">
       <block wx:if="{{editing}}">
         <textarea
@@ -20,91 +33,74 @@
           value="{{editDraft}}"
           maxlength="{{textMax}}"
           auto-height
+          disabled="{{pending !== ''}}"
+          aria-label="修改正文"
+          cursor-spacing="24"
           bindinput="onEditInput"
         />
+        <view wx:if="{{pending === 'text' || editDraft !== text}}" class="draft-hint">{{pending === 'text' ? '正在保存，请稍候。' : editUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
         <view class="origin-acts">
-          <button class="btn btn-sm" bindtap="onSaveEdit" disabled="{{!canSaveEdit || pending !== ''}}">{{pending === 'text' ? '保存中…' : '保存'}}</button>
+          <button class="btn btn-sm" bindtap="onSaveEdit" disabled="{{!canSaveEdit || pending !== ''}}">{{pending === 'text' ? '保存中…' : editUnknown ? '重试保存' : '保存修改'}}</button>
           <button class="btn btn-plain btn-sm" bindtap="onCancelEdit" disabled="{{pending !== ''}}">取消</button>
         </view>
-        <view wx:if="{{editError}}" class="notice notice-err">
+        <view wx:if="{{editError}}" class="notice {{editUnknown ? 'notice-warn' : 'notice-err'}}">
           <view class="mark"></view>
-          <text>{{editError}}</text>
+          <view class="notice-body"><text>{{editError}}</text><button class="btn-link" data-kind="text" bindtap="onCopyUnsaved">复制当前输入</button></view>
         </view>
       </block>
 
       <block wx:else>
-        <view class="origin-text">{{text}}</view>
-        <view class="origin-acts">
-          <button wx:if="{{!merged}}" class="btn btn-quiet btn-sm" bindtap="onStartEdit">修改内容</button>
-          <button
-            wx:if="{{historyCount > 0}}"
-            class="btn btn-plain btn-sm"
-            bindtap="onOpenHistory"
-          >查看修改记录（{{historyCount}}）</button>
-        </view>
+        <view class="origin-text"><text selectable="true">{{text}}</text></view>
       </block>
     </view>
 
-    <!-- 补充是详情页的主动作：进入页面即可看到，不必越过时间线。 -->
-    <view wx:if="{{!editing && !merged}}" class="detail-next">
-      <view class="section-head"><text class="k">继续补充</text></view>
+    <!-- 轻量动作：低频操作都收进了「更多」，这里只留两个主任务 -->
+    <view class="detail-actions">
+      <button class="btn btn-quiet btn-sm" bindtap="onOpenOutput" disabled="{{pending !== '' || editing || editingSupplementId}}">整理成稿</button>
+      <button wx:if="{{!merged}}" class="btn btn-plain btn-sm" bindtap="onLocateCompose" disabled="{{pending !== '' || editing || editingSupplementId}}">继续补充</button>
+    </view>
+
+    <!-- 补充是详情页的主动作：输入框紧随原文，已有补充在输入框下方 -->
+    <view wx:if="{{!editing && !editingSupplementId && !merged}}" class="detail-next">
       <view class="compose">
+        <view class="field-label">继续补充</view>
         <textarea
-          class="compose-editor"
+          class="compose-editor {{(composeFocus || supplementDraft) ? 'compose-tall' : ''}}"
           value="{{supplementDraft}}"
-          maxlength="{{supplementMax}}"
-          placeholder="为这条想法补充内容"
+          maxlength="-1"
+          placeholder="又想到什么？"
           placeholder-class="compose-ph"
-          auto-height
           bindinput="onSupplementInput"
+          focus="{{composeRequestedFocus}}"
+          disabled="{{pending !== ''}}"
+          bindfocus="onComposeFocus"
+          bindblur="onComposeBlur"
+          cursor-spacing="24"
         />
         <view class="compose-foot">
-          <text class="count">{{supplementDraft.length}} / {{supplementMax}}</text>
+          <text class="count {{supplementDraft.length > supplementMax ? 'count-over' : ''}}">{{supplementDraft.length}} / {{supplementMax}}</text>
           <button
             class="btn btn-sm"
             bindtap="onSubmitSupplement"
             disabled="{{!canAddSupplement || pending !== ''}}"
-          >{{pending === 'supplement' ? '添加中…' : '添加补充'}}</button>
+          >{{pending === 'supplement' ? '添加中…' : supplementUnknown ? '重试保存' : '添加补充'}}</button>
         </view>
+        <view wx:if="{{supplementDraft.length > supplementMax}}" class="hint-over">超出{{supplementDraft.length - supplementMax}}字符，请缩短后保存。</view>
+        <view wx:elif="{{supplementDraft}}" class="draft-hint">{{pending === 'supplement' ? '正在保存，请稍候。' : supplementUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
 
-        <view wx:if="{{supplementError}}" class="notice notice-err">
+        <view wx:if="{{supplementError}}" class="notice {{supplementUnknown ? 'notice-warn' : 'notice-err'}}">
           <view class="mark"></view>
-          <text>{{supplementError}}</text>
+          <view class="notice-body"><text>{{supplementError}}</text><button class="btn-link" data-kind="supplement" bindtap="onCopyUnsaved">复制当前输入</button></view>
         </view>
       </view>
-
-      <view class="output-acts">
-        <button class="btn btn-quiet btn-sm" bindtap="onOpenOutput">整理内容</button>
-        <button class="btn btn-plain btn-sm" bindtap="onCopyContent">复制内容</button>
-        <button class="btn btn-plain btn-sm" bindtap="onOpenShare">分享文字</button>
-        <button wx:if="{{aiEnabled}}" class="btn btn-plain btn-sm" bindtap="onAiExpand">扩展想法</button>
-        <button wx:if="{{aiEnabled && supplements.length > 1}}" class="btn btn-plain btn-sm" bindtap="onAiSummarize">汇总补充</button>
-      </view>
     </view>
 
-    <view class="divider"></view>
-    <view wx:if="{{!merged}}" class="organization">
-      <view class="section-head"><text class="k">整理标记</text></view>
-      <input value="{{tagsDraft}}" bindinput="onTagsInput" maxlength="64" placeholder="标签，以逗号分隔，最多五个" aria-label="标签" />
-      <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageSelect"><view class="stage-picker">阶段：{{stages[stageIndex].label}} · 选择</view></picker>
-      <button class="btn btn-plain btn-sm" bindtap="onSaveOrganization" disabled="{{pending}}">保存标记</button>
-    </view>
-    <view wx:if="{{provenance.length}}" class="provenance"><view class="section-head"><text class="k">汇总来源</text></view><button wx:for="{{provenance}}" wx:key="id" class="btn-link source-link" data-id="{{item.id}}" bindtap="onOpenSource" disabled="{{!item.exists}}">{{item.label}}</button></view>
-
-    <view wx:if="{{photosEnabled || photos.length}}" class="photos-section">
-      <view class="section-head"><text class="k">照片</text><text class="v">{{photos.length}} / 9</text></view>
-      <view class="photo-grid"><view wx:for="{{photos}}" wx:key="id" class="photo-cell"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" bindtap="onPreviewPhoto" /><button wx:else class="btn-link" data-id="{{item.id}}" bindtap="onPreviewPhoto">{{item.failed ? '重新查看照片' : '照片加载中'}}</button><button wx:if="{{photosEnabled && !merged}}" class="btn-link" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy}}">删除照片</button></view></view>
-      <button wx:if="{{photosEnabled && !merged}}" class="btn btn-plain btn-block" bindtap="onAddPhoto" disabled="{{photoBusy || pending}}" loading="{{photoBusy}}">添加照片</button>
-      <view class="hint-line">照片仅用于这条灵感，不加入分享或 AI 整理。</view>
-    </view>
-    <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
-    <!-- 补充时间线：按时间正序。点「更多」或长按均可打开操作面板 -->
-    <view class="section-head" style="margin-top: 36rpx">
+    <view class="section-head" style="margin-top: 8rpx">
       <text class="k">补充</text>
       <text class="v">{{supplements.length}} 条</text>
     </view>
 
-    <view wx:if="{{supplements.length === 0 && hidden.length === 0}}" class="hint-line">还没有补充</view>
+    <view wx:if="{{supplements.length === 0 && hidden.length === 0 && !merged}}" class="hint-line">还没有补充，可以从上方写下一句。</view>
 
     <view wx:else class="timeline">
       <block wx:for="{{supplements}}" wx:key="id">
@@ -118,7 +114,7 @@
               <text>{{item.time}}</text>
               <text wx:if="{{item.isAi}}" class="tag tag-ai">AI 生成 · 请核对</text>
             </view>
-            <button class="tl-more" data-id="{{item.id}}" aria-label="打开补充操作" catchtap="onSupplementAction">更多</button>
+            <button class="tl-more" data-id="{{item.id}}" aria-label="打开补充操作" catchtap="onSupplementAction" disabled="{{pending !== '' || editing || editingSupplementId}}">更多</button>
           </view>
 
           <!-- 行内修改：旧内容会留在历史里 -->
@@ -128,15 +124,19 @@
               value="{{supplementEditDraft}}"
               maxlength="{{supplementEditMax}}"
               auto-height
+              disabled="{{pending !== ''}}"
+              aria-label="修改补充"
+              cursor-spacing="24"
               bindinput="onSupplementEditInput"
             />
+            <view wx:if="{{pending === 'supplementEdit' || supplementEditDraft !== supplementEditOriginal}}" class="draft-hint">{{pending === 'supplementEdit' ? '正在保存，请稍候。' : supplementEditUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
             <view class="tl-acts">
-              <button class="btn btn-sm" bindtap="onSupplementEditSave" disabled="{{!canSaveSupplementEdit || pending !== ''}}">{{pending === 'supplementEdit' ? '保存中…' : '保存'}}</button>
+              <button class="btn btn-sm" bindtap="onSupplementEditSave" disabled="{{!canSaveSupplementEdit || pending !== ''}}">{{pending === 'supplementEdit' ? '保存中…' : supplementEditUnknown ? '重试保存' : '保存修改'}}</button>
               <button class="btn btn-plain btn-sm" bindtap="onSupplementEditCancel" disabled="{{pending !== ''}}">取消</button>
             </view>
-            <view wx:if="{{supplementEditError}}" class="notice notice-err">
+            <view wx:if="{{supplementEditError}}" class="notice {{supplementEditUnknown ? 'notice-warn' : 'notice-err'}}">
               <view class="mark"></view>
-              <text>{{supplementEditError}}</text>
+              <view class="notice-body"><text>{{supplementEditError}}</text><button class="btn-link" data-kind="editSupplement" bindtap="onCopyUnsaved">复制当前输入</button></view>
             </view>
           </block>
 
@@ -177,48 +177,88 @@
       </view>
     </view>
 
+    <!-- 标签与阶段：一行摘要，点开才是表单；取消恢复进入前的值 -->
+    <view wx:if="{{!merged && !editing && !editingSupplementId}}" class="organization">
+      <view class="org-summary" bindtap="onToggleOrganization">
+        <text class="org-value">{{orgSummary}}</text>
+        <text class="org-toggle">{{orgOpen ? '收起' : '修改标记'}}</text>
+      </view>
+      <block wx:if="{{orgOpen}}">
+        <input class="tag-input" value="{{tagsDraft}}" bindinput="onTagsInput" maxlength="64" disabled="{{pending !== ''}}" placeholder="标签，以逗号分隔，最多五个" aria-label="标签" />
+        <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageSelect" disabled="{{pending !== ''}}"><view class="stage-picker">阶段：{{stages[stageIndex].label}} · 选择</view></picker>
+        <view class="org-acts">
+          <button class="btn btn-sm" bindtap="onSaveOrganization" disabled="{{pending !== ''}}">{{pending === 'organize' ? '保存中…' : '保存标记'}}</button>
+          <button class="btn btn-plain btn-sm" bindtap="onCancelOrganization" disabled="{{pending !== ''}}">取消</button>
+        </view>
+      </block>
+    </view>
+
+    <!-- 照片在标签行之后：不夹在输入与时间线之间 -->
+    <view wx:if="{{photosEnabled || photos.length}}" class="photos-section">
+      <view class="section-head"><text class="k">照片</text><text class="v">{{photos.length}} / 9</text></view>
+      <view class="photo-grid"><view wx:for="{{photos}}" wx:key="id" class="photo-cell"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" bindtap="onPreviewPhoto" /><button wx:elif="{{item.failed}}" class="btn-link" bindtap="onReloadPhoto">重新加载照片</button><button wx:else class="btn-link" data-id="{{item.id}}" bindtap="onPreviewPhoto">照片加载中</button><button wx:if="{{photosEnabled && !merged}}" class="btn-link" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy}}">删除照片</button></view></view>
+      <button wx:if="{{photosEnabled && !merged}}" class="btn btn-plain btn-block" bindtap="onAddPhoto" disabled="{{photoBusy || pending}}" loading="{{photoBusy}}">添加照片</button>
+      <view class="hint-line">照片仅用于这条灵感，不加入分享。</view>
+    </view>
+    <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
+
+    <view wx:if="{{provenance.length}}" class="provenance"><view class="section-head"><text class="k">汇总来源</text></view><button wx:for="{{provenance}}" wx:key="id" class="btn-link source-link" data-id="{{item.id}}" bindtap="onOpenSource" disabled="{{!item.exists}}">{{item.label}}</button></view>
+
     <view wx:if="{{error}}" class="notice notice-err">
       <view class="mark"></view>
       <text>{{error}}</text>
     </view>
-
-    <view style="margin-top: 48rpx">
-      <button class="btn btn-danger btn-block" bindtap="onDelete" disabled="{{pending !== ''}}">{{pending === 'deleteInspiration' ? '删除中…' : '删除灵感'}}</button>
-    </view>
   </block>
+
+  <!-- 长正文滚离原文后出现的定位入口；键盘打开时隐藏 -->
+  <button wx:if="{{floatVisible}}" class="float-supplement" bindtap="onLocateCompose" aria-label="继续补充">继续补充</button>
+
+  <!-- 页内「更多」：修改正文、复制全文、分享文字、修改记录、删除灵感 -->
+  <view wx:if="{{moreVisible}}" class="mask" bindtap="onCloseMore">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">这条灵感</view>
+      <button wx:if="{{!merged}}" class="sheet-item" bindtap="onMoreEditText" disabled="{{pending !== ''}}">修改正文<text class="sub">旧内容会保留在修改记录中</text></button>
+      <button class="sheet-item" bindtap="onMoreCopy" disabled="{{pending !== ''}}">复制全文<text class="sub">可选仅复制正文，或正文与当前补充</text></button>
+      <button class="sheet-item" bindtap="onMoreShare" disabled="{{pending !== ''}}">分享文字<text class="sub">先确认对方会看到什么</text></button>
+      <button wx:if="{{historyCount > 0}}" class="sheet-item" bindtap="onMoreHistory" disabled="{{pending !== ''}}">修改记录（{{historyCount}}）</button>
+      <button class="sheet-item sheet-danger" bindtap="onMoreDelete" disabled="{{pending !== ''}}">删除灵感<text class="sub">正文、补充和照片会一并删除，无法撤销</text></button>
+      <button class="sheet-cancel" bindtap="onCloseMore" disabled="{{pending !== ''}}">取消</button>
+    </view>
+  </view>
 
   <!-- 补充操作面板：可由「更多」或长按打开 -->
   <view wx:if="{{sheetVisible}}" class="mask" bindtap="onSheetDismiss">
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">{{sheetTargetLabel}}</view>
 
-      <button class="sheet-item" bindtap="onSheetCopy" disabled="{{pending !== ''}}">复制这条</button>
+      <button class="sheet-item" bindtap="onSheetCopy" disabled="{{pending !== ''}}" aria-label="复制这条补充">复制补充</button>
 
       <block wx:if="{{sheetIsHidden}}">
-        <button class="sheet-item" bindtap="onSheetRestore" disabled="{{pending !== ''}}">恢复<text class="sub">恢复为普通补充</text></button>
+        <button class="sheet-item" bindtap="onSheetRestore" disabled="{{pending !== ''}}" aria-label="恢复为补充">恢复为补充<text class="sub">回到时间线继续使用</text></button>
       </block>
       <block wx:else>
-        <button class="sheet-item" bindtap="onSheetEdit" disabled="{{pending !== ''}}">修改<text class="sub">旧内容会保留在修改记录中</text></button>
-        <button class="sheet-item" bindtap="onSheetFold" disabled="{{pending !== ''}}">并入正文<text class="sub">把这条补充追加到正文末尾</text></button>
+        <button class="sheet-item" bindtap="onSheetEdit" disabled="{{pending !== ''}}" aria-label="修改这条补充">修改补充<text class="sub">旧内容会保留在修改记录中</text></button>
+        <button class="sheet-item" bindtap="onSheetFold" disabled="{{pending !== ''}}" aria-label="并入正文">并入正文<text class="sub">把这条补充追加到正文末尾</text></button>
       </block>
 
-      <button class="sheet-item sheet-danger" bindtap="onSheetDelete" disabled="{{pending !== ''}}">删除<text class="sub">此操作无法撤销</text></button>
+      <button class="sheet-item sheet-danger" bindtap="onSheetDelete" disabled="{{pending !== ''}}" aria-label="删除补充">删除补充<text class="sub">此操作无法撤销</text></button>
       <button class="sheet-cancel" bindtap="onSheetDismiss" disabled="{{pending !== ''}}">取消</button>
     </view>
   </view>
 
-  <!-- 删除确认。整个产品里唯一不可恢复的操作，不能一次点击就生效 -->
+  <!-- 删除确认。整个产品里唯一不可恢复的操作，不能一次点击就生效；
+       被删对象的内容与时间放进框里，「要删的就是这条」是连着的 -->
   <view wx:if="{{confirmVisible}}" class="mask mask-center">
     <view class="dialog">
-      <view class="dialog-title">删除补充</view>
-      <view class="dialog-body">确定移除这条补充吗？<text class="dialog-warn">此操作无法撤销</text>。</view>
+      <view class="dialog-title">{{confirmTitle}}</view>
+      <view class="dialog-body">{{confirmBody}}<text class="dialog-warn">此操作无法撤销</text>。</view>
       <view class="dialog-quote">
         <view class="dialog-quote-t">{{confirmQuote}}</view>
         <view class="dialog-quote-m">{{confirmQuoteTime}}</view>
       </view>
       <view class="dialog-acts">
         <button class="dialog-act" bindtap="onConfirmDismiss" disabled="{{pending !== ''}}">取消</button>
-        <button class="dialog-act dialog-act-danger" bindtap="onConfirmDelete" disabled="{{pending !== ''}}">{{pending === 'deleteSupplement' ? '删除中…' : '删除'}}</button>
+        <button class="dialog-act dialog-act-danger" bindtap="onConfirmDelete" disabled="{{pending !== ''}}">{{pending === 'deleteSupplement' || pending === 'deleteInspiration' ? '删除中…' : '删除'}}</button>
       </view>
     </view>
   </view>

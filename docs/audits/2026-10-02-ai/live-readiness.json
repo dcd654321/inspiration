@@ -1,0 +1,24 @@
+{
+  "SDKVersion": "3.17.3",
+  "width": 390,
+  "accountReady": true,
+  "aiEnabled": false,
+  "accountError": "",
+  "ai": {
+    "ok": false,
+    "code": "AI_DISABLED"
+  },
+  "additionalObservation": {
+    "source": "earlier delayed probe completed during helper cleanup",
+    "SDKVersion": "3.17.3",
+    "width": 390,
+    "accountReady": true,
+    "aiEnabled": false,
+    "accountError": "",
+    "ai": {
+      "code": -404006,
+      "message": "cloud.callFunction:fail -404006 empty poll result base resp. "
+    }
+  },
+  "finalClientStateEvidence": "cloud-readiness.json.finalClientObservation"
+}

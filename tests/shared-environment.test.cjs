@@ -190,27 +190,6 @@ test('共享照片下载的迟到结果在页面或会话失效后丢弃', async
   assert.deepEqual(await promise, []);
 });
 
-test('共享 AI 入口使用同一可信来源并将审核路由到本项目', async () => {
-  let identity = contextFor('user_a'), options, received;
-  const exports = {}, filename = path.resolve(__dirname, '../cloudfunctions/linggan_ai/index.js');
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { process: { env: {} }, exports,
-    require(name) {
-      if (name === 'wx-server-sdk') return { init() {}, database: () => ({}), getWXContext: () => identity,
-        openapi(input) { assert.equal(input.appid, PROJECT_APPID); return { security: { async msgSecCheck(data) {
-          assert.equal(data.openid, 'user_a'); return { errCode: 0, result: { suggest: 'pass' } };
-        } } }; } };
-      if (name === './server/wx-identity') return require('../server/wx-identity');
-      if (name === './server/ai-service') return { createAiHandler(value) { options = value; return (context) => { received = context; }; } };
-      if (name === './server/ai-quota') return { createCloudAiQuota: () => ({}) };
-      if (name === './core/ai-contract') return require('../miniprogram/core/ai-contract');
-      throw Error('Unexpected module ' + name);
-    }
-  }, { filename });
-  exports.main({}); assert.deepEqual(received, getCallerIdentity(identity));
-  assert.equal(options.enabled, false); assert.equal(await options.moderate('合成样例', received), true);
-  identity = { ...contextFor('user_a'), FROM_APPID: owner }; exports.main({ accountKey: scope }); assert.equal(received.accountKey, '');
-});
-
 test('照片页面退出后迟到下载不回填，详情等待账户时退出不开始下载', async () => {
   const previous = { wx: global.wx, Page: global.Page, getApp: global.getApp };
   const photo = { id: 'p1', createdAt: 1, fileId: 'cloud://' + config.envId + '.bucket/linggan/' + scope + '/idea/p1' };

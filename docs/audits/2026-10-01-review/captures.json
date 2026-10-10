@@ -1,0 +1,77 @@
+[
+  {
+    "name": "06-list",
+    "page": "pages/list/index",
+    "note": "fresh list"
+  },
+  {
+    "name": "07-filter",
+    "page": "pages/list/index",
+    "note": "actual filter panel"
+  },
+  {
+    "name": "08-detail",
+    "page": "pages/detail/index",
+    "note": "sample with two supplements and fixture photo"
+  },
+  {
+    "name": "09-detail-menu",
+    "page": "pages/detail/index",
+    "note": "actual menu"
+  },
+  {
+    "name": "10-supplement-menu",
+    "page": "pages/detail/index",
+    "note": "actual supplement actions"
+  },
+  {
+    "name": "11-delete-confirm",
+    "page": "pages/detail/index",
+    "note": "confirmation only, cancelled"
+  },
+  {
+    "name": "12-output",
+    "page": "pages/output/index",
+    "note": "initial editable draft"
+  },
+  {
+    "name": "13-content",
+    "page": "pages/output/index",
+    "note": "actual content selection"
+  },
+  {
+    "name": "14-format",
+    "page": "pages/output/index",
+    "note": "actual format selection"
+  },
+  {
+    "name": "15-material",
+    "page": "pages/material-output/index",
+    "note": "multi-record workflow"
+  },
+  {
+    "name": "16-mine",
+    "page": "pages/mine/index",
+    "note": "latest simplified page"
+  },
+  {
+    "name": "17-mine-lower",
+    "page": "pages/mine/index",
+    "note": "actual scroll"
+  },
+  {
+    "name": "18-share",
+    "page": "pages/share-preview/index",
+    "note": "preview only, no link created"
+  },
+  {
+    "name": "19-missing",
+    "page": "pages/output/index",
+    "note": "invalid synthetic id"
+  },
+  {
+    "name": "20-recovery",
+    "page": "pages/list/index",
+    "note": "actual return list"
+  }
+]

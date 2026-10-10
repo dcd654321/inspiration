@@ -1,12 +1,22 @@
 # 详细设计
 
-> 状态（2026-09-28）：§1—11 为 MVP 基础设计；§12—17 记录后续实现及覆盖旧约定的升级。§17 的云确认方案覆盖 §2、§3、§5、§13 中的设备持久快照、离线队列和照片暂存约定。
-> 当前小程序包含 14 个页面、19 个 service 文件、3 个云函数与 12 个服务端 action；旧设备持久化、离线队列和照片落盘实现已移到包外的 `qa/legacy/`，仅供历史规范测试。自动化测试的最新通过数以 `docs/VERIFICATION.md` 为准。
+> 状态（2026-10-08）：§1—11 保留 MVP 基础设计；§12 起记录后续变更。§17 的云确认方案覆盖 §2、§3、§5、§13 的设备持久快照、离线队列与照片暂存约定；§27 的 `remove-ai-integration` 覆盖 AI 生成、草案、工作台与模型部署要求。
+> 当前小程序包含 14 个页面、2 个云函数（`linggan_api` / `linggan_maintenance`）与 12 个服务端 action；旧设备持久化、离线队列和照片落盘实现已移到包外 `qa/legacy/`，仅供历史规范测试。自动化测试最新结果以 `docs/VERIFICATION.md` 为准。
 > 本文档描述**接口、状态及错误**；凡某节写的是当时的目标方案而实现已改，该节会显式标注「由 §X 覆盖」，未标注的不代表已实现。
 > 各能力的平台启用、云端部署与真机验收**均未完成**，本地代码完成不等于能力可用。
 > **热度提炼已暂缓**（见 `proposal.md` 非目标），本文档不含热度实现细节，仅在 §10 保留占位说明。
 
 ## 0. 文档地图
+
+2026-10-09 全量复查：当前页面、记录入口与反馈读取修复见 §28 和 `docs/FULL-REVIEW-20261009.md`。本次仅修改本地源码与验证材料。
+
+2026-10-08 移除 AI 集成：`openspec/changes/remove-ai-integration/` 定义当前记录与手动整理版本。§5.4、§5.5、§6、§7.2、§7.12、§15.3、§19 为已撤下功能的历史说明，不再作为当前开发或启用要求；已有来源与合并字段保留兼容，详见 §27。历史审查与截图记录当时的页面，不代表当前发布包。
+
+2026-10-04 全量复核：`openspec/changes/repair-page-session-races/` 定义既有反馈、分享、读取与资源回执修复。`services/page-session.js` 提供 beginPage(page)、endPage(page)、pageGuard(page)、readPageAccount(page)，仅绑定内存中的页面版本、sessionEpoch 与 store；返回的 isCurrent 在每个异步边界检查，不持久化、不授予身份。renderPosters(page,body,title,base64,codePath,isCurrent) 增加可选守卫；失效停止绘制并清理自身临时文件。服务端 sameContent 忽略对象键排列，保留数组顺序。
+
+2026-10-02 AI 开放与交互（历史，已由 `remove-ai-integration` 覆盖）：`openspec/changes/enable-ai-workbench/` 及 `docs/AI-EXPERIENCE-20261002.md` 记录当时选材、预览、保存与验收证据。
+
+2026-10-01 体验优化：`openspec/changes/refine-editing-and-material-flow/` 定义编辑保护和选材顺序；`docs/UX-IMPLEMENTATION-20261001.md` 记录状态与验证。原审查 `docs/design-20261001/review.md` 保留观察时的证据。
 
 防止跑偏的第一件事是**让每份文档只回答自己的问题**。有问题直接找对应那份，不要在四份文档之间来回翻。
 
@@ -22,7 +32,8 @@
 | 规范里哪条实现了、哪条没有 | `docs/spec-coverage.md` | —— |
 | 哪次改动验证了什么、没验证什么 | `docs/VERIFICATION.md` | —— |
 | **怎么把云端接起来** | `docs/DEPLOYMENT.md`、`deployment/product/` | 代码怎么改（那是本文档的事） |
-| product 部署范围与发布验收 | `openspec/changes/deploy-product-release/` | AI 计费启用、真实清理或 Git 合并授权 |
+| 当前产品与本地发布范围 | `openspec/changes/remove-ai-integration/`、本文 §27 | 远端删除、部署或重新审核通过的证明 |
+| product 部署范围与发布验收 | `openspec/changes/deploy-product-release/`、`deployment/product/`（AI 要求由 `remove-ai-integration` 覆盖） | 真实清理或 Git 合并授权 |
 | 分享与反馈的目标、场景 | `openspec/changes/add-sharing-feedback/` | 当前实现证据 |
 | 搜索、回顾、用途模板与生产可靠性 | `openspec/changes/complete-product-workflows/`、本文 §15 | 云端部署已完成的证明 |
 | 跨灵感手动选材 | `openspec/changes/add-material-output/`、本文 §16 | AI 汇总、批量留档或云端部署 |
@@ -62,8 +73,8 @@ core/       纯函数，零 wx 依赖。npm test 直接覆盖
 - `core/` 不得 require `services/` 或任何页面模块，不得引用 `wx.*`。
 - `services/` 之间不得循环依赖。
 - `pages/` 只调 `services/` 与 `core/limits`，不自己判断业务规则。
-- 云函数入口只做两件事：从可信上下文取身份、转发给 `server/`。`cloudfunctions/linggan_api/index.js`（12 个业务 action）、`linggan_ai/index.js`（`expand` / `summarize`）、`linggan_maintenance/index.js`（保留期清理）都是这么薄。业务逻辑全部在 `server/`，以便脱离云环境单测。
-- `server/` 是构建产物的唯一来源。`scripts/build-cloud.cjs` 把它同步进**三个**云函数目录，`npm run check` 断言产物与源码一致——不同步即视为失败。
+- 云函数入口只做受信上下文/授权校验并转发给 `server/`。`cloudfunctions/linggan_api/index.js` 承载 12 个业务 action，`linggan_maintenance/index.js` 承载保留期清理。业务逻辑在 `server/`，可脱离云环境单测。
+- `server/` 是构建产物的唯一来源。`scripts/build-cloud.cjs` 把它同步进**两个**云函数目录，`npm run check` 断言产物与源码一致——不同步即视为失败。
 
 ## 2. 云函数协议
 
@@ -71,7 +82,7 @@ core/       纯函数，零 wx 依赖。npm test 直接覆盖
 
 **用户已明确授权以下四项共享适配，实施和平台验收分别记录。** 授权范围不包含共用认证函数、其他应用、全局存储规则、AI 计费启用或实际数据清理。
 
-正式共享环境为 `product-d2g59zty74d7d1ec1`，资源方 AppID `wx7ad85943fe81e095`，本小程序仍为 `wxed8fdc5d559d973d`（`server/wx-identity.js` 的 `PROJECT_APPID`）。三个云函数同名部署在资源方环境，调用方身份仍只认本项目 AppID。
+正式共享环境为 `product-d2g59zty74d7d1ec1`，资源方 AppID `wx7ad85943fe81e095`，本小程序仍为 `wxed8fdc5d559d973d`（`server/wx-identity.js` 的 `PROJECT_APPID`）。当前两个函数的部署目标为资源方环境；历史 AI 函数不在本次部署范围，调用方身份仍只认本项目 AppID。
 
 `services/cloud-client.js` 提供 `createCloudConnection({ config, getSdk })` 与 `getCloudClient()`：按 `resourceAppid`/`envId` 创建独立 `wx.cloud.Cloud` 实例，等待 `init()`；初始化抛错或返回非零 `errCode` 均视为失败，清除初始化任务以便重试，不向业务层交付未就绪实例。同次并发共享初始化，绝不回退默认云实例或旧环境。App、`wx-transport`、照片上传/删除及私有下载统一取此实例。只下载可信账户记录中的照片，临时路径不持久化、不写日志，页面退出丢弃路径和迟到回执。
 
@@ -107,7 +118,7 @@ wx.cloud.callFunction({
 
 ### 2.3 动作表
 
-`linggan_api` 认识全部 12 个动作（`server/protocol.js`）。`expand` 与 `summarize` 在另一个函数 `linggan_ai`，见 §6 与 §15.3。
+`linggan_api` 认识全部 12 个动作（`server/protocol.js`）。当前没有 `expand`、`summarize` 或其他模型 action。
 
 | action | payload | 成功返回 data | 说明 |
 | --- | --- | --- | --- |
@@ -176,16 +187,15 @@ wx.cloud.callFunction({
 
 **分享与反馈**：`share.*` 与 `feedback.*` 的专属码（`SHARE_NOT_CONFIGURED`、`SHARE_UNAVAILABLE`、`SHARE_LIMIT`、`SHARE_CONTENT_REJECTED`、`SHARE_REVIEW_UNAVAILABLE`、`SHARE_RETRY_UNAVAILABLE`、`SHARE_TOO_LONG`、`BACKUP_PENDING`、`TOKEN_OR_QR_FAILED`、`FEEDBACK_LIMIT`、`RATE_LIMITED`、`RATE_LIMIT_UNAVAILABLE`）与页面处置见 §14.4；这些动作不过传输层缓存，必须由服务端重查决定结果。
 
-**只存在于本机**（不来自云端）：`LOCAL_WRITE_FAILED`（本机存储写入失败，见 §7.5）、`ACCOUNT_SESSION_CHANGED`（账户会话已切换，迟到结果作废，见 §15.5）、`AI_*` 系列（见 §6）。
+**会话与历史设备错误**（不来自云端）：`LOCAL_WRITE_FAILED` 仅为 §7.5 的历史持久化错误，`ACCOUNT_SESSION_CHANGED` 为账户会话已切换、迟到结果作废（见 §15.5）。§6 的 AI 专属错误已撤下。
 
-### 2.6 三个云函数与平台配置
+### 2.6 两个云函数与平台配置
 
-代码里是三个函数，不是一个。它们的入口都只做「取身份 → 转发」，差别在配置与开关。
+当前构建与默认部署只包含以下两个函数；历史 AI 函数和配置不在清单内。
 
 | 函数 | 承载 | 环境变量（非密钥） | 密钥 | 云调用权限 | 平台超时 |
 | --- | --- | --- | --- | --- | --- |
 | `linggan_api` | §2.3 的 12 个 action | `LINGGAN_SHARE_KEY_ID`、`LINGGAN_SHARE_CREATE_ENABLED`、`LINGGAN_SHARE_CODE_VERSION`、`LINGGAN_PHOTOS_ENABLED`、`LINGGAN_STORAGE_PREFIX` | `LINGGAN_SHARE_TOKEN_KEY`（32 字节 hex）、`LINGGAN_SHARE_PREVIOUS_KEYS`（轮换映射） | `security.msgSecCheck`、`wxacode.getUnlimited` | 未在仓库声明 |
-| `linggan_ai` | `expand`、`summarize` | `LINGGAN_AI_ENABLED`、`LINGGAN_AI_MODEL`、`LINGGAN_AI_DAILY_LIMIT`（默认 20）、`LINGGAN_AI_MINUTE_LIMIT`（默认 3） | 无（走平台 AI，不需自建供应商密钥） | `security.msgSecCheck` | **启用前须 ≥60 秒**，服务端业务截止 50 秒、客户端 55 秒 |
 | `linggan_maintenance` | 保留期清理 | `LINGGAN_MAINTENANCE_ENABLED`（默认关闭） | `LINGGAN_MAINTENANCE_TOKEN`（≥32 字符） | 无 | 未在仓库声明 |
 
 三条要记住的事实：
@@ -455,6 +465,8 @@ wx.env.USER_DATA_PATH/linggan/tmp/                            压缩中间产物
 
 ### 5.4 AI 草案（纯本机，不持久化）
 
+> 已撤下：本节及 §5.5 仅保留历史状态机，当前由 §27 覆盖，不再存在生成草案页面或恢复路径。
+
 `idle → generating → ready → adopted | partially_adopted | discarded`
 
 失败分支：`generating → failed | disabled | quota_exceeded`
@@ -491,6 +503,8 @@ wx.env.USER_DATA_PATH/linggan/tmp/                            压缩中间产物
 - **失败不留痕**：任何失败路径都不得写入空的汇总结果或半合并状态；被选中的内容与汇总前完全一致。
 
 ## 6. AI 契约与降级
+
+> 已撤下：本节为历史生成接口与输出约束；2026-10-08 移除工作台、契约模块和模型服务，当前要求见 §27。
 
 ### 6.1 请求与返回
 
@@ -592,20 +606,9 @@ byUpdatedAtDesc(a, b)          → number          // 列表排序：按 updated
 - `now` 一律由调用方注入，内部**不得**调用 `Date.now()`，否则 `npm test` 无法稳定断言。
 - 同时提供抛错版（`createInspiration`）与不抛错版（`validateInspiration`），页面用后者做即时校验，服务端与测试用前者做硬校验。
 
-### 7.2 `core/ai-contract.js`
+### 7.2 AI 契约模块（已撤下）
 
-```js
-validateDraft(raw)    → { ok: true, value: Draft } | { ok: false, code, field }
-validateSummary(raw)  → { ok: true, value: Summary } | { ok: false, code, field }
-checkSafety(text)     → { ok: boolean, rule?: string }
-```
-
-汇总结果的契约（`Summary` 为 `{ text: string }`）：
-
-- `text` 必须是非空字符串，长度不超过 `LIMITS.summaryMaxLength`（**新值待定，见 §11 第 10 项**）。
-- 同样过 `checkSafety`。
-- 空结果、超长、结构不合法、命中安全规则 → 一律拒绝，**不展示、不写入**，按汇总失败处理。
-- 汇总**不产出结构化三分区**（那是 `ai-expansion` 的形态），只产出一段连续文本——汇总的本质是把多条收成一条，不是重新分析。
+2026-10-08 按 `remove-ai-integration` 删除 `core/ai-contract.js`，当前不提供草案/汇总输出校验接口。历史输出协议见 §6 和历史提案；已有记录继续使用记录结构校验。
 
 ### 7.3 `core/errors.js` 与 `core/limits.js`
 
@@ -614,12 +617,14 @@ checkSafety(text)     → { ok: boolean, rule?: string }
 `core/errors.js`（新增）：
 
 ```js
-ERROR_CODES      校验错误码常量表（EMPTY_TEXT / TEXT_TOO_LONG / INVALID_ID / UNSAFE_CONTENT …）
+ERROR_CODES      校验错误码常量表（EMPTY_TEXT / TEXT_TOO_LONG / INVALID_ID …）
 ERROR_MESSAGES   错误码到中文文案的映射，文案面向用户，不含开发者黑话
 ValidationError  errors: [{ field, code }]，code 取首项，页面可逐字段定位
 ```
 
 错误码的值是稳定字符串，会出现在测试断言与降级判断里，改名即破坏兼容。
+
+2026-10-08 `remove-ai-integration` 撤下 AI 契约专用错误码 `MISSING_SECTION`、`TOO_FEW_ITEMS`、`TOO_MANY_ITEMS`、`EMPTY_ITEM`、`ITEM_TOO_LONG`、`UNSAFE_CONTENT` 及其文案；记录、照片和历史来源校验继续使用通用错误码。
 
 `core/limits.js`——**这里是全部取值的一处清单**，代码里的每一个键都必须在这张表里，反之亦然。`tests/design-contract.test.cjs` 会核对，两边不一致直接红。
 
@@ -632,16 +637,11 @@ ValidationError  errors: [{ field, code }]，code 取首项，页面可逐字段
 | `heatMin` | 0 | 骨架 | 热度下限。热度已暂缓，取值保留 |
 | `heatMax` | 100 | 骨架 | 热度上限。同上 |
 | `idMaxLength` | 64 | 本变更 | 标识长度上限。标识参与云存储路径拼接，必须有明确字符集与长度约束 |
-| `aiMinTextLength` | 8 | 本变更 | 正文短于此长度不请求 AI 扩展，避免空洞草案且不消耗额度 |
-| `draftSectionMinItems` | 1 | 本变更 | AI 草案每个分区的最少条目数 |
-| `draftSectionMaxItems` | 5 | 本变更 | AI 草案每个分区的最多条目数 |
-| `draftItemMaxLength` | 200 | 本变更 | AI 草案单条目的长度上限 |
-| `mergeMinItems` | 2 | 本变更 | 汇总所需的最少来源条数（补充）或个数（灵感） |
-| `summaryMaxLength` | 2000 | 本变更 | 汇总结果的长度上限 |
-| `summaryMaxSourceItems` | 20 | 本变更 | 单次汇总可携带的来源条数上限 |
-| `summaryMaxSourceChars` | 12000 | 本变更 | 来源内容拼接后的总字符数上限，防止打出超大请求 |
+| `mergeMinItems` | 2 | 本变更 | 历史合并记录兼容所需的最少来源数 |
+| `summaryMaxLength` | 2000 | 本变更 | 手动整理稿件及历史汇总文字的长度上限 |
+| `summaryMaxSourceItems` | 20 | 本变更 | 历史汇总记录的来源条数边界，保留数据读取与校验兼容 |
 
-**最后四项没有明确依据**，是实施时取的保守默认，**需要评审后定稿**（见 §11 第 10 项）。
+**最后四项的历史取值说明由 `remove-ai-integration` 覆盖**：当前保留三个兼容/稿件边界，撤下五个仅供 AI 请求与草案契约使用的键；历史讨论见 §11 第 10 项。
 
 **未设定的项**：`supplementMaxCount` 不设上限——规范只约束单条补充的长度，未要求条数上限；凭空加一个限制会让用户在长线灵感上撞到无谓的墙。若后续确有需要再单独提案。
 
@@ -840,28 +840,9 @@ removePhotos(fileIds) → Promise<{ ok, removed, failed }>
 
 `removePhotos` 返回**逐个文件**的结果而不是一个总成败：部分成功是真实存在的情况，压成一个布尔值会让调用方无法决定「哪些记录可以安全地删掉」。
 
-### 7.12 `services/ai.js`
+### 7.12 AI 服务签名（已撤下）
 
-AI 调用与降级。**只负责「调用 → 校验 → 返回结果对象」，不负责把结果写进数据**——「确认后才落盘」由页面做。
-
-```js
-// 模块级导出
-createAiService({ enabled, callModel, quota, timeoutMs }) → AiService
-```
-
-```js
-// AiService 实例上的方法
-expand({ text, supplements })                     → Promise<Result>
-summarize({ scope, items })                       → Promise<Result>
-```
-
-一次生成的顺序是刻意的：未启用 → **扣额度** → 调用 → 超时 → 契约校验。
-
-- **额度在调用之前扣**：否则超额的那次已经把模型调出去了，成本已经产生。
-- **校验不过则退还**：那是平台侧的锅，不该记在用户头上。
-- **过短（扩展）与过少（汇总）在扣额度之前就返回**：规范要求这两种情况**不消耗额度**。
-
-四条降级路径（未启用、超时、额度耗尽、校验失败）各有独立的错误码与**可直接展示的中文说明**——失败只给一个码，界面就没法如实告诉用户发生了什么。
+2026-10-08 按 `remove-ai-integration` 删除 `services/ai.js` 与 `ai-workflow.js`，模块及实例签名退休，不再作为当前导出契约。当前无模型调用、配额或生成后采纳路径。
 
 ### 7.13 `server/repository.js`
 
@@ -990,7 +971,7 @@ send(action, payload, meta) → Promise<Result>
 
 本节属于独立变更 `openspec/changes/add-content-output/`，不改变账户文档字段。`services/content-output.js` 只读传入的灵感对象：`currentSupplements(item)` 返回按创建时间排序的有效补充；`buildUseText(item, selectedIds)` 生成正文与选中补充的干净纯文本；`buildArchiveText(item, generatedAt)` 生成带时间、历史和收起标记的留档文本。三者不写存储，也不调用 `wx`。
 
-`pages/detail` 只负责复制入口和操作反馈；`pages/output` 负责选择、编辑、另存与留档。整理稿另存时调用既有 `createInspiration` 和 `store.saveInspiration`，因此沿用 2000 字上限、账户隔离和保存状态。TXT 文件由页面在用户点击后写入 `wx.env.USER_DATA_PATH`，页面继续提供文字预览；用户再次点击后才调用 `wx.shareFileMessage` 选择发送去向。离开页面时尽力清理小程序内的临时文件。不自动分享，不含照片；外部副本不会随原记录删除，页面明确提醒。
+`pages/detail` 的复制入口收在页内「更多」面板，操作反馈仍内联在页面；`pages/output` 进入即构建可编辑的自由稿（补充默认全选），工具行为「调整内容 / 选择格式 / 更多」，面板改动先暂存、点「应用选择 / 应用格式」才写回，用户手工改过稿件时先弹替换确认。整理稿另存时调用既有 `createInspiration` 和 `store.saveInspiration`，因此沿用 2000 字上限、账户隔离和保存状态。TXT 文件由页面在用户点击后写入 `wx.env.USER_DATA_PATH`，页面继续提供文字预览；用户再次点击后才调用 `wx.shareFileMessage` 选择发送去向。离开页面时尽力清理小程序内的临时文件。不自动分享，不含照片；外部副本不会随原记录删除，页面明确提醒。
 
 ## 13. 云同步整改（`repair-cloud-sync`）
 
@@ -1037,10 +1018,10 @@ send(action, payload, meta) → Promise<Result>
 | 入口/页面 | 行为 | 状态与文案 |
 | --- | --- | --- |
 | “我的”→“分享小程序” | 微信聊天卡片；公共入口页可调用 `onShareTimeline` | 只带公共品牌文案和入口路径，不读取个人内容，不创建个人分享记录，也不写“已发送” |
-| 详情→`pages/share-preview/index` | 选择当前正文与有效补充，完整预览，确认 30 天有效期 | “拿到分享链接的人都能查看”；确认前不创建；备份未完成或冲突时禁用确认 |
+| 详情→`pages/share-preview/index` | 选择当前正文与有效补充，完整预览，确认 30 天有效期 | “拿到分享链接的人都能查看”；确认前不创建；备份未完成或冲突时禁用确认；主按钮按状态替换「确认内容并准备分享 → 准备中… → 选择微信好友」，修改选择立即使已准备结果失效且不报“已发送” |
 | “发给微信好友” | 创建快照后用 `button open-type="share"` 触发聊天卡片 | 只说“分享内容已准备好”，不把打开选择器视为发送成功 |
 | “发朋友圈” | 创建快照，生成分页文字海报及小程序码；用户保存后自行发布 | “海报已保存，请到朋友圈自行发布”；失败按生成/保存区分，不说已发布 |
-| `pages/shared/index` | 从聊天 `?t=` 或海报码 `scene=s=` 解析令牌，调用只读接口 | 有效时仅展示分享快照；无效/撤销/过期/源删除统一“这份分享已无法查看”，可举报 |
+| `pages/shared/index` | 从聊天 `?t=` 或海报码 `scene=s=` 解析令牌，调用只读接口 | 有效时仅展示分享快照；无效/撤销/过期/源删除统一“分享无法查看 / 分享已失效，可请分享者重新发送”，不给重试；网络等其他失败写“暂时无法查看 / 请稍后重试。”并给“重新读取”，可举报 |
 | “我的”→`pages/my-shares/index` | 查看本人记录、撤销、重新创建并分享 | “可查看/已过期/已撤销/已失效”；源记录不存在或代际变化时标“已失效”；渠道写“用于聊天/朋友圈”，不写“已发出”；快照清理后只保留时间与状态 |
 | “我的”→`pages/feedback/index` | 提交意见、查看本人反馈 | “反馈已收到/提交失败”；状态“已提交/处理中/已关闭”，不承诺回复时间 |
 
@@ -1072,7 +1053,7 @@ send(action, payload, meta) → Promise<Result>
 
 ### 14.4 反馈与错误边界
 
-反馈类别 `bug/idea/other`；分享页举报走 `share_report`。正文去首尾空白后 10—1000 字，不收照片、文件或独立联系方式；页面提示避免写入敏感信息。每账户每天最多 5 条反馈，举报同一分享每账户每天最多 1 条，超限 `FEEDBACK_LIMIT`。状态由服务端初设 `submitted`，`reviewing/closed` 只允许后台受权人员改；客户端不得提交状态、回复或其他用户 ID。微信原生反馈入口若保留，应标“向微信反馈”，与“给我们提建议”区分。
+反馈类别 `bug/idea/other`；分享页举报走 `share_report`。正文去首尾空白后 10—1000 字，不收照片、文件或独立联系方式；页面提示避免写入敏感信息。**客户端在正文不足 10 字时置灰提交按钮，并在计数处写明还差几字**（2026-09-30 补），与记录页「无内容即置灰」保持同一规则，不等到提交失败才提示。每账户每天最多 5 条反馈，举报同一分享每账户每天最多 1 条，超限 `FEEDBACK_LIMIT`。状态由服务端初设 `submitted`，`reviewing/closed` 只允许后台受权人员改；客户端不得提交状态、回复或其他用户 ID。反馈入口只有一个，按钮文案「提交反馈」（2026-09-30 用户决定：不写「向微信反馈」），当前接微信原生 open-type 通道；自建反馈页的入口暂时隐藏（共享云环境未联通，提交无法落库与查阅），反馈页与分享举报路径保留，云环境接通后恢复——恢复时需重新区分两个通道的命名。
 
 | 错误码 | 页面处理 |
 | --- | --- |
@@ -1114,6 +1095,8 @@ send(action, payload, meta) → Promise<Result>
 
 ### 15.3 AI 与确认写入
 
+> 已撤下：本节的生成与采纳要求由 `remove-ai-integration` 覆盖。历史字段与来源读取仍兼容，当前没有生成或重新采纳入口。
+
 `server/ai-service.js` 的 `createAiHandler({enabled,generate,moderate,quota,contract,timeoutMs})` 只接受可信上下文、白名单文本字段与唯一请求 ID。先校验长度、重复来源和身份字段，再原子预留配额、审查输入、调用 CloudBase 模型、JSON 解析、契约校验及输出审查。审核也受频率限制，明确失败退款但不退频率。超时和审核不可用均失败关闭；无正文或图片日志。`createCloudModel({app,modelName})` 按 [CloudBase Node SDK](https://docs.cloudbase.net/ai/model/nodejs-access) 调用 `app.ai().createModel('cloudbase').generateText`，模型名由环境配置，客户端无模型凭据。审核按 Unicode 字符分块，每块至多 600 字符、2400 UTF-8 字节。
 
 `server/ai-quota.js` 按账户及上海自然日计算额度，默认 20 次/日、3 次/分钟，可在环境变量向下调整。每日文档保存请求 ID 哈希与终态，不保存输入、输出、OpenID。相同请求不会跨实例重复调用；明确失败退还日额度，超时不退款以防迟到调用绕过成本上限。分钟频率不退款。未经配置与验收时 AI 客户端/服务端均关闭。
@@ -1126,7 +1109,7 @@ Node SDK 以自身 `tcb.SYMBOL_CURRENT_ENV` 绑定当前云函数环境，不复
 
 ### 15.4 可选使用统计
 
-`createUsageMetrics({storage,cacheScope,now})` 提供 `read/setEnabled/track/report`。默认关闭，`track(event)` 忽略未知事件与所有额外参数；统计写失败仅返回 false，业务成功仍由业务结果决定。我的页先说明用途和边界，用户可随时关闭并清空，再次开启从零计数；查看或复制不发送给维护者。
+`createUsageMetrics({storage,cacheScope,now})` 提供 `read/setEnabled/track/report`。默认关闭，`track(event)` 忽略未知事件与所有额外参数；统计写失败仅返回 false，业务成功仍由业务结果决定；查看或复制不发送给维护者。**2026-09-30 用户决定：客户端入口（原「使用帮助—诊断信息」）已删除**，服务与接线保留、默认关闭无界面；本节只描述服务本身。
 
 ### 15.5 照片接入与同步
 
@@ -1183,3 +1166,104 @@ getInspiration()
 ```
 
 `getConfirmedRevision()` 只返回当前云端已确认的版本和代际，供创建文字分享使用。网络恢复时 `refresh()` 拉取可信账户快照；不提供离线操作队列、备份状态或恢复副本接口。
+
+## 18. UI 与交互一致性修复（2026-10-01）
+
+对应提案 `repair-ui-interactions` 与复核 R01—R09。补充与另存请求冻结输入，事件处理拒绝等待期间编辑；成功标记按当前稿件与已确认提交快照逐字比较。补充请求记录 store、sessionEpoch 与页面 viewVersion，迟到响应不清空新会话草稿。同稿失败重试保留待确认实体 ID，不改服务端协议。
+
+`services/draft-alert.js` 提供 `setDraftLeaveAlert(hasDraft)`：仅设置平台支持的返回提醒，失败或能力不可用时不阻断输入；不拦截系统手势或退出，不持久化内容。单条稿件手工编辑且未确认另存时开启，多素材已有未另存稿件时开启；确认后或页面隐藏/卸载关闭，返回当前有效页面时重新按稿件状态设置。复制不等于另存。
+
+列表以 store 引用、sessionEpoch、cacheScope 标识当前可信视图，同会话 onShow 不清空；读取失败保留内容及查询、锚点。重新认证或身份改变先清空内容；已可信 store 的重试调用 `refresh()`，其失败不替换当前快照。页面隐藏或新一次读取使旧异步准备结果失效。
+
+原生滚动区按弹层布局后量到的可用高度设置 `sheetScrollHeight`，避免只收缩 flex 外框、内部滚动视口仍延伸到按钮下。内容/留档打开、窗口变化、复制及文件反馈改变底部区域时重新测量；测量版本和当前面板相位共同阻止旧结果覆盖新面板。
+
+未知另存结果（NETWORK、INTERNAL、空结果或异常）显示“尚未确认另存”；明确拒绝显示“未能另存”并给出恢复动作。视觉布局、字号、安全区规范见 ui-design §12；验证分类分别记录。
+
+2026-10-03 复核补充：单条整理的账户读取、重读、替换确认、复制及文件回执捕获 loadVersion、store 与 sessionEpoch。卸载或新读取使旧回调失效；替换确认还须匹配当前稿件、面板、暂存选择和来源。过期文件生成成功后仅清理该次文件，不回填新页面。初次 onShow 复用仍有效的账户读取，不重复构建稿件。
+
+## 19. AI 开放与工作台交互（2026-10-02）
+
+> 历史说明：本节已由 2026-10-08 `remove-ai-integration` 覆盖，工作台、开关和模型服务均已撤下；下文仅保留当时设计与纠错依据。
+
+对应 `enable-ai-workbench`。客户端 `ai.enabled=true`，由共享 Cloud 实例调用 linggan_ai；服务端仍独立检查 LINGGAN_AI_ENABLED、模型、审核、配额，不因客户端开关放行。平台真实状态见 AI-EXPERIENCE-20261002.md。
+
+页面范围：expand 使用原文和主动勾选补充；supplements 使用所选补充；inspirations 使用所选灵感的当前正文与有效补充。生成前显示条数/总字数、限制 20 条/12000 字，扩展正文至少 8 字。生成前再次核对可见素材与当前快照，变化时刷新并要求重选。生成期间冻结素材选择，完成后滚动至顶部并进入预览，不自动保存。
+
+预览状态提供逐条选择编辑、复制、AI 核对标注和离开提醒；汇总默认 append，overwrite 须确认收起后果，跨灵感须指定目标。保存及覆盖确认期间 busy=true、busyKind=save/confirm，事件与原生控件同时冻结。pendingSave 保存整批产物 ID、时间和内容，相同结果重试复用；当前已确认快照完整匹配产物时直接完成，其余源快照变化拒绝写入。未知结果显示警告并冻结编辑，提供重试确认和复制，已知拒绝保留可编辑预览。
+
+页面加载、生成和保存均用 sequence、sessionEpoch、store 引用校验；隐藏/卸载清除预览和 pendingSave，迟到回执不更新新页面。平台返回提醒仅覆盖支持的动作，常驻文字提醒预览离开后不保留。成功提供查看保存内容与返回列表；读取失败有重读，AI 失败有手动整理出口。所有状态仅在会话内存中，不建立设备持久草稿。
+
+2026-10-04 纠正上一轮误判：AI 汇总补充带至少两个 sourceIds，实际领域与服务端上限均为 2000 字，和灵感汇总一致；普通补充仍为 1000 字。预览保留完整输出，超过 2000 字才禁用保存，仍可复制、修改。来源快照比较忽略对象字段排列，真实内容变化仍拒绝写入。
+
+## 20. 页面会话与异步回执复核（2026-10-04）
+
+对应 `repair-page-session-races`，完整证据见 [全量复核](FULL-RECHECK-20261004.md)。`page-session` 的读取与守卫同时约束页面可见版本、sessionEpoch 和当前 store；账户准备完成后才绑定返回 store，隐藏或再次读取使旧回执失效。反馈、分享列表、分享预览、分享接收、修改记录和照片查看使用此约束；详情写入另要求当前已加载 store/epoch。
+
+反馈与分享准备在账户读取前冻结提交快照并设置 busy。分页请求串行、按实体ID去重；撤销和照片删除在弹窗前锁定，确认回执仍须处于原页面会话。详情删除未知结果提示重新读取核对，旧回执不能导航或影响新页面。复制菜单、剪贴板提示及长内容测量遵守同样的上下文约束。
+
+海报生成逐个异步边界检查守卫，独立码文件路径只清理本次资源。相册保存冻结图片列表，失败从未完成位置重试；页面失效停止后续图片，已发出的平台保存无法撤回。历史页同步显式 `versionCount` 与版本数组，清空、读取失败和重新读取均更新数量。启动读取使用递增 readVersion，只有最新请求可结束状态或跳转。
+
+服务端同内容比较递归排序对象键，保留数组顺序；重复提交的字段重排不构成内容修改，照片替换和历史删除仍执行原校验。当前两个云函数共享副本通过构建同步，实际部署另行验收。
+
+## 24. 可写入口与同账户会话稿恢复（2026-10-07）
+
+对应 `optimize-product-experience-20261007` 的 Q03、Q06，用户已授权本地实现；云端部署、提交与发布不在本轮范围。启动页在首次 `onReady` 后直接 `switchTab` 到记录页，账户与快照准备继续由 App 执行。记录页的文字输入不等待账户读取；保存仍须得到当前受信账户、代际与云端确认。2026-10-08 原生复核纠正：不在 `onLoad` 立即跳转，以避免开发者工具懒加载注册竞态；跳转失败只提供重新打开入口，不声称正在读账户。
+
+`services/session-drafts.js` 导出 `createSessionDrafts({ now, maxEntries, maxAge })`、`draftContext(app, store)`、`sameContext(left, right)`、`sourceVersion(value)`。容器提供 `bind(context)`、`put(key, context, value)`、`get(key, context)`、`remove(key, context)`、`clear()`。context 仅取当前云端快照确认的 `cacheScope` 与正整数 `generation`，不接受页面路由中的身份；确认 scope 或 generation 变化会清除全部旧稿。最多保留 12 项，30 分钟未更新过期；最旧项先清理。内容以 JSON 副本存放，不持有 store、transport、权限、临时图片/文件路径、请求 Promise 或回调，不调用微信存储与文件系统。
+
+记录稿、单条使用稿与多素材选材在 hide/unload 前只保留会话文字、已应用的选择顺序、模板、来源版本及待确认产物。随后使页面版本、store 权限和旧请求失效，并清空可见私人内容。show 先重新确认当前账户；同 scope 与 generation 才恢复，确认失败期间不显示旧稿。进程终止后不恢复。来源版本使用递归排序的字段序列，数组顺序保留；来源变化的旧稿提供复制，禁止沿旧来源整理或保存，用户须重读并重选。历史 AI 预览恢复已随工作台撤下。
+
+页面 `draftRecoveryNotice` 告知当前恢复结果；`sourceStale` 标记旧稿来源变化。输出页与多素材页 `saveUnknown` 冻结待确认稿件的文字、选择和模板，复制与重试仍可用。待确认产物保留稳定 ID 与完整内容；新会话恢复后先核对快照中该 ID 的已确认内容，完全一致可结束保存；不一致再以当前账户和代际提交同一产物，来源变化不得继续旧来源写入。已确认或用户主动放弃后清除相应会话稿，不在后台自动发送。
+
+App 原账户草稿 Map 改成最后一次确认账户与代际的一套补充草稿，重新确认同账户可接续，跨账户或账户代际变化清空；补充草稿最多 32 条、30 分钟未更新过期，页面恢复容器与补充草稿均不保留无限账户分区。
+
+
+## 25. 分享范围、公开读取与用途承接（2026-10-07）
+
+对应 `optimize-product-experience-20261007` 的 Q08、Q10、Q11，用户已授权本地实现。以下规则覆盖 §14.2 的默认全选和 §14.3 的公开响应白名单；不放宽分享创建审核、可信微信上下文、限流、有效期、撤销或源删除校验。远端代码和真机分享待另行验收。
+
+分享预览初始只包含正文，所有有效补充默认未选。用户显式勾选后才加入公开正文；改变范围立即清除已准备令牌、海报和当前请求参数。准备成功只提示下一步选择微信好友，不表示已发送。聊天卡片取服务端已确认快照标题；合法用途可附在标题中；封面为包内 5:4 品牌图，不包含私人照片、账户或历史。
+
+已确认记录增加可选 `templateId`，只允许 `free/social/video/work/action`；基础 `createInspiration` 保持既有对象形状，只有成稿另存时写入当次稿件实际模板。`server/record-validation.js` 拒绝其他类型和值。`share.create` 参数不新增用途、标题或正文，服务端 `makeSnapshot` 仅从已确认来源记录复制合法 `templateId` 到公开快照；创建幂等摘要仍取请求参数，记录版本校验守住审核期间的来源变化。旧记录和旧快照缺少用途时保持无用途，不猜测作者意图。`share.get` 白名单为 `title/body/createdAt/expiresAt/templateId?`，清理仍整体清空 snapshot。
+
+`services/cloud-client.js` 提供 `getCloudConnectionGeneration()`：选择 SDK 实例发生变化时递增公共连接代次，读取代次本身不初始化云环境。`services/public-reader.js` 提供 `readPublicPage(page, options?)`，只等待已配置共享 Cloud 实例初始化，不调用 `App.ensureReady`、`snapshot.pull` 或私人 store。返回 `{ client, epoch, generation, isCurrent }`；守卫绑定页面 viewVersion、当前 sessionEpoch、Cloud 连接代次，初始化失败仍保留可用于当前失败状态的守卫。客户端不提交身份；`linggan_api` 仍从可信平台上下文认证读者并限流。公开内容可在读者私人快照失败时读取；匿名/错误来源仍拒绝。
+
+接收页每次读取还绑定 token 与 loadVersion，旧 token、页面隐藏、会话变化或 SDK 替换后的回执均不渲染。公开读取不检查私人 store，复制也绑定同一公共读取守卫。正常成功白名单纯文本渲染；旧正文在开始读取/失败/隐藏时清除。撤销、过期、源删除统一不可查看，无重试；网络、连接或服务失败提供重新读取。
+
+只有已读取的合法非 free 用途显示“用这个结构写自己的”；缺少用途及自由稿显示“也整理我的想法”。开始自己的任务时写一次会话意图 `sharedTemplateIntent={ templateId, epoch, expiresAt }`，有效期 5 分钟；不含作者正文、token、账户或来源 ID。记录页消费后删除，拒绝旧 epoch/过期/非法枚举，保留当前未提交输入；自己的保存仍重新确认私人账户与云端写入。用途可取消，接收者从空输入开始，不自动建记录。首次确认保存后按意图用途进入自己的成稿。
+
+AI 来源标签本轮不新增。现有正文并入 AI 补充和手动另存没有完整可追溯来源元数据，仅从当前正文 `source` 推断可能遗漏；须后续明确来源协议再传播，不把手动模板稿标成 AI 输出。
+
+## 26. 结果分享与用途入口（2026-10-07）
+
+`services/result-share.js` 导出 `shareConfirmedDraft(page, { isCurrent, save })`。已确认同文字的 savedId 直接进入分享预览；未另存先确认“保存后预览分享”，只执行现有受信保存。取消、重复点击、页面隐藏、稿件改动、未知保存或来源变化均不导航。弹窗与另存回执再次核对页面会话和逐字稿件，不触发自动分享。两个成稿页另存时仅附当次合法 templateId，未知重试保持原 item 及模板不变。
+
+进入分享预览/已存详情再返回时，已确认的当前稿件也保留会话编辑状态与 savedId。恢复后再次检查该已存记录的文字和用途仍匹配；记录删除或变化则保留手工稿，清除旧确认标记，重新保存后再分享。2026-10-08 独立复核与回归纠正，避免取消分享后重建成原素材。
+
+记录页在本次 onShow 开始时只消费一次五分钟内、相同 epoch 的合法非自由稿用途；账户准备自身导致 epoch 更新不影响已消费的纯用途。提示仅是结构选择，不携带作者文字。当前有自己的未提交输入时保留输入，不静默替换。取消用途不改正文；确认保存后通过白名单 template 查询进入成稿。普通新记录不写 templateId，成稿另存才记录实际用途；非法路由用途回退自由稿。
+
+## 27. 记录与手动整理版本（2026-10-08）
+
+对应 `remove-ai-integration`。用户因个人主体深度合成类目审核驳回明确要求移除 AI 集成；本次授权仅涵盖本地修改与验证，未提交、部署、上传或重新审核。
+
+- 发布包移除 `pages/ai-workbench` 及注册路径，列表、详情和更多面板不再提供扩展、汇总或 AI 整理事件；客户端 AI 配置、服务、编排与输出契约模块一并删除。
+- 删除服务端独立模型适配与 AI 配额实现。构建、检查和默认部署仅含 `linggan_api`、`linggan_maintenance`；当前资源输入为五个集合和十四个业务索引。维护不再遍历 AI 额度集合。已部署函数、集合、模型配置及共享认证没有操作。
+- 保留记录、补充、照片、搜索、阶段、回顾、手动选材、模板编辑、复制、TXT、分享和反馈。手动格式只组织已有文字，用户自己编辑；可靠保存、未知结果重试、账户隔离和会话草稿保护继续有效。
+- 保留 `source`、`sourceIds`、`summarySources`、`mergedInto` 及修改历史的数据兼容与真实来源标识。已有生成内容不改成手写来源，不迁移、清空或改写云记录。历史合并内容的读取、展开和恢复继续兼容；没有重新生成路径。
+- `ai-expansion`、`ai-summarize`、`ai-workbench-experience` 的历史场景标为「已撤下」，`manual-only-product` 场景按实际测试证据登记。Node 回归、构建扫描、OpenSpec 严格校验与开发者工具/真机、重新审核分别报告；本地通过不能证明审核通过。
+
+## 28. 当前记录入口与反馈读取修复（2026-10-09）
+
+`services/capture-entry.js` 提供 `startCapture()`：列表、欢迎和公开分享的记录入口设置一次性 `captureStartIntent={epoch,expiresAt}`，有效期五分钟，只保存在会话内存。跳转失败仅清理该次意图。记录页在账户准备和稿件恢复后核对代次与有效期；有效入口清除旧成功反馈及旧用途，展示空输入。未保存正文或待确认请求继续接续，不能被入口覆盖；普通 Tab 返回继续保留成功反馈，输入区始终可见。分享用途同样在等待结束后核对当前代次，防止旧意图带入新账户。
+
+首页连续记录修复对应 `repair-capture-continuity`：composer 不再受 lastSavedId 控制挂载。当前保存确认后清空正文并设置 inputFocus=false；lastSavedId 非空时主按钮显示「再记一条」，下方为上一条摘录与补充/整理入口。`onRecordAnother()` 仅在当前页可见、非 saving、有 lastSavedId、无 draft 与 pendingSave 时清除旧成功反馈和 draftRecoveryNotice，并设置 inputFocus=true。直接输入下一条复用 onInput 的清除逻辑；onSave 继续创建新 ID，未知重试仍复用待确认 ID。保存确认、页面/账户/代际守卫和会话恢复协议均保留。
+
+列表回顾行「继续补充」携带 `focus=supplement`，由详情既有定位和聚焦行为承接。
+
+反馈页 `historyError` 与提交 `error` 分别呈现。只有读取成功且无条目时显示「还没有反馈记录」；失败保留已有条目和输入，在「我的反馈」下提供重试。`onRetryHistory()` 重试失败的首次读取或同一分页，不清空输入，也不重复提交反馈。账户和页面守卫继续约束所有回执。
+
+单条成稿重新读取前清理当前页显式生成的 TXT 临时文件，再清空路径与生成新文件标识；仍不自动导出、发送或保存未提交稿件。清理失败不阻断读取，已有原记录不受影响。
+
+快照版本一致性修复见 `repair-snapshot-version-safety`：内部 `serialWrite(work)` 在公开写方法调用时捕获版本/代际，实际串行执行前复核；变化则返回 CONFLICT / STALE_GENERATION。push 相同内容及删除缺失对象的回执先核对 baseVersion；注册的照片清理任务继续按原任务幂等恢复。成功回执超过本地版本加一时，必须完整回读并核对操作结果；回读失败保留原版本，不能只给旧快照赋新版本。接口及数据库字段不变，不增加持久队列或自动合并。
+
+回退可恢复本次本地差异；恢复生成式 AI 前须重新确认主体、类目、资质和启用授权。远端 AI 资源若需停用或删除，另行核对精确目标、影响和恢复边界。

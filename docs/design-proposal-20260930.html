@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>灵感拾光簿 · 优化视觉稿</title>
+<style>
+  /* ============================================================
+     优化视觉稿 · 方向一「案头纸本」
+     375px 视口下的 px，换算 rpx 请 ×2（与 docs/ui-mockup.html 同约定）。
+     这是静态视觉稿，不是可运行小程序；交互说明见每个屏幕下方的注释。
+     ============================================================ */
+  :root {
+    /* 墨色由深到浅 */
+    --ink:        #191a23;
+    --ink-2:      #5f6070;
+    --ink-3:      #6f6f7b;
+
+    --paper:      #f7f6f2;
+    --surface:    #ffffff;
+    --line:       #e6e4de;
+    --line-strong:#d7d4cb;
+
+    --brand:      #34377f;
+    --brand-soft: #eeeef8;
+    --brand-line: #c9cae6;
+    --spark:      #e4a83a;
+
+    --danger:     #b43c32;
+    --danger-soft:#fbeeec;
+    --danger-line:#efc9c4;
+
+    --warn-ink:   #8a6420;
+    --warn-soft:  #fdf4e3;
+
+    /* 圆角：小 8 / 中 12 / 大 16（= 16 / 24 / 32rpx） */
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+
+    --pad: 20px;   /* 页面左右留白 = 40rpx */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #eceae5;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 32px 80px;
+  }
+
+  .doc-head { max-width: 1180px; margin: 0 auto 40px; }
+  .doc-head h1 { font-size: 22px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 10px; }
+  .doc-head p { color: var(--ink-2); font-size: 13px; line-height: 1.8; max-width: 68ch; }
+  .doc-head .tagline { color: var(--ink-3); font-size: 12px; margin-top: 12px; }
+
+  /* ---------------- 屏幕网格 ---------------- */
+  .grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 36px 30px;
+    align-items: flex-start;
+  }
+
+  .item { width: 375px; }
+
+  .item > .cap {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    margin-bottom: 4px;
+  }
+  .item > .cap .n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    font-size: 11px;
+    margin-right: 7px;
+    vertical-align: 1px;
+  }
+  .item > .note {
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.7;
+    margin: 0 0 12px;
+  }
+  .item > .note b { color: var(--ink); font-weight: 600; }
+
+  /* ---------------- 手机外框 ---------------- */
+  .phone {
+    width: 375px;
+    min-height: 700px;
+    background: var(--paper);
+    border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(25,26,35,.13), 0 2px 6px rgba(25,26,35,.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .statusbar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px 0 30px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 0 0 auto;
+  }
+  .statusbar .right { display: flex; align-items: center; gap: 5px; }
+  .sb-bat { width: 22px; height: 11px; border: 1.4px solid var(--ink); border-radius: 3px; position: relative; opacity: .9; }
+  .sb-bat::after { content:""; position:absolute; right:-3px; top:3px; width:2px; height:5px; background:var(--ink); border-radius:0 1px 1px 0; }
+  .sb-bat::before { content:""; position:absolute; left:1.5px; top:1.5px; bottom:1.5px; width:12px; background:var(--ink); border-radius:1px; }
+
+  .navbar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--surface);
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .navbar .back {
+    position: absolute; left: 16px; top: 0; height: 44px;
+    display: flex; align-items: center;
+    font-size: 17px; color: var(--ink);
+  }
+  .navbar .capsule {
+    position: absolute; right: 14px; top: 9px;
+    width: 78px; height: 26px;
+    border: 1px solid #e2e0da;
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: space-around;
+    background: rgba(255,255,255,.7);
+  }
+  .navbar .capsule i { display: block; width: 13px; height: 13px; border-radius: 50%; border: 1.4px solid #4a4a55; }
+  .navbar .capsule i.dots { border: none; display: flex; align-items: center; gap: 2px; }
+  .navbar .capsule i.dots::before,
+  .navbar .capsule i.dots::after,
+  .navbar .capsule i.dots span { content:""; display:block; width:3.5px; height:3.5px; border-radius:50%; background:#4a4a55; }
+
+  .body {
+    flex: 1;
+    padding: 20px var(--pad) 28px;
+    overflow: hidden;
+    background: var(--paper);
+  }
+  .body.flush { padding-top: 0; }
+
+  /* ---------------- 通用件 ---------------- */
+  .page-title { font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; }
+  .page-sub { font-size: 14px; color: var(--ink-2); line-height: 1.7; margin-top: 5px; }
+
+  .section-k {
+    font-size: 13.5px; font-weight: 600; letter-spacing: .02em; color: var(--ink-2);
+  }
+  .section-v { font-size: 13px; color: var(--ink-3); }
+
+  .panel { background: var(--surface); border-radius: var(--r-md); }
+  .divider { height: 1px; background: var(--line); }
+
+  .btn {
+    font-size: 15px; font-weight: 500; letter-spacing: .01em;
+    border: none; border-radius: var(--r-sm);
+    min-height: 44px; padding: 0 22px;
+    background: var(--brand); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .btn-block { display: flex; width: 100%; }
+  .btn[disabled], .btn.is-disabled { background: #e4e4ec; color: var(--ink-3); }
+  .btn-quiet { background: transparent; color: var(--brand); border: 1px solid var(--brand-line); }
+  .btn-plain { background: var(--surface); color: var(--ink-2); border: 1px solid var(--line-strong); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger-line); }
+  .btn-sm { min-height: 40px; font-size: 14px; padding: 0 16px; border-radius: 7px; }
+  .btn-link {
+    background: transparent; color: var(--brand); border: none;
+    font-size: 13.5px; min-height: 44px; padding: 0 6px;
+    display: inline-flex; align-items: center;
+  }
+
+  .hint { font-size: 13px; color: var(--ink-3); line-height: 1.7; }
+  .count { font-size: 12px; color: var(--ink-3); }
+
+  /* 提示条：图标形状区分语义，不只靠颜色 */
+  .notice {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 11px 13px; border-radius: var(--r-sm);
+    font-size: 13px; line-height: 1.6; margin-top: 12px;
+  }
+  .notice .mark {
+    flex: 0 0 auto; width: 15px; height: 15px; border-radius: 50%;
+    margin-top: 2px; position: relative;
+  }
+  .notice-ok   { background: var(--brand-soft); border: 1px solid var(--brand-line); color: var(--brand); }
+  .notice-ok .mark { background: var(--brand); }
+  .notice-ok .mark::after {
+    content:""; position: absolute; left: 4.6px; top: 3px;
+    width: 3.4px; height: 6.5px;
+    border: solid #fff; border-width: 0 1.6px 1.6px 0;
+    transform: rotate(45deg);
+  }
+  .notice-err  { background: var(--danger-soft); border: 1px solid var(--danger-line); color: var(--danger); }
+  .notice-err .mark { background: var(--danger); }
+  .notice-err .mark::before,
+  .notice-err .mark::after {
+    content:""; position: absolute; left: 6.7px; top: 3.4px;
+    width: 1.7px; height: 8px; background: #fff; border-radius: 1px;
+    transform: rotate(45deg);
+  }
+  .notice-err .mark::after { transform: rotate(-45deg); }
+  .notice-warn { background: var(--warn-soft); color: var(--warn-ink); }
+  .notice-warn .mark { background: var(--warn-ink); }
+  .notice-warn .mark::before {
+    content:""; position: absolute; left: 6.6px; top: 3.4px;
+    width: 1.8px; height: 5.4px; background: #fff; border-radius: 1px;
+  }
+  .notice-warn .mark::after {
+    content:""; position: absolute; left: 6.6px; bottom: 3px;
+    width: 1.8px; height: 1.8px; background: #fff; border-radius: 50%;
+  }
+
+  /* ---------------- 记录页 ---------------- */
+  .head-row { display: flex; align-items: center; gap: 12px; }
+  .head-mark { width: 52px; height: 52px; border-radius: 13px; flex: 0 0 auto; }
+
+  .composer {
+    background: var(--surface);
+    border-radius: var(--r-md);
+    padding: 16px 16px 14px;
+    margin-top: 18px;
+  }
+  .composer .editor {
+    min-height: 150px;
+    font-size: 16.5px; line-height: 1.75; letter-spacing: .01em;
+    color: var(--ink);
+  }
+  .composer .editor.ph { color: var(--ink-3); }
+  .composer .foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px;
+  }
+  .savebtn { width: 108px; }
+
+  /* ---------------- 列表 ---------------- */
+  .listbar { display: flex; align-items: center; justify-content: space-between; }
+  .searchbox {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid var(--line-strong);
+    border-radius: var(--r-md); padding: 0 12px; margin-top: 14px;
+  }
+  .searchbox input {
+    flex: 1; border: none; outline: none; background: transparent;
+    height: 38px; font-size: 14.5px; color: var(--ink);
+    font-family: inherit;
+  }
+  .searchbox input::placeholder { color: var(--ink-3); }
+
+  .chips { display: flex; gap: 7px; margin-top: 10px; overflow: hidden; }
+  .chip {
+    flex: 0 0 auto;
+    border: 1px solid var(--line-strong); background: transparent;
+    border-radius: 22px; font-size: 12.5px; color: var(--ink-2);
+    height: 32px; padding: 0 13px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .chip.on { background: var(--brand-soft); color: var(--brand); border-color: var(--brand-line); }
+  .chip .caret { width: 0; height: 0; border-left: 3.5px solid transparent; border-right: 3.5px solid transparent; border-top: 4px solid currentColor; opacity: .8; }
+
+  .review-card {
+    background: var(--brand-soft); border: 1px solid var(--brand-line);
+    padding: 14px; border-radius: var(--r-md); margin: 14px 0 0;
+  }
+  .review-card .rh { font-size: 12.5px; color: var(--brand); display: flex; justify-content: space-between; align-items: center; }
+  .review-card .rt { font-size: 15px; line-height: 1.65; margin: 8px 0 12px; }
+  .review-card .ra { display: flex; align-items: center; justify-content: space-between; }
+
+  .listhead { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 8px; }
+
+  .list { background: var(--surface); border-radius: var(--r-md); overflow: hidden; }
+  .row { padding: 15px 16px 14px; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: none; }
+  .row .body-t { font-size: 15.5px; line-height: 1.68; letter-spacing: .01em; }
+  .row .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .row .meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; color: var(--ink-3); }
+  .row .meta .sep { width: 1px; height: 9px; background: var(--line-strong); }
+  .stagetag { font-size: 11.5px; padding: 2.5px 7px; border-radius: 4px; background: #edede7; color: var(--ink-2); white-space: nowrap; }
+  .tagchip { font-size: 11.5px; padding: 2.5px 7px; border-radius: 4px; background: #edede7; color: var(--ink-2); white-space: nowrap; }
+
+  .empty {
+    background: var(--surface); border-radius: var(--r-md);
+    padding: 46px 28px 44px; text-align: center;
+  }
+  .empty .em { width: 56px; height: 56px; border-radius: 14px; display: block; margin: 0 auto 14px; }
+  .empty .et { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .empty .ed { font-size: 13px; color: var(--ink-2); line-height: 1.7; margin-top: 6px; }
+
+  /* ---------------- 详情 ---------------- */
+  .stamp { font-size: 12px; color: var(--ink-3); padding-bottom: 10px; }
+  /* 原文用系统衬线：字号已经是全页最大，再用字族和界面其余部分拉开一层。
+     Android 多数机型没有中文衬线会回落成无衬线——降级，不是损坏。 */
+  .origin-text { font-size: 19px; line-height: 1.78; letter-spacing: .012em; font-family: "Songti SC", "STSong", "SimSun", Georgia, serif; }
+  .origin-acts { display: flex; gap: 8px; margin-top: 18px; }
+
+  .compose { background: var(--surface); border-radius: 10px; padding: 12px 13px 11px; margin-top: 6px; }
+  .compose .ed { min-height: 44px; font-size: 14px; line-height: 1.7; color: var(--ink-3); }
+  .compose-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+
+  .acts { display: flex; gap: 8px; margin: 12px 0 0; }
+  .acts .btn { flex: 1 1 0; padding: 0 6px; font-size: 13.5px; }
+
+  .fold-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border-radius: 10px;
+    padding: 13px 14px; margin-top: 18px;
+  }
+  .fold-row .l { font-size: 14px; color: var(--ink); }
+  .fold-row .l .k { font-size: 13px; color: var(--ink-2); margin-right: 8px; }
+  .fold-row .caret { width: 7px; height: 7px; border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: rotate(-45deg); }
+
+  .tl-item { position: relative; padding: 14px 0 14px 20px; }
+  .tl-item::before {
+    content:""; position: absolute; left: 0; top: 21px;
+    width: 7px; height: 7px; border-radius: 50%; background: #cdcdd8;
+    box-shadow: 0 0 0 3px var(--paper);
+  }
+  .tl-item::after {
+    content:""; position: absolute; left: 3px; top: 26px; bottom: -4px;
+    width: 1px; background: var(--line);
+  }
+  .tl-item:last-child::after { display: none; }
+  .tl-when { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--ink-3); margin-bottom: 5px; }
+  .tl-more { font-size: 12.5px; color: var(--brand); }
+  .tl-what { font-size: 14.5px; line-height: 1.72; letter-spacing: .01em; }
+
+  /* ---------------- 底部操作面板 ---------------- */
+  .sheet-mask {
+    position: absolute; inset: 0; background: rgba(22,22,29,.42);
+    display: flex; align-items: flex-end;
+  }
+  .sheet {
+    width: 100%; background: var(--surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    padding: 6px 0 12px;
+  }
+  .sheet-title { font-size: 12px; color: var(--ink-3); text-align: center; padding: 12px 20px 10px; border-bottom: 1px solid var(--line); }
+  .sheet-item {
+    display: block; width: 100%; text-align: left;
+    padding: 15px 20px; font-size: 16px; line-height: 1.4; letter-spacing: .01em;
+    background: var(--surface); border: none; border-bottom: 1px solid var(--line);
+  }
+  .sheet-item .sub { display: block; font-size: 13px; color: var(--ink-3); margin-top: 3px; }
+  .sheet-danger { color: var(--danger); }
+  .sheet-danger .sub { color: #c0847d; }
+  .sheet-cancel {
+    display: flex; align-items: center; justify-content: center;
+    margin: 10px 14px 0; height: 44px; width: calc(100% - 28px);
+    border: none; font-size: 16px; color: var(--ink-2);
+    background: #f2f2f6; border-radius: var(--r-sm);
+  }
+
+  /* ---------------- 底部 tabbar ---------------- */
+  .tabbar {
+    flex: 0 0 auto; height: 56px; background: var(--surface);
+    display: flex; align-items: flex-start; padding-top: 6px;
+    border-top: 1px solid #f0eee9;
+  }
+  .tab { flex: 1; text-align: center; font-size: 10.5px; color: var(--ink-3); }
+  .tab.on { color: var(--brand); }
+  .tab .ic { display: block; width: 21px; height: 21px; margin: 0 auto 3px; border: 1.6px solid currentColor; border-radius: 4px; opacity: .85; }
+  .tab .ic.round { border-radius: 50%; }
+  .homebar { flex: 0 0 auto; height: 22px; background: var(--surface); position: relative; }
+  .homebar::after { content:""; position: absolute; left: 50%; transform: translateX(-50%); bottom: 8px; width: 134px; height: 5px; border-radius: 3px; background: #191a23; opacity: .85; }
+
+  /* ---------------- 规范表 ---------------- */
+  .spec { max-width: 1180px; margin: 56px auto 0; }
+  .spec h2 { font-size: 17px; font-weight: 600; margin-bottom: 14px; letter-spacing: -.01em; }
+  .spec table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; font-size: 13px; }
+  .spec th, .spec td { text-align: left; padding: 10px 14px; border-bottom: 1px solid #eeece7; vertical-align: top; }
+  .spec th { background: #f7f6f2; font-weight: 600; color: var(--ink-2); font-size: 12px; letter-spacing: .02em; }
+  .spec td code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; background: #f4f3ef; padding: 1px 5px; border-radius: 4px; }
+  .spec tr:last-child td { border-bottom: none; }
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 7px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.08); }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>灵感拾光簿 · 优化视觉稿</h1>
+  <p>对应《产品体验审查与优化设计（2026-09-30）》第 4—5 节。方向为「案头纸本」：原文是页面里最大的东西，层级靠留白和分隔线做，承载面只用在真正需要一整块内容的地方。</p>
+  <p class="tagline">375px 视口下的 px，换 rpx 请 ×2。静态视觉稿，不是可运行小程序；每个屏幕下方的注释说明布局、按钮、文案与交互行为。</p>
+</div>
+
+<div class="grid">
+
+  <!-- ============ 1. 记录页 · 首次进入 ============ -->
+  <div class="item">
+    <div class="cap"><span class="n">1</span>记录页 · 首次进入</div>
+    <p class="note">冷启动落地页。副标题由功能罗列改为一句陈述；输入区加高，页面重心落在「能写」上。</p>
+    <div class="phone">
+      <div class="statusbar"><span>11:02</span><span class="right"><span>●●●</span><span class="sb-bat"></span></span></div>
+      <div class="navbar">灵感拾光簿<div class="capsule"><i class="dots"><span></span></i><i></i></div></div>
+      <div class="body">
+        <div class="head-row">
+          <div class="head-mark" style="background:#1b1c4a;display:flex;align-items:center;justify-content:center;color:#e4a83a;font-size:24px">✦</div>
+          <div>
+            <div class="page-title">记录想法</div>
+            <div class="page-sub">先写下来，之后再补充。</div>
+          </div>
+        </div>
+
+        <div class="composer">
+          <div class="editor ph">此刻想到什么？</div>
+          <div class="foot">
+            <span class="count">0 / 2000</span>
+            <button class="btn savebtn is-disabled" disabled>记下来</button>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:14px">想到什么先写一句，之后可以继续补充、整理和复制。</p>
+      </div>
+      <div class="tabbar">
+        <div class="tab on"><i class="ic"></i>记录</div>
+        <div class="tab"><i class="ic"></i>灵感</div>
+        <div class="tab"><i class="ic round"></i>我的</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 记录页 · 已记下 ============ -->
+  <div class="item">
+    <div class="cap"><span class="n">2</span>记录页 · 已记下（完成反馈）</div>
+    <p class="note">成功反馈改为主色系 + 对勾图标（原来是琥珀底 + 感叹号，与错误、警示同形）。一行说清结果，一行给出下一步。</p>
+    <div class="phone">
+      <div class="statusbar"><span>11:02</span><span class="right"><span>●●●</span><span class="sb-bat"></span></span></div>
+      <div class="navbar">灵感拾光簿<div class="capsule"><i class="dots"><span></span></i><i></i></div></div>
+      <div class="body">
+        <div class="head-row">
+          <div class="head-mark" style="background:#1b1c4a;display:flex;align-items:center;justify-content:center;color:#e4a83a;font-size:24px">✦</div>
+          <div>
+            <div class="page-title">记录想法</div>
+            <div class="page-sub">先写下来，之后再补充。</div>
+          </div>
+        </div>
+
+        <div class="composer">
+          <div class="editor ph">此刻想到什么？</div>
+          <div class="foot">
+            <span class="count">0 / 2000</span>
+            <button class="btn savebtn is-disabled" disabled>记下来</button>
+          </div>
+        </div>
+
+        <div class="notice notice-ok">
+          <span class="mark"></span>
+          <span>已记下。<a style="color:var(--brand);text-decoration:underline;text-underline-offset:2px">查看这条</a></span>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on"><i class="ic"></i>记录</div>
+        <div class="tab"><i class="ic"></i>灵感</div>
+        <div class="tab"><i class="ic round"></i>我的</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+  </div>
+
+  <!-- ============ 3. 灵感列表 · 首次进入 ============ -->
+  <div class="item">
+    <div class="cap"><span class="n">3</span>灵感列表 · 首次进入（空）</div>
+    <p class="note"><b>空数据时不渲染任何筛选与开关。</b>搜索、筛选、阶段、每日回顾、选材整理全部收起，屏幕只留「开始」这一件事。控件在有条目之后才出现。</p>
+    <div class="phone">
+      <div class="statusbar"><span>11:02</span><span class="right"><span>●●●</span><span class="sb-bat"></span></span></div>
+      <div class="navbar">灵感拾光簿<div class="capsule"><i class="dots"><span></span></i><i></i></div></div>
+      <div class="body">
+        <div class="listbar">
+          <div class="page-title">我的灵感</div>
+          <button class="btn-link">记一条</button>
+        </div>
+
+        <div class="empty" style="margin-top:22px">
+          <div class="em" style="background:#1b1c4a;display:flex;align-items:center;justify-content:center;color:#e4a83a;font-size:26px">✦</div>
+          <div class="et">还没有灵感</div>
+          <div class="ed">从一个想法开始，之后可以继续补充、整理并复制使用。</div>
+        </div>
+        <button class="btn btn-block" style="margin-top:16px">记下第一个想法</button>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><i class="ic"></i>记录</div>
+        <div class="tab on"><i class="ic"></i>灵感</div>
+        <div class="tab"><i class="ic round"></i>我的</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+  </div>
+
+  <!-- ============ 4. 灵感列表 · 有条目 ============ -->
+  <div class="item">
+    <div class="cap"><span class="n">4</span>灵感列表 · 有条目</div>
+    <p class="note">四行控件合并为两行：阶段并入筛选行，「选材整理」移到列表段落头，每日回顾开关移入「我的」。列表整体上移约 120px，首屏可见条目由约 1 条增至约 2 条。</p>
+    <div class="phone">
+      <div class="statusbar"><span>11:02</span><span class="right"><span>●●●</span><span class="sb-bat"></span></span></div>
+      <div class="navbar">灵感拾光簿<div class="capsule"><i class="dots"><span></span></i><i></i></div></div>
+      <div class="body">
+        <div class="listbar">
+          <div class="page-title">我的灵感</div>
+          <button class="btn-link">记一条</button>
+        </div>
+
+        <div class="searchbox"><span style="color:var(--ink-3);font-size:13px">⌕</span><input placeholder="搜索正文、补充或标签"></div>
+
+        <div class="chips">
+          <span class="chip on">全部</span>
+          <span class="chip">有补充</span>
+          <span class="chip">七天内</span>
+          <span class="chip">已合并</span>
+          <span class="chip">阶段<span class="caret"></span></span>
+        </div>
+
+        <div class="review-card">
+          <div class="rh"><span>继续一个想法</span></div>
+          <div class="rt">做一个方便回顾旧想法的小工具，让记录之后的整理更加自然。</div>
+          <div class="ra">
+            <button class="btn btn-sm" style="width:104px">继续补充</button>
+            <button class="btn-link">今天跳过</button>
+          </div>
+        </div>
+
+        <div class="listhead">
+          <span class="section-v">共 2 条</span>
+          <button class="btn-link" style="font-size:13px">选材整理</button>
+        </div>
+
+        <div class="list">
+          <div class="row">
+            <div class="body-t">周五下午想到：把阳台的旧木箱改成工具收纳，量好尺寸再买滑轨。</div>
+            <div class="tags"><span class="stagetag">想法</span></div>
+            <div class="meta"><span>3 分钟前</span></div>
+          </div>
+          <div class="row">
+            <div class="body-t">整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。</div>
+            <div class="tags"><span class="stagetag">整理中</span><span class="tagchip">内容选题</span><span class="tagchip">城市散步</span></div>
+            <div class="meta"><span>3 天前</span><span class="sep"></span><span>2 条补充</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><i class="ic"></i>记录</div>
+        <div class="tab on"><i class="ic"></i>灵感</div>
+        <div class="tab"><i class="ic round"></i>我的</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+  </div>
+
+  <!-- ============ 5. 灵感详情 ============ -->
+  <div class="item">
+    <div class="cap"><span class="n">5</span>灵感详情 · 重排后</div>
+    <p class="note">「整理标记」由 192px 的整块表单折叠成约 44px 的一行状态摘要，时间线因此上移约 148px（296rpx）。三个动作按钮等宽一行，不再落单。原文字号保持全页最大。</p>
+    <div class="phone">
+      <div class="statusbar"><span>11:02</span><span class="right"><span>●●●</span><span class="sb-bat"></span></span></div>
+      <div class="navbar"><span class="back">‹</span>灵感详情<div class="capsule"><i class="dots"><span></span></i><i></i></div></div>
+      <div class="body">
+        <div class="stamp">3 天前</div>
+        <div class="origin-text">整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。</div>
+        <div class="origin-acts">
+          <button class="btn btn-quiet btn-sm">修改内容</button>
+          <button class="btn btn-plain btn-sm">修改记录（2）</button>
+        </div>
+
+        <div style="margin-top:20px">
+          <div class="section-k" style="margin-bottom:6px">继续补充</div>
+          <div class="compose">
+            <div class="ed">为这条想法补充内容</div>
+            <div class="compose-foot">
+              <span class="count">0 / 1000</span>
+              <button class="btn btn-sm is-disabled" style="width:92px" disabled>添加补充</button>
+            </div>
+          </div>
+          <div class="acts">
+            <button class="btn btn-quiet btn-sm">整理内容</button>
+            <button class="btn btn-plain btn-sm">复制内容</button>
+            <button class="btn btn-plain btn-sm">分享文字</button>
+          </div>
+        </div>
+
+        <div class="fold-row">
+          <span class="l"><span class="k">整理标记</span>整理中 · 内容选题、城市散步</span>
+          <span class="caret"></span>
+        </div>
+
+        <div class="listhead" style="margin:18px 0 2px">
+          <span class="section-k">补充</span>
+          <span class="section-v">2 条</span>
+        </div>
+
+        <div style="margin-top:-4px">
+          <div class="tl-item">
+            <div class="tl-when"><span>3 天前</span><span class="tl-more">更多</span></div>
+            <div class="tl-what">每条路线控制在两小时内，补充休息点和雨天替代安排。</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-when"><span>3 天前</span><span class="tl-more">更多</span></div>
+            <div class="tl-what">先从自己熟悉的三个街区开始，照片仅留作个人参考。</div>
+          </div>
+        </div>
+
+        <button class="btn btn-danger btn-block" style="margin-top:14px">删除灵感</button>
+      </div>
+      <div class="homebar" style="background:var(--paper)"></div>
+    </div>
+  </div>
+
+  <!-- ============ 6. 补充操作面板 ============ -->
+  <div class="item">
+    <div class="cap"><span class="n">6</span>补充操作面板 · 布局修复</div>
+    <p class="note">修掉当前的逐字换行：说明文字改为主标签下方另起一行、左对齐（原为右侧 flex 挤压主标签）。删除项与其余各项以分隔线隔开，危险色保留。</p>
+    <div class="phone" style="min-height:640px">
+      <div class="statusbar"><span>11:02</span><span class="right"><span>●●●</span><span class="sb-bat"></span></span></div>
+      <div class="navbar"><span class="back">‹</span>灵感详情<div class="capsule"><i class="dots"><span></span></i><i></i></div></div>
+      <div class="body" style="filter:grayscale(.06);opacity:.92">
+        <div class="stamp">3 天前</div>
+        <div class="origin-text">整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。</div>
+        <div class="origin-acts"><button class="btn btn-quiet btn-sm">修改内容</button></div>
+        <div style="margin-top:20px">
+          <div class="section-k" style="margin-bottom:6px">继续补充</div>
+          <div class="compose">
+            <div class="ed">为这条想法补充内容</div>
+            <div class="compose-foot"><span class="count">0 / 1000</span><button class="btn btn-sm is-disabled" style="width:92px" disabled>添加补充</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-mask">
+        <div class="sheet">
+          <div class="sheet-title">这条补充 · 09-27 11:02</div>
+          <button class="sheet-item">复制这条</button>
+          <button class="sheet-item">修改<span class="sub">旧内容会保留在修改记录中</span></button>
+          <button class="sheet-item">并入正文<span class="sub">把这条补充追加到正文末尾，可展开恢复</span></button>
+          <button class="sheet-item sheet-danger">删除<span class="sub">此操作无法撤销</span></button>
+          <button class="sheet-cancel">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= 规范表 ================= -->
+<div class="spec">
+  <h2>方向一「案头纸本」· 可执行视觉规范</h2>
+  <table>
+    <tr><th style="width:150px">项</th><th style="width:210px">值</th><th>用途与规则</th></tr>
+    <tr><td>正文与标题</td><td><span class="swatch" style="background:#191a23"></span><code>#191a23</code></td><td>原文、页面标题、列表正文、按钮外的所有主要文字</td></tr>
+    <tr><td>次要文字</td><td><span class="swatch" style="background:#5f6070"></span><code>#5f6070</code></td><td>副标题、说明、区块标题</td></tr>
+    <tr><td>最淡</td><td><span class="swatch" style="background:#6f6f7b"></span><code>#6f6f7b</code></td><td>时间戳、占位符、计数。不再用于正文</td></tr>
+    <tr><td>页面底色</td><td><span class="swatch" style="background:#f7f6f2"></span><code>#f7f6f2</code></td><td>所有页面底色；原文区直接落在它上面，不放进卡片</td></tr>
+    <tr><td>承载面</td><td><span class="swatch" style="background:#ffffff"></span><code>#ffffff</code></td><td>仅用于输入区、列表、空态、面板。不用逐条卡片</td></tr>
+    <tr><td>分隔线</td><td><span class="swatch" style="background:#e6e4de"></span><code>#e6e4de</code> / <code>#d7d4cb</code></td><td>发丝分隔线 / 需要更明确边界时</td></tr>
+    <tr><td>主色</td><td><span class="swatch" style="background:#34377f"></span><code>#34377f</code></td><td>主按钮、选中态、链接、成功反馈</td></tr>
+    <tr><td>主色浅底 / 描边</td><td><code>#eeeef8</code> / <code>#c9cae6</code></td><td>选中 chip、回顾卡、成功提示底</td></tr>
+    <tr><td>点睛色</td><td><span class="swatch" style="background:#e4a83a"></span><code>#e4a83a</code></td><td><b>只用于</b>灵光标记（品牌图形内）。<b>不再用于成功提示</b></td></tr>
+    <tr><td>错误</td><td><span class="swatch" style="background:#b43c32"></span><code>#b43c32</code></td><td>失败提示文字与描边；配 ✕ 图标</td></tr>
+    <tr><td>警示</td><td><span class="swatch" style="background:#8a6420"></span><code>#8a6420</code></td><td>可继续但需注意（如刷新失败、可恢复的合并）；配 ! 图标</td></tr>
+    <tr><td>字号阶梯</td><td><code>48 / 38 / 31 / 30 / 27 / 26 / 24 rpx</code></td><td>页面标题 / 原文 / 列表正文 / 正文 / 区块标题 / 辅助 / 最淡。行高 1.6—1.78，原文用 1.78</td></tr>
+    <tr><td>间距阶梯</td><td><code>0 / 8 / 16 / 24 / 32 / 40 / 52 rpx</code></td><td>全部间距取阶梯值，不出现 15、21 这类散值</td></tr>
+    <tr><td>页面留白</td><td><code>40rpx</code></td><td>左右；底部 <code>calc(64rpx + env(safe-area-inset-bottom))</code></td></tr>
+    <tr><td>圆角</td><td><code>16 / 24 / 32 rpx</code></td><td>小（按钮、输入）/ 中（卡片、承载面）/ 大（底部面板上缘）</td></tr>
+    <tr><td>触摸目标</td><td><code>≥ 88rpx</code></td><td>所有可点元素，含文字链接。视觉可以小，热区不能小</td></tr>
+    <tr><td>按钮</td><td>高 <code>88rpx</code></td><td>主=主色填充；次=白底+<code>2rpx #d7d4cb</code>；安静=透明+主色字+<code>2rpx #c9cae6</code>；危险=透明+错误色字+错误描边。一行多个时等宽 <code>flex:1</code>，禁止落单</td></tr>
+    <tr><td>表单</td><td>白底卡片 / <code>20rpx</code> 圆角</td><td><b>所有可编辑字段必须有可见输入边界</b>，不能渲染成静态文字</td></tr>
+    <tr><td>列表</td><td>单块承载面 + 发丝线</td><td>行高 <code>≥120rpx</code>，正文两行截断，元信息一行</td></tr>
+    <tr><td>状态图标</td><td>✓ / ! / ✕</td><td>成功、警示、错误三种<b>形状不同</b>。颜色只是辅助，不允许只靠颜色区分</td></tr>
+    <tr><td>适配</td><td>rpx 等比</td><td>字号不随屏幕放大缩放；长文本 <code>word-break</code>；一行最多 3 个按钮，超出换行等宽</td></tr>
+  </table>
+</div>
+
+</body>
+</html>

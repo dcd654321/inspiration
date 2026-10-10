@@ -2,68 +2,203 @@ const { LIMITS, createId } = require('../../core/limits');
 const { createInspiration } = require('../../core/inspiration');
 const { formatAbsolute } = require('../../core/format');
 const { currentSupplements, buildTemplateText, buildArchiveText, USE_TEMPLATES } = require('../../services/content-output');
+const { setDraftLeaveAlert } = require('../../services/draft-alert');
+const { draftContext, sourceVersion } = require('../../services/session-drafts');
+const { shareConfirmedDraft } = require('../../services/result-share');
+
+function guardDraft(data) {
+  setDraftLeaveAlert(Boolean(data.draftEdited && data.draft.trim() && !data.savedSame));
+}
+
+// 原生 scroll-view 的内部视口不会随 flex 收缩自动同步，写入实际可用高度。
+function fitSheetScroll(page) {
+  const phase = page.data.phase;
+  if (!['content', 'archive'].includes(phase) || typeof wx.createSelectorQuery !== 'function') return;
+  const version = page.sheetRenderVersion = (page.sheetRenderVersion || 0) + 1;
+  const measure = () => {
+    if (page.disposed || page.data.phase !== phase || version !== page.sheetRenderVersion) return;
+    try {
+      wx.createSelectorQuery().select('.sheet-scroll').boundingClientRect((rect) => {
+        if (!page.disposed && page.data.phase === phase && version === page.sheetRenderVersion && rect && rect.height > 0) {
+          page.setData({ sheetScrollHeight: Math.floor(rect.height) });
+        }
+      }).exec();
+    } catch (err) { /* 查询不可用时保留 CSS 的视口高度约束。 */ }
+  };
+  if (typeof wx.nextTick === 'function') wx.nextTick(measure);
+  else measure();
+}
 
 Page({
   data: {
     ready: false,
     missing: false,
-    mode: 'organize',
-    phase: 'select',
+    // 读取失败（账户/网络）与「确认不存在」分开
+    readError: false,
+    // edit = 正在编辑稿件；content/format/more = 相应面板；archive = 文字留档
+    phase: 'edit',
+    sheetScrollHeight: 0,
     options: [],
+    // 面板里的暂存副本：确认「应用」才写回 options/templateId，取消不改动任何东西
+    stagedOptions: [],
+    stagedTemplateId: 'free',
     selectedCount: 0,
     draft: '',
     draftEdited: false,
+    canSaveAs: false,
+    savedSame: false,
     templateId: 'free',
     templates: USE_TEMPLATES,
+    summary: '正文',
     maxLength: LIMITS.textMaxLength,
     archive: '',
     txtPath: '',
     error: '',
     notice: '',
+    noticeLink: false,
     savedId: '',
-    busy: false
+    savedDraft: '',
+    busy: false,
+    saveUnknown: false, sourceStale: false, draftRecoveryNotice: ''
   },
 
   async onLoad(query) {
     this.pendingSave = null;
-    this.confirmedDraft = '';
     this.id = (query && query.id) || '';
-    this.fileToken = createId('arc');
+    this.requestedTemplate = query && USE_TEMPLATES.some((entry) => entry.id === query.template) ? query.template : '';
     this.disposed = false;
+    return this.readAccount();
+  },
+
+  async readAccount(refresh = false) {
+    setDraftLeaveAlert(false);
+    const version = this.loadVersion = (this.loadVersion || 0) + 1;
+    this.loading = true;
+    this.pendingSave = null;
+    const previousFile = this.data.txtPath;
+    if (previousFile && typeof wx.getFileSystemManager === 'function') {
+      try { wx.getFileSystemManager().unlink({ filePath: previousFile, fail() {} }); }
+      catch (err) { /* 显式导出的临时文件清理失败不阻断重新读取。 */ }
+    }
+    this.fileToken = createId('arc');
+    this.setData({ ready: false, draft: '', archive: '', options: [], stagedOptions: [], txtPath: '', savedId: '', savedDraft: '', readError: false, error: '', notice: '', busy: false, saveUnknown: false, sourceStale: false, draftRecoveryNotice: '' });
     const app = getApp();
-    const store = await app.ensureReady();
-    this.loadedEpoch = app.globalData.sessionEpoch;
-    const item = store && store.getInspiration(this.id);
-    if (!item) {
-      this.setData({ ready: true, missing: true });
+    let store, epoch = this.loadingEpoch = app.globalData.sessionEpoch;
+    try {
+      const pending = refresh ? app.refreshAccount() : app.ensureReady();
+      epoch = this.loadingEpoch = app.globalData.sessionEpoch;
+      store = await pending;
+    } catch (err) { store = null; }
+    if (this.disposed || version !== this.loadVersion || epoch !== app.globalData.sessionEpoch || store && store !== app.globalData.store) return;
+    this.loading = false;
+    this.loadedEpoch = epoch;
+    this.loadedStore = store;
+    if (!store) {
+      this.setData({ ready: true, missing: false, readError: true, error: app.globalData.accountError || '请稍后重试。' });
       return;
     }
+    this.draftOwner = draftContext(app, store);
+    const recovered = app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('output:' + this.id, this.draftOwner);
+    this.build(store, recovered);
+  },
+
+  current(version = this.loadVersion) {
+    const app = getApp();
+    return !this.disposed && !this.loading && version === this.loadVersion &&
+      this.loadedEpoch === app.globalData.sessionEpoch && this.loadedStore === app.globalData.store && Boolean(this.loadedStore);
+  },
+
+  /** 进入即给出一份可编辑的自由稿：不让用户在看到结果之前先做一串选择。 */
+  build(store, recovered) {
+    const item = store && store.getInspiration(this.id);
+    this.sourceStamp = sourceVersion(item);
+    if (recovered) {
+      this.pendingSave = recovered.pendingSave;
+      const sourceStale = recovered.sourceStamp !== this.sourceStamp;
+      if (sourceStale) this.sourceStamp = recovered.sourceStamp;
+      const next = Object.assign({}, recovered.data, { ready: true, missing: false, readError: false, phase: 'edit', busy: false,
+        sourceStale, draftRecoveryNotice: sourceStale ? '素材已更新，已保留当前稿件供复制。重新读取后可继续整理。' : '已接续这次稿件。',
+        error: sourceStale ? '来源已变化，请先复制当前稿件，再重新读取素材。' : '' });
+      if (this.pendingSave && sourceVersion(store.getInspiration(this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
+        next.savedId = this.pendingSave.item.id; next.savedDraft = this.pendingSave.text; next.saveUnknown = false;
+        next.savedSame = next.draft === next.savedDraft; this.pendingSave = null;
+      }
+      const confirmed = next.savedId && store.getInspiration(next.savedId);
+      if (next.savedId && (!confirmed || confirmed.text !== next.savedDraft || (confirmed.templateId || 'free') !== next.templateId)) {
+        next.savedId = ''; next.savedDraft = ''; next.savedSame = false;
+        next.draftRecoveryNotice = '已保留当前稿件，之前另存的记录已变化，请重新保存后分享。';
+      }
+      next.archive = item ? buildArchiveText(item, Date.now()) : '';
+      next.noticeLink = Boolean(next.savedId);
+      next.canSaveAs = !sourceStale && this.canSaveAs(next.draft, next.savedDraft);
+      this.setData(next); guardDraft(this.data); return;
+    }
+    if (!item) {
+      this.setData({ ready: true, missing: true, readError: false });
+      return;
+    }
+    const templateId = this.requestedTemplate || (USE_TEMPLATES.some((entry) => entry.id === item.templateId) ? item.templateId : 'free');
+    this.setData({ templateId });
     const options = currentSupplements(item).map((supplement) => ({
       id: supplement.id,
       content: supplement.content,
       time: formatAbsolute(supplement.createdAt),
       selected: true
     }));
+    const selectedIds = options.filter((entry) => entry.selected).map((entry) => entry.id);
+    const draft = buildTemplateText(item, selectedIds, this.data.templateId);
+    this.pendingSave = null;
     this.setData({
-      ready: true,
+      ready: true, missing: false, readError: false,
+      phase: 'edit',
       options,
-      selectedCount: options.length,
-      archive: buildArchiveText(item, Date.now())
+      selectedCount: selectedIds.length,
+      draft,
+      draftEdited: false,
+      canSaveAs: this.canSaveAs(draft, ''),
+      savedSame: false,
+      summary: selectedIds.length ? '正文 + ' + selectedIds.length + '条补充' : '正文',
+      archive: buildArchiveText(item, Date.now()),
+      error: '', notice: '', noticeLink: false, savedId: '', savedDraft: '', busy: false, saveUnknown: false, sourceStale: false, draftRecoveryNotice: ''
     });
+    guardDraft(this.data);
+  },
+
+  /** 另存按钮的可提交性：空稿、超限、与已另存内容逐字相同都不可提交。 */
+  canSaveAs(draft, savedDraft) {
+    return Boolean(draft && draft.trim()) && draft.length <= LIMITS.textMaxLength && draft !== savedDraft;
   },
 
   async onShow() {
     const app = getApp();
-    if (!this.id || this.loadedEpoch === app.globalData.sessionEpoch) return;
-    this.onUnload();
-    this.setData({ ready: false, draft: '', archive: '', options: [], txtPath: '' });
-    await this.onLoad({ id: this.id });
+    if (this.loading && this.loadingEpoch === app.globalData.sessionEpoch) return;
+    if (!this.id || this.current()) { guardDraft(this.data); return; }
+    this.disposed = false;
+    this.setData({ ready: false, draft: '', archive: '', options: [], txtPath: '', savedId: '', savedDraft: '' });
+    await this.readAccount();
   },
 
-  onUnload() {
+  onHide() { this.suspend(); },
+
+  onUnload() { this.suspend(); },
+
+  suspend() {
+    setDraftLeaveAlert(false);
+    const app = getApp();
+    if (!this.disposed && this.draftOwner && app.globalData.sessionDrafts && this.data.ready && !this.data.readError) {
+      const fields = ['draft', 'draftEdited', 'templateId', 'options', 'selectedCount', 'summary', 'savedId', 'savedDraft', 'savedSame', 'saveUnknown'];
+      const data = fields.reduce((result, key) => { result[key] = this.data[key]; return result; }, {});
+      if (this.data.busy && this.pendingSave) data.saveUnknown = true;
+      const pendingSave = this.pendingSave && { text: this.pendingSave.text, item: this.pendingSave.item };
+      app.globalData.sessionDrafts.put('output:' + this.id, this.draftOwner, { data, pendingSave, sourceStamp: this.sourceStamp });
+    }
     this.disposed = true;
+    this.loadVersion = (this.loadVersion || 0) + 1;
+    this.loading = false;
     this.pendingSave = null;
     const filePath = this.data.txtPath;
+    this.loadedStore = null; this.draftOwner = null;
+    this.setData({ ready: false, draft: '', archive: '', options: [], stagedOptions: [], txtPath: '', savedId: '', savedDraft: '', notice: '', error: '', busy: false, saveUnknown: false, sourceStale: false, draftRecoveryNotice: '' });
     if (!filePath || typeof wx.getFileSystemManager !== 'function') return;
     try {
       wx.getFileSystemManager().unlink({ filePath, fail() {} });
@@ -72,64 +207,164 @@ Page({
     }
   },
 
-  onModeChange(event) {
-    const mode = event.currentTarget.dataset.mode;
-    if (mode !== 'organize' && mode !== 'archive') return;
-    this.setData({ mode, error: '', notice: '' });
+  onRetryLoad() {
+    if (this.disposed || this.loading || this.data.busy) return;
+    const reload = () => {
+      if (this.disposed || this.data.busy) return;
+      const app = getApp();
+      if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('output:' + this.id, this.draftOwner);
+      return this.readAccount(true);
+    };
+    if (this.data.draft && (this.data.draftEdited || this.data.sourceStale || this.data.saveUnknown)) {
+      const version = this.loadVersion;
+      wx.showModal({ title: '重新读取素材？', content: '重新读取将替换当前稿件，可先复制要保留的文字。', confirmText: '重新读取', cancelText: '保留稿件',
+        success: (result) => { if (result.confirm && this.current(version)) reload(); } });
+    } else return reload();
   },
 
-  onToggleSupplement(event) {
-    const id = event.currentTarget.dataset.id;
-    const options = this.data.options.map((entry) => (
-      entry.id === id ? Object.assign({}, entry, { selected: !entry.selected }) : entry
-    ));
+  onBackToList() { wx.switchTab({ url: '/pages/list/index' }); },
+
+  /** 面板本体上的点击不该穿透到遮罩，否则点哪都关。 */
+  noop() {},
+
+  // ------------------------------------------------------------ 面板
+
+  onOpenContent() {
+    if (this.data.busy) return;
+    if (this.data.sourceStale) return this.onRetryLoad();
     this.setData({
-      options,
-      selectedCount: options.filter((entry) => entry.selected).length,
-      error: ''
+      phase: 'content',
+      sheetScrollHeight: 0,
+      stagedOptions: this.data.options.map((entry) => Object.assign({}, entry)),
+      stagedTemplateId: this.data.templateId,
+      error: '', notice: ''
+    }, () => fitSheetScroll(this));
+  },
+
+  onOpenFormat() {
+    if (this.data.busy) return;
+    this.setData({
+      phase: 'format',
+      stagedOptions: this.data.options.map((entry) => Object.assign({}, entry)),
+      stagedTemplateId: this.data.templateId,
+      error: '', notice: ''
     });
   },
 
-  onGenerate() {
+  onOpenMore() {
+    if (this.data.busy) return;
+    this.setData({ phase: 'more', error: '', notice: '' });
+  },
+
+  onOpenArchive() {
+    if (this.data.busy) return;
+    this.setData({ phase: 'archive', sheetScrollHeight: 0, error: '', notice: '' }, () => fitSheetScroll(this));
+  },
+
+  onResize() {
+    this.setData({ sheetScrollHeight: 0 }, () => fitSheetScroll(this));
+  },
+
+  onClosePanel() {
+    if (this.data.busy) return;
+    // 取消面板不改动稿件的任何字节
+    this.setData({ phase: 'edit', error: '', notice: '' });
+  },
+
+  onToggleSupplement(event) {
+    if (this.data.busy) return;
+    const id = event.currentTarget.dataset.id;
+    const base = this.data.stagedOptions.length ? this.data.stagedOptions : this.data.options;
+    const stagedOptions = base.map((entry) => (
+      entry.id === id ? Object.assign({}, entry, { selected: !entry.selected }) : entry
+    ));
+    this.setData({ stagedOptions, error: '' });
+  },
+
+  onTemplateSelect(event) {
+    if (this.data.busy) return;
+    const templateId = event.currentTarget.dataset.template;
+    if (USE_TEMPLATES.some((template) => template.id === templateId)) this.setData({ stagedTemplateId: templateId, error: '' });
+  },
+
+  /**
+   * 应用「调整内容」或「选择格式」。手工改过的稿件受替换保护：
+   * 取消保留当前文字、光标与选择；确认才替换。
+   */
+  onApply() {
+    if (this.data.busy || this.data.saveUnknown || this.data.sourceStale || !this.current()) return;
+    const version = this.loadVersion, draft = this.data.draft, phase = this.data.phase;
+    const staged = JSON.stringify([this.data.stagedOptions, this.data.stagedTemplateId]);
     const store = getApp().globalData.store;
     const item = store && store.getInspiration(this.id);
     if (!item) {
       this.setData({ missing: true });
       return;
     }
-    const ids = this.data.options.filter((entry) => entry.selected).map((entry) => entry.id);
-    const generated = buildTemplateText(item, ids, this.data.templateId);
-    const epoch = this.loadedEpoch;
-    const originalDraft = this.data.draft;
+    const stagedOptions = this.data.stagedOptions.length || !this.data.options.length
+      ? this.data.stagedOptions : this.data.options;
+    const stagedTemplateId = this.data.stagedTemplateId;
+    const source = JSON.stringify(item);
+    const selectedIds = stagedOptions.filter((entry) => entry.selected).map((entry) => entry.id);
+    let generated;
+    try {
+      generated = buildTemplateText(item, selectedIds, stagedTemplateId);
+    } catch (err) {
+      this.setData({ error: err.message });
+      return;
+    }
     const apply = () => {
-      if (this.disposed || epoch !== this.loadedEpoch || epoch !== getApp().globalData.sessionEpoch || originalDraft !== this.data.draft) return;
-      if (generated !== originalDraft) this.pendingSave = null;
-      this.setData({ phase: 'edit', draft: generated, draftEdited: false, error: '', notice: '', savedId: '' });
+      if (!this.current(version) || this.data.busy || this.data.draft !== draft || this.data.phase !== phase ||
+          JSON.stringify([this.data.stagedOptions, this.data.stagedTemplateId]) !== staged) return;
+      if (JSON.stringify(store.getInspiration(this.id)) !== source) { this.setData({ error: '素材已更新，请重新读取后核对。' }); return; }
+      this.pendingSave = null;
+      this.sourceStamp = sourceVersion(item);
+      // 确认后才把暂存写回：取消（onClosePanel）不改动 options/templateId
+      this.setData({
+        phase: 'edit',
+        options: stagedOptions,
+        templateId: stagedTemplateId,
+        selectedCount: selectedIds.length,
+        draft: generated,
+        draftEdited: false,
+        canSaveAs: this.canSaveAs(generated, this.data.savedDraft),
+        savedSame: Boolean(this.data.savedId && this.data.savedDraft === generated),
+        summary: selectedIds.length ? '正文 + ' + selectedIds.length + '条补充' : '正文',
+        error: '', notice: '', noticeLink: false
+      });
+      guardDraft(this.data);
     };
     if (this.data.draftEdited && this.data.draft !== generated) {
-      wx.showModal({ title: '替换当前使用稿？', content: '你编辑过当前稿件。重新生成将替换这些编辑，原始记录不会改变。',
-        confirmText: '替换', cancelText: '保留', success: (result) => { if (result.confirm) apply(); } });
+      wx.showModal({
+        title: '替换当前稿件？',
+        content: '你修改过这份稿件。替换后，这些修改不会保留。',
+        confirmText: '替换稿件',
+        cancelText: '保留编辑',
+        success: (result) => { if (result.confirm) apply(); }
+      });
     } else apply();
   },
 
-  onTemplateChange(event) {
-    const templateId = event.currentTarget.dataset.template;
-    if (USE_TEMPLATES.some((template) => template.id === templateId)) this.setData({ templateId });
-  },
-  onResumeDraft() { if (this.data.draft) this.setData({ phase: 'edit' }); },
-
-  onBackToSelection() {
-    if (this.data.busy) return;
-    this.setData({ phase: 'select', error: '', notice: '' });
-  },
+  // ------------------------------------------------------------ 编辑与出口
 
   onDraftInput(event) {
-    if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null;
-    this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '', savedId: '' });
+    if (this.data.busy || this.data.saveUnknown || !this.current()) return;
+    const value = event.detail.value;
+    if (this.pendingSave && this.pendingSave.text !== value) this.pendingSave = null;
+    this.setData({
+      draft: value,
+      draftEdited: true,
+      canSaveAs: this.canSaveAs(value, this.data.savedDraft),
+      // 改回与已另存内容逐字相同也算「已另存」，不产生第二条
+      savedSame: Boolean(this.data.savedId && this.data.savedDraft === value),
+      error: '', notice: '', noticeLink: false
+    });
+    guardDraft(this.data);
   },
 
   copyText(text) {
-    const app = getApp(), epoch = app.globalData.sessionEpoch;
+    if (!this.current()) return;
+    const app = getApp(), version = this.loadVersion;
     if (!text || !text.trim()) {
       this.setData({ error: '没有可复制的内容。', notice: '' });
       return;
@@ -137,29 +372,29 @@ Page({
     try {
       wx.setClipboardData({
         data: text,
-        success: () => { if (this.disposed || epoch !== app.globalData.sessionEpoch) return; this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。' }); if (text === this.data.draft && app.globalData.metrics) app.globalData.metrics.track('output_copied'); },
-        fail: () => this.setData({ error: '复制未完成，请稍后重试。', notice: '' })
+        success: () => { if (!this.current(version)) return; this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。', noticeLink: false }, () => fitSheetScroll(this)); if (text === this.data.draft && app.globalData.metrics) app.globalData.metrics.track('output_copied'); },
+        fail: () => { if (this.current(version)) this.setData({ error: '复制未完成，请重试。', notice: '' }, () => fitSheetScroll(this)); }
       });
     } catch (err) {
-      this.setData({ error: '复制未完成，请稍后重试。', notice: '' });
+      if (this.current(version)) this.setData({ error: '复制未完成，请重试。', notice: '' }, () => fitSheetScroll(this));
     }
   },
 
-  onCopyDraft() {
-    this.copyText(this.data.draft);
-  },
+  onCopyDraft() { this.copyText(this.data.draft); },
 
-  onCopyArchive() {
-    this.copyText(this.data.archive);
-  },
+  onCopyArchive() { this.copyText(this.data.archive); },
 
   async onSaveAsNew() {
-    if (this.data.busy) return;
+    if (this.data.busy || !this.current()) return;
+    const version = this.loadVersion;
     const app = getApp(), store = app.globalData.store, epoch = app.globalData.sessionEpoch;
     if (!store || this.disposed || this.loadedEpoch !== epoch) return;
+    if (this.data.sourceStale || sourceVersion(store.getInspiration(this.id)) !== this.sourceStamp) {
+      this.setData({ sourceStale: true, canSaveAs: false, error: '来源已变化，请先复制当前稿件，再重新读取素材。' }); return;
+    }
     const draft = this.data.draft;
-    if (this.data.savedId && this.confirmedDraft === draft) {
-      this.setData({ notice: '这份使用稿已另存，可直接查看。' });
+    if (this.data.savedId && this.data.savedDraft === draft) {
+      this.setData({ notice: '这份稿件已另存，可以直接查看。', noticeLink: true, error: '' });
       return;
     }
     if (!draft.trim()) {
@@ -167,39 +402,49 @@ Page({
       return;
     }
     if (draft.length > LIMITS.textMaxLength) {
-      this.setData({ error: '使用稿超过 ' + LIMITS.textMaxLength + ' 字，可先复制，或缩短后另存。', notice: '' });
+      this.setData({ error: '另存最多' + LIMITS.textMaxLength + '字符，当前超出' + (draft.length - LIMITS.textMaxLength) + '字符。可先复制，或缩短后另存。', notice: '' });
       return;
     }
 
     let next;
     try {
-      next = this.pendingSave && this.pendingSave.text === draft && this.pendingSave.store === store
-        ? this.pendingSave.item : createInspiration({ id: createId('ins'), text: draft, now: Date.now() });
+      next = this.pendingSave && this.pendingSave.text === draft
+        ? this.pendingSave.item : Object.assign({}, createInspiration({ id: createId('ins'), text: draft, now: Date.now() }),
+          { templateId: USE_TEMPLATES.some((entry) => entry.id === this.data.templateId) ? this.data.templateId : 'free' });
       this.pendingSave = { text: draft, store, item: next };
     } catch (err) {
       this.setData({ error: '暂时无法另存，请检查内容后重试。', notice: '' });
       return;
     }
 
-    this.setData({ busy: true, error: '', notice: '' });
+    this.setData({ busy: true, error: '', notice: '', noticeLink: false });
     let result;
     try {
       result = await store.saveInspiration(next);
     } catch (err) {
       result = null;
     }
-    if (this.disposed || epoch !== app.globalData.sessionEpoch || app.globalData.store !== store) return;
+    if (!this.current(version) || epoch !== app.globalData.sessionEpoch || app.globalData.store !== store) return;
     if (!result || !result.ok || result.synced !== true) {
-      this.setData({ busy: false, error: '另存失败，使用稿还在，可稍后重试或先复制。' });
+      const unknown = !result || !result.code || ['NETWORK', 'INTERNAL'].includes(result.code);
+      this.setData({ busy: false, error: unknown
+        ? '尚未确认另存，稿件还在。请重试确认，或先复制。'
+        : '未能另存，稿件还在。请检查内容后重试，或先复制。', saveUnknown: unknown });
       return;
     }
     this.setData({
       busy: false,
+      saveUnknown: false,
       savedId: next.id,
-      notice: '已另存为新灵感，原记录未改动。'
+      savedDraft: draft,
+      savedSame: this.data.draft === draft,
+      canSaveAs: this.canSaveAs(this.data.draft, draft),
+      notice: '已另存为新灵感',
+      noticeLink: true
     });
+    guardDraft(this.data);
     this.pendingSave = null;
-    this.confirmedDraft = draft;
+    if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('output:' + this.id, this.draftOwner);
     if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
   },
 
@@ -208,8 +453,16 @@ Page({
     wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.savedId) });
   },
 
+  onShareDraft() {
+    const version = this.loadVersion;
+    shareConfirmedDraft(this, { isCurrent: () => this.current(version), save: () => this.onSaveAsNew() });
+  },
+
+  // ------------------------------------------------------------ 文字留档
+
   onCreateTxt() {
-    if (this.data.busy) return;
+    if (this.data.busy || !this.current()) return;
+    const version = this.loadVersion;
     const base = wx.env && wx.env.USER_DATA_PATH;
     if (!base || typeof wx.getFileSystemManager !== 'function') {
       this.setData({ error: '当前设备暂不支持生成文件，可先复制留档文字。', notice: '' });
@@ -224,7 +477,7 @@ Page({
         data: this.data.archive,
         encoding: 'utf8',
         success: () => {
-          if (this.disposed) {
+          if (!this.current(version)) {
             try { fileSystem.unlink({ filePath, fail() {} }); } catch (err) { /* 尽力清理 */ }
             return;
           }
@@ -232,17 +485,18 @@ Page({
             busy: false,
             txtPath: filePath,
             notice: 'TXT 已生成。可点击下方按钮，自己选择发送到哪里。'
-          });
+          }, () => fitSheetScroll(this));
         },
-        fail: () => this.setData({ busy: false, error: '文件生成失败，可先复制留档文字。' })
+        fail: () => { if (this.current(version)) this.setData({ busy: false, error: '文件生成失败，可先复制留档文字。' }, () => fitSheetScroll(this)); }
       });
     } catch (err) {
-      this.setData({ busy: false, error: '文件生成失败，可先复制留档文字。' });
+      if (this.current(version)) this.setData({ busy: false, error: '文件生成失败，可先复制留档文字。' }, () => fitSheetScroll(this));
     }
   },
 
   onShareTxt() {
-    if (!this.data.txtPath || this.data.busy) return;
+    if (!this.data.txtPath || this.data.busy || !this.current()) return;
+    const version = this.loadVersion;
     if (typeof wx.shareFileMessage !== 'function') {
       this.setData({ error: '当前设备无法发送 TXT 文件，可复制留档文字。', notice: '' });
       return;
@@ -252,11 +506,11 @@ Page({
       wx.shareFileMessage({
         filePath: this.data.txtPath,
         fileName: '灵感文字留档.txt',
-        success: () => this.setData({ busy: false, notice: 'TXT 已发送。外部副本不会随原记录删除。' }),
-        fail: () => this.setData({ busy: false, error: '文件未发送，可重试或复制留档文字。' })
+        success: () => { if (this.current(version)) this.setData({ busy: false, notice: 'TXT 已发送。外部副本不会随原记录删除。' }); },
+        fail: () => { if (this.current(version)) this.setData({ busy: false, error: '文件未发送，可重试或复制留档文字。' }); }
       });
     } catch (err) {
-      this.setData({ busy: false, error: '文件未发送，可重试或复制留档文字。' });
+      if (this.current(version)) this.setData({ busy: false, error: '文件未发送，可重试或复制留档文字。' });
     }
   }
 });

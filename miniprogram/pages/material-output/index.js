@@ -3,11 +3,19 @@ const { USE_TEMPLATES } = require('../../services/content-output');
 const { createInspiration } = require('../../core/inspiration');
 const { createId, LIMITS } = require('../../core/limits');
 const { formatAbsolute } = require('../../core/format');
+const { setDraftLeaveAlert } = require('../../services/draft-alert');
+const { draftContext, sourceVersion } = require('../../services/session-drafts');
+const { shareConfirmedDraft } = require('../../services/result-share');
+
+function guardDraft(data) {
+  setDraftLeaveAlert(Boolean(data.draft.trim() && !(data.savedId && data.savedDraft === data.draft)));
+}
 
 function initialData() {
   return { ready: false, phase: 'select', options: [], total: 0, query: '', selectedOnly: false,
     selectedCount: 0, sourceCount: 0, templates: USE_TEMPLATES, templateId: 'free', draft: '', draftEdited: false,
-    maxLength: LIMITS.textMaxLength, savedId: '', savedDraft: '', busy: false, error: '', notice: '' };
+    maxLength: LIMITS.textMaxLength, savedId: '', savedDraft: '', busy: false, error: '', notice: '',
+    saveUnknown: false, sourceStale: false, draftRecoveryNotice: '', showFormats: false };
 }
 
 Page({
@@ -17,22 +25,55 @@ Page({
   onHide() { this.suspend(); },
   onUnload() { this.suspend(); },
   suspend() {
+    setDraftLeaveAlert(false);
+    const app = getApp();
+    if (this.active && this.draftOwner && app.globalData.sessionDrafts) {
+      const fields = ['phase', 'query', 'selectedOnly', 'templateId', 'draft', 'draftEdited', 'savedId', 'savedDraft', 'saveUnknown', 'sourceStale'];
+      const data = fields.reduce((result, key) => { result[key] = this.data[key]; return result; }, {});
+      if (this.data.busy && this.pendingSave) data.saveUnknown = true;
+      const pendingSave = this.pendingSave && { text: this.pendingSave.text, item: this.pendingSave.item };
+      app.globalData.sessionDrafts.put('material-output', this.draftOwner, { data, selected: this.selected, pendingSave });
+    }
     this.active = false; this.session = (this.session || 0) + 1; this.store = null;
+    this.draftOwner = null;
     this.materials = []; this.selected = []; this.pendingSave = null; this.setData(initialData());
   },
   async load() {
+    setDraftLeaveAlert(false);
     this.active = true; const session = this.session = (this.session || 0) + 1;
     this.materials = []; this.selected = []; this.pendingSave = null; this.selectionVersion = 0; this.setData(initialData());
     const app = getApp();
+    let epoch = app.globalData.sessionEpoch;
     try {
-      const store = await app.ensureReady();
-      if (!this.active || session !== this.session || store !== app.globalData.store) return;
+      const pending = app.ensureReady();
+      epoch = app.globalData.sessionEpoch;
+      const store = await pending;
+      if (!this.active || session !== this.session || epoch !== app.globalData.sessionEpoch || store !== app.globalData.store) return;
       if (!store) { this.setData({ ready: true, error: '暂时无法读取素材，请联网后重试。' }); return; }
       this.store = store; this.epoch = app.globalData.sessionEpoch;
+      this.draftOwner = draftContext(app, store);
       this.materials = listMaterials(store.listInspirations());
-      this.setData({ ready: true }); this.renderOptions();
+      const recovered = app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('material-output', this.draftOwner);
+      if (recovered) {
+        this.selected = recovered.selected; this.pendingSave = recovered.pendingSave;
+        const sourceStale = Boolean(recovered.data.sourceStale || this.selected.some((part) =>
+          sourceVersion(this.materials.find((entry) => entry.key === part.key)) !== sourceVersion(part)));
+        const data = Object.assign({}, recovered.data, { ready: true, busy: false, sourceStale,
+          draftRecoveryNotice: sourceStale ? '素材已更新，已保留当前稿件供复制。重新选材后可继续整理。' : '已接续这次选材和稿件。',
+          error: sourceStale ? '来源已变化，请先复制当前稿件，再刷新素材。' : '' });
+        if (this.pendingSave && sourceVersion(store.listInspirations().find((entry) => entry.id === this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
+          data.savedId = this.pendingSave.item.id; data.savedDraft = this.pendingSave.text; data.saveUnknown = false; this.pendingSave = null;
+        }
+        const confirmed = data.savedId && store.listInspirations().find((entry) => entry.id === data.savedId);
+        if (data.savedId && (!confirmed || confirmed.text !== data.savedDraft || (confirmed.templateId || 'free') !== data.templateId)) {
+          data.savedId = ''; data.savedDraft = '';
+          data.draftRecoveryNotice = '已保留当前稿件，之前另存的记录已变化，请重新保存后分享。';
+        }
+        this.setData(data); guardDraft(this.data);
+      } else this.setData({ ready: true });
+      this.renderOptions();
     } catch (err) {
-      if (this.active && session === this.session) this.setData({ ready: true, error: '暂时无法读取素材，请稍后重试。' });
+      if (this.active && session === this.session && epoch === app.globalData.sessionEpoch) this.setData({ ready: true, error: '暂时无法读取素材，请稍后重试。' });
     }
   },
   current(session = this.session) {
@@ -54,8 +95,9 @@ Page({
   },
   onSearch(event) { if (this.current()) { this.setData({ query: event.detail.value }); this.renderOptions(); } },
   onSelectedOnly() { if (this.current()) { this.setData({ selectedOnly: !this.data.selectedOnly }); this.renderOptions(); } },
+  onClearSearch() { if (this.current()) { this.setData({ query: '', selectedOnly: false }); this.renderOptions(); } },
   onToggle(event) {
-    if (!this.current() || this.data.busy) return;
+    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale) return;
     const key = event.currentTarget.dataset.key;
     const found = this.materials.find((entry) => entry.key === key);
     if (!found) return;
@@ -65,34 +107,50 @@ Page({
     this.selectionVersion++; this.setData({ error: '' }); this.renderOptions();
   },
   onTemplate(event) {
-    if (!this.current() || this.data.busy) return;
+    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale || this.data.phase !== 'edit') return;
     const templateId = event.currentTarget.dataset.template;
-    if (USE_TEMPLATES.some((entry) => entry.id === templateId)) { this.selectionVersion++; this.setData({ templateId }); }
+    if (templateId === this.data.templateId || !USE_TEMPLATES.some((entry) => entry.id === templateId)) return;
+    this.onGenerate(templateId);
+  },
+  onToggleFormats() {
+    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale) return;
+    this.setData({ showFormats: !this.data.showFormats });
   },
   onRefresh() {
     if (!this.current() || this.data.busy) return;
+    if (this.data.saveUnknown && !this.data.sourceStale) return;
     const session = this.session;
-    wx.showModal({ title: '刷新素材？', content: '将读取最新内容并清空选材，已生成的稿件不会改变。', confirmText: '刷新', cancelText: '取消', success: (result) => {
+    wx.showModal({ title: '刷新素材？', content: this.data.sourceStale
+      ? '将清空旧选材和当前稿件，请先复制要保留的文字，再读取最新素材。'
+      : '将读取最新内容并清空选材，已生成的稿件不会改变。', confirmText: '刷新', cancelText: '取消', success: (result) => {
       if (!result.confirm || !this.current(session)) return;
       try {
         this.materials = listMaterials(this.store.listInspirations()); this.selected = []; this.selectionVersion++;
+        if (this.data.sourceStale) {
+          this.pendingSave = null;
+          if (getApp().globalData.sessionDrafts && this.draftOwner) getApp().globalData.sessionDrafts.remove('material-output', this.draftOwner);
+          this.setData({ draft: '', draftEdited: false, phase: 'select', sourceStale: false, saveUnknown: false, savedId: '', savedDraft: '', draftRecoveryNotice: '' });
+        }
         this.setData({ error: '' }); this.renderOptions();
       } catch (err) { this.setData({ error: '素材未能刷新，当前稿件仍保留。' }); }
     } });
   },
-  onGenerate() {
-    if (!this.current() || this.data.busy) return;
+  onGenerate(requestedTemplate) {
+    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale) return;
+    const templateId = typeof requestedTemplate === 'string' ? requestedTemplate : this.data.templateId;
+    const oldTemplate = this.data.templateId, oldPhase = this.data.phase;
     const session = this.session, revision = this.selectionVersion, oldDraft = this.data.draft;
     const apply = () => {
-      if (!this.current(session) || revision !== this.selectionVersion || oldDraft !== this.data.draft) return;
+      if (!this.current(session) || this.data.busy || this.data.phase !== oldPhase || revision !== this.selectionVersion || oldDraft !== this.data.draft || oldTemplate !== this.data.templateId) return;
       try {
-        const result = buildMaterialDraft(this.store.listInspirations(), this.selected, this.data.templateId);
+        const result = buildMaterialDraft(this.store.listInspirations(), this.selected, templateId);
         if (this.pendingSave && this.pendingSave.text !== result.text) this.pendingSave = null;
-        this.setData({ phase: 'edit', draft: result.text, draftEdited: false, error: '', notice: '' }, () => this.scrollTop(session));
+        this.setData({ phase: 'edit', templateId, draft: result.text, draftEdited: false, showFormats: false, error: '', notice: '' }, () => this.scrollTop(session));
+        guardDraft(this.data);
       } catch (err) { this.setData({ error: err.message }); }
     };
     if (this.data.draftEdited) {
-      wx.showModal({ title: '替换当前使用稿？', content: '你编辑过当前稿件。重新生成将替换这些编辑，来源记录不会改变。', confirmText: '替换', cancelText: '保留',
+      wx.showModal({ title: '替换当前稿件？', content: '你修改过这份稿件。替换后，这些修改不会保留。', confirmText: '替换稿件', cancelText: '保留编辑',
         success: (result) => { if (result.confirm) apply(); } });
     } else apply();
   },
@@ -101,13 +159,19 @@ Page({
   },
   onBackToSelection() {
     if (!this.current() || this.data.busy) return;
+    if (this.data.sourceStale) return this.onRefresh();
     const session = this.session; this.setData({ phase: 'select', error: '', notice: '' }, () => this.scrollTop(session));
   },
   onResumeDraft() {
     if (!this.current() || !this.data.draft) return;
     const session = this.session; this.setData({ phase: 'edit', error: '' }, () => this.scrollTop(session));
   },
-  onInput(event) { if (this.current() && !this.data.busy) { if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null; this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '' }); } },
+  onInput(event) {
+    if (!this.current() || this.data.busy || this.data.saveUnknown) return;
+    if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null;
+    this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '' });
+    guardDraft(this.data);
+  },
   onCopy() {
     if (!this.current() || this.data.busy) return;
     const text = this.data.draft, session = this.session;
@@ -115,7 +179,7 @@ Page({
     this.setData({ busy: true, error: '', notice: '' });
     const finish = (success) => {
       if (!this.current(session)) return;
-      this.setData({ busy: false, error: success ? '' : '复制未完成，稿件仍保留，可重试。', notice: success ? '已复制，可粘贴到需要的地方。' : '' });
+      this.setData({ busy: false, error: success ? '' : '复制未完成，请重试。', notice: success ? '已复制，可粘贴到需要的地方。' : '' });
       if (success && getApp().globalData.metrics) getApp().globalData.metrics.track('output_copied');
     };
     try { wx.setClipboardData({ data: text, success: () => finish(true), fail: () => finish(false) }); }
@@ -124,24 +188,42 @@ Page({
   async onSave() {
     if (!this.current() || this.data.busy) return;
     const text = this.data.draft, session = this.session, store = this.store;
+    const latest = listMaterials(store.listInspirations());
+    if (this.data.sourceStale || this.selected.some((part) => sourceVersion(latest.find((entry) => entry.key === part.key)) !== sourceVersion(part))) {
+      this.setData({ sourceStale: true, error: '来源已变化，请先复制当前稿件，再刷新素材。' }); return;
+    }
     if (this.data.savedId && this.data.savedDraft === text) { this.setData({ notice: '这份稿件已另存，可直接查看。' }); return; }
-    if (!text.trim() || text.length > LIMITS.textMaxLength) { this.setData({ error: '另存需要 1 至 2000 字。超长稿件可完整复制，或缩短后另存。' }); return; }
+    if (!text.trim()) { this.setData({ error: '没有可另存的内容，可先选择素材整理成稿。' }); return; }
+    if (text.length > LIMITS.textMaxLength) { this.setData({ error: '另存最多' + LIMITS.textMaxLength + '字符，当前超出' + (text.length - LIMITS.textMaxLength) + '字符。可先复制，或缩短后另存。' }); return; }
     this.setData({ busy: true, error: '', notice: '' });
     try {
-      const item = this.pendingSave && this.pendingSave.text === text && this.pendingSave.store === store
-        ? this.pendingSave.item : createInspiration({ id: createId('ins'), text, now: Date.now() });
+      const item = this.pendingSave && this.pendingSave.text === text
+        ? this.pendingSave.item : Object.assign({}, createInspiration({ id: createId('ins'), text, now: Date.now() }),
+          { templateId: USE_TEMPLATES.some((entry) => entry.id === this.data.templateId) ? this.data.templateId : 'free' });
       this.pendingSave = { text, store, item };
       const result = await store.saveInspiration(item);
       if (!this.current(session)) return;
-      if (!result || !result.ok || result.synced !== true) throw Error('SAVE_FAILED');
-      this.setData({ busy: false, savedId: item.id, savedDraft: text,
-        notice: '已另存为新灵感，来源记录未改动。' });
+      if (!result || !result.ok || result.synced !== true) {
+        const unknown = !result || !result.code || ['NETWORK', 'INTERNAL'].includes(result.code);
+        this.setData({ busy: false, error: unknown
+          ? '尚未确认另存，稿件还在。请重试确认，或先复制。'
+          : '未能另存，稿件还在。请检查内容后重试，或先复制。', saveUnknown: unknown });
+        return;
+      }
+      this.setData({ busy: false, saveUnknown: false, savedId: item.id, savedDraft: text,
+        notice: '已另存为新灵感' });
       this.pendingSave = null;
+      if (getApp().globalData.sessionDrafts && this.draftOwner) getApp().globalData.sessionDrafts.remove('material-output', this.draftOwner);
+      guardDraft(this.data);
       if (getApp().globalData.metrics) getApp().globalData.metrics.track('output_saved');
     } catch (err) {
-      if (this.current(session)) this.setData({ busy: false, error: '另存未完成，稿件仍保留，可重试或先复制。' });
+      if (this.current(session)) this.setData({ busy: false, saveUnknown: true, error: '尚未确认另存，稿件还在。请重试确认，或先复制。' });
     }
   },
   onOpenSaved() { if (this.current() && this.data.savedId) wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.savedId) }); },
+  onShareDraft() {
+    const session = this.session;
+    shareConfirmedDraft(this, { isCurrent: () => this.current(session), save: () => this.onSave() });
+  },
   onBack() { wx.navigateBack(); }
 });

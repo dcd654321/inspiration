@@ -41,11 +41,38 @@ test('保存未获确认时记录页保留输入和会话内重试标识', async
     const page = { data: Object.assign({}, definition.data), setData(next) { Object.assign(this.data, next); } };
     definition.onInput.call(page, { detail: { value: '尚待保存的想法' } });
     await definition.onSave.call(page);
+    // 结果未知：不清空、不报成功、不编造确定失败，给出重试与复制两条路
     assert.equal(page.data.draft, '尚待保存的想法');
     assert.equal(page.data.lastSavedId, '');
-    assert.match(page.data.error, /保存未完成/);
+    assert.equal(page.data.status, 'unknown');
+    assert.equal(page.data.errorText, '');
     await definition.onSave.call(page);
     assert.equal(saved[0].id, saved[1].id);
+  } finally {
+    delete require.cache[pagePath];
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete global[key]; else global[key] = value;
+    }
+  }
+});
+
+test('确认被拒绝时记录页区分「未能保存」，原因按已知回执给出', async () => {
+  const pagePath = require.resolve('../miniprogram/pages/capture/index');
+  const previous = { Page: global.Page, getApp: global.getApp };
+  let definition;
+  const store = { saveInspiration: async () => ({ ok: false, code: 'VALIDATION', message: '内容没有通过校验。' }) };
+  const app = { globalData: { store, cacheScope: scope }, ensureReady: async () => store };
+  try {
+    global.Page = (value) => { definition = value; };
+    global.getApp = () => app;
+    delete require.cache[pagePath]; require(pagePath);
+    const page = { data: Object.assign({}, definition.data), setData(next) { Object.assign(this.data, next); } };
+    definition.onInput.call(page, { detail: { value: '会被拒绝的内容' } });
+    await definition.onSave.call(page);
+    assert.equal(page.data.status, 'rejected');
+    assert.equal(page.data.errorText, '内容没有通过校验。');
+    assert.equal(page.data.draft, '会被拒绝的内容');
+    assert.equal(page.data.lastSavedId, '');
   } finally {
     delete require.cache[pagePath];
     for (const [key, value] of Object.entries(previous)) {

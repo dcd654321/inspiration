@@ -1,0 +1,73 @@
+{
+  "steps": [
+    {
+      "label": "ordinary entry, no requested keyboard",
+      "inputFocus": false,
+      "nativeFocus": 0,
+      "disabled": false,
+      "draft": "",
+      "canSave": false
+    },
+    {
+      "label": "bound focus event",
+      "inputFocus": true,
+      "nativeFocus": 1,
+      "disabled": false,
+      "draft": "",
+      "canSave": false
+    },
+    {
+      "label": "automation input event, not physical IME",
+      "inputFocus": true,
+      "nativeFocus": 1,
+      "disabled": false,
+      "draft": "焦点修复验证：点开后可以继续记录想法。",
+      "canSave": true
+    },
+    {
+      "label": "bound blur event",
+      "inputFocus": false,
+      "nativeFocus": 0,
+      "disabled": false,
+      "draft": "焦点修复验证：点开后可以继续记录想法。",
+      "canSave": true
+    },
+    {
+      "label": "tap 再记一条, then bound focus event",
+      "inputFocus": true,
+      "nativeFocus": 1,
+      "disabled": false,
+      "draft": "",
+      "canSave": false
+    },
+    {
+      "label": "return from mine, restore text without requesting keyboard",
+      "inputFocus": false,
+      "nativeFocus": 0,
+      "disabled": false,
+      "draft": "第二条验证文字",
+      "canSave": true
+    }
+  ],
+  "exceptions": [],
+  "logs": [
+    {
+      "type": "info",
+      "args": [
+        "Lazy code loading is enabled. Only injecting required components."
+      ]
+    }
+  ],
+  "boundary": {
+    "fixture": true,
+    "cloud": false,
+    "productionWrite": false,
+    "physicalKeyboardVerified": false
+  },
+  "binding": {
+    "focus": "function () { [native code] }",
+    "blur": "function"
+  },
+  "route": "pages/capture/index",
+  "verifiedAt": "2026-10-08T14:09:05.355Z"
+}

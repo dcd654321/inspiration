@@ -11,11 +11,11 @@ function createRetentionService({ db, now = Date.now }) {
       const dryRun = opts.dryRun !== false;
       const limit = Number.isSafeInteger(opts.limit) ? Math.max(1, Math.min(100, opts.limit)) : 50;
       const counts = { shares: { eligible: 0, changed: 0, failed: 0 },
-        feedback: { eligible: 0, changed: 0, failed: 0 }, rates: { eligible: 0, changed: 0, failed: 0 }, aiUsage: { eligible: 0, changed: 0, failed: 0 } };
+        feedback: { eligible: 0, changed: 0, failed: 0 }, rates: { eligible: 0, changed: 0, failed: 0 } };
       const scans = [
         ['shares', 'expired', at - 90 * DAY], ['shares', 'revoked', at - 90 * DAY],
         ['feedback', 'closed', at - 180 * DAY], ['feedback', 'open', at - 365 * DAY],
-        ['rates', 'expired', at], ['aiUsage', 'expired', at]
+        ['rates', 'expired', at]
       ];
       const seen = new Set();
       for (const [kind, reason, cutoff] of scans) {
@@ -39,7 +39,7 @@ function createRetentionService({ db, now = Date.now }) {
 }
 
 function createCloudRetentionDb(db) {
-  const names = { shares: 'linggan_shares', feedback: 'linggan_feedback', rates: 'linggan_rate_limits', aiUsage: 'linggan_ai_usage' };
+  const names = { shares: 'linggan_shares', feedback: 'linggan_feedback', rates: 'linggan_rate_limits' };
   function condition(kind, reason, cutoff) {
     if (kind === 'shares') return { payloadPurgedAt: null,
       [reason === 'revoked' ? 'revokedAt' : 'expiresAt']: db.command.lte(cutoff).and(db.command.gt(0)) };

@@ -1,33 +1,43 @@
-<view class="page material-page">
-  <view class="page-title">选材整理</view>
-  <view class="page-sub">从多条灵感中选择素材，整理成一份稿件。原记录不会改动。</view>
-  <view class="selection-note">未另存的稿件离开后不保留。</view>
+<view class="page material-page {{phase === 'select' ? 'material-select-page' : ''}}">
+  <view class="page-title">{{phase === 'select' ? '选材成稿' : '整理成稿'}}</view>
+  <view class="page-sub">{{phase === 'select' ? '把相关的文字放到一起，整理成一份稿件。' : '编辑、复制，或把这份稿件分享给需要的人。'}}</view>
+  <view wx:if="{{draft && !(savedId && savedDraft === draft)}}" class="selection-note">稿件仅在本次使用中保留，关闭小程序前请复制或另存。</view>
+  <view wx:if="{{draftRecoveryNotice}}" class="recovery-note" aria-live="polite">{{draftRecoveryNotice}}</view>
   <view wx:if="{{!ready}}" class="empty"><view class="ed">正在读取素材…</view></view>
   <view wx:elif="{{error && !total}}" class="empty">
     <view class="notice notice-err" aria-live="polite">{{error}}</view>
     <button class="btn btn-plain btn-block" bindtap="load">重新读取</button>
   </view>
   <block wx:elif="{{phase === 'select'}}">
-    <view class="section-label">选择使用方式</view>
-    <view class="template-options"><button wx:for="{{templates}}" wx:key="id" class="template-option {{templateId === item.id ? 'template-selected' : ''}}" data-template="{{item.id}}" bindtap="onTemplate">{{item.name}}</button></view>
-    <view class="selection-note">仅组合选定的原文，不自动扩写。数字表示素材进入稿件的顺序。</view>
+    <view class="selection-note">只整理选中的文字，不自动补写。数字表示内容进入稿件的顺序。</view>
     <input class="material-search" value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索素材文字" aria-label="搜索素材文字" />
     <view class="material-tools"><button class="btn-link" bindtap="onSelectedOnly">{{selectedOnly ? '显示全部' : '只看已选'}}</button><button class="btn-link" bindtap="onRefresh">刷新素材</button></view>
-    <view wx:if="{{!options.length}}" class="empty-options">{{total ? '没有符合条件的素材，可调整搜索或显示全部。' : '还没有可用素材，请先记录想法。'}}</view>
-    <button wx:for="{{options}}" wx:key="key" class="option" data-key="{{item.key}}" bindtap="onToggle" aria-label="{{item.selected ? '取消选择' : '选择'}}{{item.kind}}">
+    <view wx:if="{{!options.length}}" class="empty-options"><view>{{total ? selectedOnly && !query ? '还没有选中素材，先从全部素材中选择。' : '没有找到匹配的素材，换个词或显示全部素材。' : '还没有可用素材，请先记录想法。'}}</view><button wx:if="{{total > 0}}" class="btn-link" bindtap="onClearSearch">{{query ? '清空搜索' : '显示全部素材'}}</button></view>
+    <button wx:for="{{options}}" wx:key="key" class="option {{item.selected ? 'option-selected' : ''}}" data-key="{{item.key}}" bindtap="onToggle" disabled="{{busy || saveUnknown || sourceStale}}" aria-label="{{item.selected ? '取消选择' : '选择'}}{{item.kind}}">
       <text class="option-check {{item.selected ? 'option-checked' : ''}}">{{item.order || ''}}</text>
       <view class="option-body"><text class="option-time">{{item.kind}} · {{item.time}}</text><text wx:if="{{item.kind === '补充'}}" class="material-source">来自：{{item.sourceText}}</text><text class="option-content">{{item.content}}</text></view>
     </button>
-    <view class="material-footer"><view wx:if="{{error}}" class="notice notice-err" aria-live="polite">{{error}}</view><view class="selection-note">已选 {{selectedCount}} 段 · {{sourceCount}} 条灵感</view><button class="btn btn-block" bindtap="onGenerate" disabled="{{!selectedCount}}">生成使用稿</button><button wx:if="{{draft}}" class="btn btn-plain btn-block" bindtap="onResumeDraft">返回当前稿件</button></view>
+    <view class="material-footer"><view wx:if="{{error}}" class="notice notice-err" aria-live="polite">{{error}}</view><view class="selection-note">已选 {{selectedCount}} 段 · {{sourceCount}} 条灵感</view><button class="btn btn-block" bindtap="onGenerate" disabled="{{busy || saveUnknown || sourceStale || !selectedCount}}">整理成稿</button><button wx:if="{{draft}}" class="btn btn-plain btn-block" bindtap="onResumeDraft">返回当前稿件</button></view>
   </block>
   <block wx:else>
-    <button class="back-select" bindtap="onBackToSelection" disabled="{{busy}}">返回选材</button>
-    <textarea class="draft-editor" value="{{draft}}" maxlength="-1" bindinput="onInput" disabled="{{busy}}" aria-label="编辑使用稿" />
-    <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">{{draft.length}} 字 · 另存上限 {{maxLength}} 字</view>
-    <button class="btn btn-block main-action" bindtap="onCopy" disabled="{{busy}}">复制使用稿</button>
-    <button class="btn btn-quiet btn-block secondary-action" bindtap="onSave" disabled="{{busy || (savedId && savedDraft === draft)}}">{{savedId && savedDraft === draft ? '当前稿件已另存' : '另存为新灵感'}}</button>
-    <button wx:if="{{savedId}}" class="btn btn-plain btn-block secondary-action" bindtap="onOpenSaved" disabled="{{busy}}">查看已另存的灵感</button>
+    <view class="result-tools"><button class="back-select" bindtap="onBackToSelection" disabled="{{busy}}">返回选材</button><button class="back-select" bindtap="onToggleFormats" disabled="{{busy || saveUnknown || sourceStale}}">{{showFormats ? '收起格式' : '选择格式'}}</button></view>
+    <block wx:if="{{showFormats}}">
+    <view class="section-label">稿件格式</view>
+    <view class="template-options"><button wx:for="{{templates}}" wx:key="id" class="template-option {{templateId === item.id ? 'template-selected' : ''}}" data-template="{{item.id}}" bindtap="onTemplate" disabled="{{busy || saveUnknown || sourceStale}}" aria-label="{{item.name}}{{templateId === item.id ? '，已选择' : ''}}">{{templateId === item.id ? '✓ ' : ''}}{{item.name}}</button></view>
+    <view class="selection-note">只编排选中的文字，不自动补写。切换格式会重新整理稿件。</view>
+    </block>
+    <view class="field-label draft-label">这份稿件</view>
+    <textarea class="draft-editor {{saveUnknown ? 'draft-pending' : ''}}" value="{{draft}}" maxlength="-1" bindinput="onInput" disabled="{{busy || saveUnknown}}" cursor-spacing="24" aria-label="编辑稿件" />
+    <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">
+      <text wx:if="{{draft.length > maxLength}}">另存最多{{maxLength}}字符，当前超出{{draft.length - maxLength}}字符。</text>
+      <text wx:else>{{draft.length}}字符 · 另存最多{{maxLength}}字符</text>
+    </view>
+    <view wx:if="{{sourceStale}}" class="notice notice-warn"><view class="mark"></view><view class="notice-body"><view>素材已变化，当前稿件仍可复制。请重新选择素材后再保存。</view><button class="btn-link" bindtap="onBackToSelection" disabled="{{busy}}">重新选择素材</button></view></view>
+    <view wx:if="{{error && total && phase !== 'select'}}" class="notice {{saveUnknown ? 'notice-warn' : 'notice-err'}}" aria-live="polite">{{error}}</view>
+    <button class="btn btn-block main-action" bindtap="onCopy" disabled="{{busy || !draft.length}}">复制稿件</button>
+    <button class="btn btn-quiet btn-block secondary-action" bindtap="onSave" disabled="{{busy || sourceStale || !draft.length || (savedId && savedDraft === draft)}}">{{busy ? '正在另存…' : saveUnknown ? '重试确认保存' : savedId && savedDraft === draft ? '已另存' : '另存为新灵感'}}</button>
+    <button class="btn btn-plain btn-block secondary-action" bindtap="onShareDraft" disabled="{{busy || saveUnknown || sourceStale || !draft.length}}">{{savedId && savedDraft === draft ? '分享这份稿件' : '保存并预览分享'}}</button>
+    <button wx:if="{{savedId}}" class="btn btn-plain btn-block secondary-action" bindtap="onOpenSaved" disabled="{{busy}}">查看新灵感</button>
   </block>
-  <view wx:if="{{error && total && phase !== 'select'}}" class="notice notice-err" aria-live="polite">{{error}}</view>
   <view wx:if="{{notice}}" class="notice notice-success" aria-live="polite">{{notice}}</view>
 </view>

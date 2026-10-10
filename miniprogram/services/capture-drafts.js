@@ -19,11 +19,17 @@
  */
 function createCaptureDrafts() {
   const drafts = new Map();
+  const trim = () => {
+    for (const [id, entry] of drafts) if (Date.now() - entry.at >= 30 * 60 * 1000) drafts.delete(id);
+    while (drafts.size > 32) drafts.delete(drafts.keys().next().value);
+  };
 
   return {
     /** 读一条草稿。没写过返回空串，页面可以直接绑到输入框上。 */
     get(inspirationId) {
-      return drafts.get(inspirationId) || '';
+      trim();
+      const entry = drafts.get(inspirationId);
+      return entry ? entry.text : '';
     },
 
     /**
@@ -37,7 +43,8 @@ function createCaptureDrafts() {
         drafts.delete(inspirationId);
         return '';
       }
-      drafts.set(inspirationId, text);
+      drafts.delete(inspirationId);
+      drafts.set(inspirationId, { text, at: Date.now() }); trim();
       return text;
     },
 
@@ -51,6 +58,7 @@ function createCaptureDrafts() {
     },
 
     has(inspirationId) {
+      trim();
       return drafts.has(inspirationId);
     }
   };

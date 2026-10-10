@@ -1,19 +1,21 @@
-<view class="page shared-page">
+<view class="page shared-page {{!loading && !error ? 'has-start-footer' : ''}}">
   <view wx:if="{{loading}}" class="shared-state">正在打开分享…</view>
   <block wx:elif="{{error}}">
     <view class="page-title">{{unavailable ? '分享无法查看' : '暂时无法查看'}}</view>
     <view class="shared-state">{{error}}</view>
-    <button wx:if="{{!unavailable}}" class="btn btn-quiet btn-block" bindtap="onRetry">重试</button>
-    <button class="btn btn-plain btn-block" bindtap="onStart">去记录我的想法</button>
+    <button wx:if="{{!unavailable}}" class="btn btn-quiet btn-block" bindtap="onRetry">重新读取</button>
+    <button class="btn btn-plain btn-block" bindtap="onStart">记录我的想法</button>
   </block>
   <block wx:else>
-    <view class="shared-eyebrow">来自灵感拾光簿 · 只读分享</view>
+    <view class="shared-eyebrow">来自灵感拾光簿</view>
+    <view wx:if="{{hasTemplate && templateName}}" class="shared-purpose">用途：{{templateName}}</view>
     <view class="page-title">{{title}}</view>
     <view class="shared-date">分享于 {{date}}</view>
     <view class="shared-content"><text selectable="true">{{body}}</text></view>
-    <view class="shared-note">这是一份分享时保存的文字快照。原作者之后的修改不会自动更新到这里。</view>
-    <button class="btn btn-quiet btn-block" bindtap="onCopy">复制文字</button>
-    <button class="btn btn-plain btn-block" bindtap="onStart">记录我的想法</button>
+    <view class="shared-note">这是分享时的文字。原作者之后的修改不会更新到这里。</view>
+    <view class="shared-value"><view class="shared-value-title">你也可以，从一句话开始</view><view class="shared-value-copy">记下自己的想法，随时补充，需要时整理成可用的文字。</view></view>
+    <button class="btn btn-quiet btn-block" bindtap="onCopy">复制这份文字</button>
     <button class="shared-report" bindtap="onReport">举报这份内容</button>
+    <view class="shared-start-footer"><button class="btn btn-block" bindtap="onStart">{{startLabel || '也整理我的想法'}}</button></view>
   </block>
 </view>

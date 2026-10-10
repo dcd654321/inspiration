@@ -1,0 +1,111 @@
+/* 启动过渡页：品牌时刻，不是工作页。读完就切走，没有常驻内容。 */
+
+.launch {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  /* 自定义导航没有原生栏，顶部按安全区让开胶囊 */
+  padding: calc(env(safe-area-inset-top) + 160rpx) 60rpx calc(112rpx + env(safe-area-inset-bottom));
+  background: var(--paper);
+}
+
+.launch-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 一次性的入场；没有常驻动画 */
+.launch-mark {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 40rpx;
+  animation: launch-rise 480ms ease-out both;
+}
+
+.launch-name {
+  margin-top: 30rpx;
+  font-size: 40rpx;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  animation: launch-rise 480ms ease-out 60ms both;
+}
+
+/* 品牌独立句（C01），带句号 */
+.launch-line {
+  margin-top: 14rpx;
+  font-size: 27rpx;
+  font-size: max(27rpx, 14px);
+  color: var(--ink-2);
+  animation: launch-rise 480ms ease-out 120ms both;
+}
+
+.launch-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 发丝轨道与「拾光」光点。加载指示是全站唯一的循环动效：
+   它表达「正在进行」，不是装饰；减少动态效果时停用（见文件末媒体查询）。 */
+.launch-track {
+  position: relative;
+  width: 320rpx;
+  height: 2rpx;
+  border-radius: 2rpx;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.launch-spark {
+  position: absolute;
+  top: -5rpx;
+  left: 0;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  /* 琥珀是品牌图形的专属信号；这里就是品牌时刻的「灵光」本人 */
+  background: var(--spark);
+  box-shadow: 0 0 12rpx rgba(228, 168, 58, 0.9);
+  animation: launch-travel 1.8s ease-in-out infinite;
+}
+
+.launch-status {
+  margin-top: 22rpx;
+  font-size: 25rpx;
+  font-size: max(25rpx, 13px);
+  color: var(--ink-3);
+}
+
+.launch-error {
+  color: var(--ink-2);
+  line-height: 1.7;
+  text-align: center;
+  max-width: 520rpx;
+}
+
+.launch-action { margin-top: 20rpx; }
+
+@keyframes launch-rise {
+  from { opacity: 0; transform: translateY(16rpx); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes launch-travel {
+  0% { transform: translateX(-12rpx); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateX(320rpx); opacity: 0; }
+}
+
+/* 减少动态效果：停掉一切动画，光点停在轨道中间 */
+@media (prefers-reduced-motion: reduce) {
+  .launch-mark,
+  .launch-name,
+  .launch-line { animation: none; }
+  .launch-spark { animation: none; left: calc(50% - 6rpx); }
+}

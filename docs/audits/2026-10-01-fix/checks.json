@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-01",
+  "branch": "dev",
+  "baseline": "a6dd036",
+  "state": "uncommitted workspace",
+  "tests": {
+    "total": 437,
+    "pass": 437,
+    "fail": 0,
+    "skipped": 0,
+    "newBehaviorCases": 18
+  },
+  "check": {
+    "passed": 255
+  },
+  "openspec": {
+    "passed": 9,
+    "failed": 0
+  },
+  "diffCheck": "passed",
+  "screenshots": [
+    "01-material-selection.png",
+    "02-material-draft.png",
+    "03-output.png",
+    "04-format-safe.png",
+    "05-content-safe.png",
+    "06-archive-three-actions.png",
+    "07-output-frozen.png",
+    "08-output-confirmed.png",
+    "09-output-new-edit.png",
+    "10-output-unknown.png",
+    "11-compose-focused.png",
+    "12-supplement-frozen.png",
+    "13-supplement-confirmed.png",
+    "14-list-retained.png",
+    "15-photo-safe.png",
+    "16-detail-menu-safe.png",
+    "17-archive-last-line.png",
+    "18-material-100-bottom.png",
+    "19-photo-final-safe.png"
+  ],
+  "scope": {
+    "developerTools": "390x844 synthetic QA fixture",
+    "realDevice": false,
+    "realCloud": false,
+    "ai": false,
+    "otherWidths": false,
+    "deployed": false,
+    "committed": false
+  }
+}

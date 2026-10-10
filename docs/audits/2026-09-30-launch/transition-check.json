@@ -1,0 +1,10 @@
+{
+  "calls": [
+    "/pages/capture/index",
+    "/pages/capture/index",
+    "/pages/capture/index"
+  ],
+  "routes": [
+    "pages/capture/index"
+  ]
+}

@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>灵感拾光簿 · 2026-10-07 改版设计稿</title>
+  <style>
+    :root { --paper:#f7f6f2; --surface:#fff; --ink:#191a23; --ink2:#5f6070; --ink3:#6f6f7b; --line:#e6e4de; --lineStrong:#d7d4cb; --field:#858596; --brand:#34377f; --soft:#eeeef8; --brandLine:#c9cae6; --spark:#e4a83a; --warn:#8a6420; --warnBg:#fdf4e3; --danger:#b43c32; --dangerBg:#fbeeec; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:#eeefec; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; font-size:16px; line-height:1.65; }
+    main { max-width:1648px; margin:0 auto; padding:46px 32px 60px; }
+    h1,h2,h3,p { margin:0; }
+    .board-kicker { font-size:13px; letter-spacing:.14em; color:#696c64; font-weight:600; margin-bottom:12px; }
+    .board-top { display:flex; justify-content:space-between; gap:30px; align-items:flex-start; }
+    .board-top h1 { font-size:34px; line-height:1.3; letter-spacing:-.03em; font-weight:600; }
+    .board-intro { max-width:830px; margin-top:16px; font-size:16px; color:#585c57; }
+    .board-badge { border:1px solid #c9cec5; border-radius:8px; padding:8px 14px; font-size:13px; color:#5d6259; white-space:nowrap; }
+    .board-note { margin-top:18px; font-size:13px; color:#65695f; max-width:1150px; }
+    .legend { display:flex; flex-wrap:wrap; gap:12px 24px; margin-top:26px; padding-top:24px; border-top:1px solid #d4d8cf; font-size:13px; color:#5f625b; }
+    .legend span { display:flex; align-items:center; gap:8px; }
+    .swatch { width:18px; height:18px; border-radius:5px; display:inline-block; border:1px solid #caccc6; }
+    .section-head { display:flex; justify-content:space-between; gap:20px; align-items:baseline; margin:40px 0 20px; }
+    .section-head h2 { font-size:22px; font-weight:600; letter-spacing:-.02em; }
+    .section-head p { color:#61665d; font-size:14px; }
+    .grid { display:grid; grid-template-columns:repeat(4,375px); gap:28px; align-items:start; }
+    .screen-card { width:375px; }
+    .screen-label { min-height:74px; display:flex; flex-direction:column; gap:4px; }
+    .screen-label h3 { font-size:16px; font-weight:600; }
+    .screen-label p { font-size:13px; color:#63675f; line-height:1.55; }
+    .screen-note { margin-top:12px; font-size:13px; color:#64695f; line-height:1.6; min-height:44px; }
+    .phone { width:375px; height:812px; background:var(--paper); border:1px solid #d1d3cd; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; position:relative; box-shadow:0 8px 20px rgba(32,41,28,.045); }
+    .system { height:26px; flex:0 0 26px; padding:5px 18px 0; display:flex; justify-content:space-between; font-size:11px; line-height:1; font-weight:600; background:var(--surface); }
+    .system-right { display:flex; align-items:center; gap:5px; }
+    .signal { width:11px; height:8px; display:inline-block; border-left:2px solid currentColor; border-right:2px solid currentColor; position:relative; }
+    .signal::before { content:""; display:block; position:absolute; bottom:0; left:3px; width:2px; height:5px; background:currentColor; }
+    .battery { height:7px; width:16px; border:1px solid currentColor; border-radius:2px; display:inline-block; position:relative; }
+    .battery::after { content:""; position:absolute; right:2px; left:2px; top:1px; bottom:1px; background:currentColor; }
+    .nav { height:46px; flex:0 0 46px; background:var(--surface); display:flex; align-items:center; position:relative; justify-content:center; font-size:16px; font-weight:600; }
+    .back { position:absolute; left:17px; width:24px; height:32px; display:flex; align-items:center; justify-content:flex-start; }
+    .back::before { content:""; width:9px; height:9px; transform:rotate(45deg); border-left:1.5px solid var(--ink); border-bottom:1.5px solid var(--ink); }
+    .capsule { position:absolute; right:10px; top:9px; width:76px; height:28px; border:1px solid #dedfdc; border-radius:18px; display:flex; align-items:center; justify-content:center; gap:10px; background:rgba(255,255,255,.9); }
+    .capsule .dots { letter-spacing:1px; line-height:1; font-size:15px; padding-bottom:6px; }
+    .capsule .circle { width:11px; height:11px; border:1.5px solid #272b29; border-radius:50%; position:relative; }
+    .capsule .circle::after { content:""; width:3px; height:3px; border-radius:50%; background:#272b29; position:absolute; left:2.5px; top:2.5px; }
+    .capsule .sep { height:12px; width:1px; background:#dbdcd8; }
+    .content { flex:1; min-height:0; padding:22px 20px; overflow:hidden; }
+    .home-indicator { height:24px; flex:0 0 24px; position:relative; background:var(--paper); }
+    .home-indicator::after { content:""; width:112px; height:4px; border-radius:3px; background:#222723; position:absolute; bottom:6px; left:calc(50% - 56px); }
+    .tabbar { height:80px; flex:0 0 80px; border-top:1px solid var(--line); background:var(--surface); display:flex; justify-content:space-around; padding:10px 18px 25px; position:relative; }
+    .tabbar::after { content:""; width:112px; height:4px; border-radius:3px; background:#222723; position:absolute; bottom:6px; left:calc(50% - 56px); }
+    .tab { width:80px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; line-height:1.3; color:var(--ink3); gap:4px; }
+    .tab img { height:22px; width:22px; }
+    .tab.active { color:var(--brand); }
+    .brand-row { display:flex; gap:12px; align-items:center; }
+    .brand-mark { width:52px; height:52px; border-radius:13px; flex:0 0 52px; }
+    .brand-name { font-size:16px; font-weight:600; }
+    .brand-sub { color:var(--ink3); font-size:13px; margin-top:2px; }
+    .hero { font-size:26px; line-height:1.42; letter-spacing:-.025em; font-weight:600; margin-top:20px; }
+    .lead { font-size:15px; color:var(--ink2); line-height:1.7; margin-top:9px; }
+    .title { font-size:24px; line-height:1.34; font-weight:600; letter-spacing:-.02em; }
+    .sub { font-size:14px; color:var(--ink2); line-height:1.7; margin-top:8px; }
+    .eyebrow { font-size:13px; color:var(--ink3); line-height:1.5; margin-bottom:8px; }
+    .sample { font-size:12px; color:#626668; line-height:1.4; background:#ebece7; padding:4px 7px; border-radius:4px; display:inline-block; }
+    .sample.line { display:block; margin:12px 0 8px; width:fit-content; }
+    .composer { margin-top:21px; border-radius:12px; background:var(--surface); border:1px solid var(--line); padding:16px; }
+    .field-label { color:var(--ink2); font-size:13px; font-weight:600; margin-bottom:11px; }
+    .field { color:var(--ink3); font-size:17px; line-height:1.75; min-height:126px; white-space:pre-wrap; }
+    .field.inputted { color:var(--ink); min-height:104px; }
+    .field-focus { outline:2px solid var(--brand); outline-offset:-1px; }
+    .field-count { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; color:var(--ink3); font-size:13px; line-height:1.5; margin-top:8px; }
+    .hint { font-size:13px; line-height:1.65; color:var(--ink3); }
+    .btn { min-height:48px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:var(--brand); color:white; font-size:16px; font-weight:500; line-height:1.35; padding:10px 14px; }
+    .btn + .btn { margin-top:10px; }
+    .btn.disabled { background:#e4e4ec; color:var(--ink3); }
+    .btn.quiet { min-height:44px; border:1px solid var(--brandLine); background:transparent; color:var(--brand); }
+    .btn.plain { min-height:44px; border:1px solid var(--lineStrong); background:var(--surface); color:var(--ink2); }
+    .btn.sm { min-height:44px; padding:8px 12px; font-size:14px; }
+    .btn.link { min-height:44px; padding:0 2px; border:0; color:var(--brand); background:transparent; font-size:14px; text-align:left; justify-content:flex-start; font-weight:400; }
+    .btn-row { display:flex; gap:10px; }
+    .btn-row .btn { flex:1; min-width:0; margin-top:0; }
+    .composer .btn { margin-top:16px; }
+    .path { display:flex; align-items:center; justify-content:space-between; font-size:13px; color:var(--ink2); margin-top:21px; padding:0 18px; }
+    .path .arrow { color:#9b9da5; }
+    .private { color:var(--ink3); font-size:13px; text-align:center; margin-top:14px; }
+    .heading-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .text-action { min-height:44px; display:flex; align-items:center; color:var(--brand); font-size:14px; white-space:nowrap; }
+    .search { background:var(--surface); border:1px solid var(--field); border-radius:8px; min-height:44px; display:flex; align-items:center; color:var(--ink3); padding:0 12px; font-size:14px; margin-top:16px; }
+    .search-icon { width:14px; height:14px; border:1.5px solid var(--ink3); border-radius:50%; margin-right:10px; position:relative; }
+    .search-icon::after { content:""; width:5px; height:1.5px; background:var(--ink3); position:absolute; right:-3px; bottom:-2px; transform:rotate(45deg); }
+    .chips { display:flex; gap:8px; margin-top:8px; align-items:center; }
+    .chip { min-height:44px; display:flex; align-items:center; color:var(--ink2); font-size:14px; padding:0 14px; border-radius:8px; }
+    .chip.active { color:var(--brand); background:var(--soft); font-weight:500; }
+    .list-section { display:flex; align-items:center; justify-content:space-between; margin-top:16px; font-size:13px; color:var(--ink3); }
+    .list-section strong { color:var(--ink2); font-weight:600; }
+    .list-section .text-action { font-size:14px; min-height:32px; }
+    .list { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:8px; }
+    .row { padding:17px 16px; border-bottom:1px solid var(--line); }
+    .row:last-child { border-bottom:0; }
+    .row-text { font-size:16px; line-height:1.75; color:var(--ink); }
+    .row-meta { color:var(--ink3); font-size:13px; margin-top:10px; display:flex; gap:14px; flex-wrap:wrap; }
+    .review-row { display:flex; justify-content:space-between; min-height:48px; padding:0 16px; align-items:center; background:var(--paper); font-size:14px; color:var(--ink2); border-bottom:1px solid var(--line); }
+    .review-row span:last-child { color:var(--brand); }
+    .tag { color:var(--ink2); font-size:12px; line-height:1.4; display:inline-block; border:1px solid var(--lineStrong); padding:3px 8px; border-radius:5px; margin-top:9px; }
+    .detail-time { display:flex; justify-content:space-between; font-size:13px; color:var(--ink3); align-items:center; height:28px; }
+    .detail-time .text-action { min-height:44px; padding:0 2px; }
+    .origin { margin-top:15px; font-size:19px; line-height:1.75; white-space:pre-wrap; }
+    .detail-actions { margin-top:19px; }
+    .ai-link { display:flex; align-items:center; gap:8px; color:var(--brand); font-size:14px; min-height:44px; margin-top:5px; }
+    .ai-mark { font-size:10px; line-height:18px; padding:0 5px; border:1px solid var(--brandLine); border-radius:4px; letter-spacing:.05em; font-weight:600; }
+    .mini-composer { padding:12px 14px; border:1px solid var(--field); border-radius:8px; background:var(--surface); margin-top:6px; }
+    .mini-field { min-height:51px; color:var(--ink3); font-size:16px; line-height:1.75; }
+    .mini-foot { display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--ink3); font-size:13px; margin-top:5px; }
+    .mini-foot .btn { min-width:106px; }
+    .section-title { display:flex; justify-content:space-between; gap:12px; font-size:14px; color:var(--ink2); margin:23px 0 13px; font-weight:600; }
+    .section-title span { color:var(--ink3); font-size:13px; font-weight:400; }
+    .timeline { border-left:1px solid var(--lineStrong); margin-left:5px; padding-left:17px; }
+    .timeline-item { position:relative; padding-bottom:18px; }
+    .timeline-item::before { content:""; position:absolute; left:-21px; top:7px; width:7px; height:7px; border:1px solid var(--lineStrong); background:var(--paper); border-radius:50%; }
+    .timeline-meta { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--ink3); }
+    .timeline-text { margin-top:8px; font-size:16px; line-height:1.75; }
+    .tools { display:flex; justify-content:space-between; align-items:center; color:var(--brand); font-size:14px; min-height:44px; }
+    .option { display:flex; gap:12px; border:1px solid var(--lineStrong); border-radius:10px; padding:13px 12px; margin-top:8px; background:var(--surface); }
+    .option.selected { border-color:var(--brand); background:var(--soft); }
+    .check { width:22px; height:22px; flex:0 0 22px; border:1.5px solid var(--field); border-radius:6px; margin-top:2px; display:flex; align-items:center; justify-content:center; color:var(--brand); font-size:13px; line-height:1; }
+    .selected .check { border-color:var(--brand); background:var(--brand); color:white; }
+    .option-meta { color:var(--ink3); font-size:13px; line-height:1.5; }
+    .option-text { color:var(--ink); font-size:16px; line-height:1.7; margin-top:4px; }
+    .source { color:var(--ink2); font-size:13px; margin-top:5px; line-height:1.55; }
+    .dock { flex-shrink:0; background:var(--paper); border-top:1px solid var(--line); padding:12px 20px 13px; }
+    .dock .hint { margin-bottom:10px; }
+    .dock .btn-row { margin-top:10px; }
+    .draft-summary { color:var(--ink2); font-size:13px; margin-top:8px; }
+    .draft-paper { padding:16px; border:1px solid var(--field); border-radius:8px; background:var(--surface); font-size:16px; line-height:1.75; white-space:pre-wrap; min-height:245px; }
+    .draft-paper strong { font-weight:600; font-size:16px; }
+    .draft-counter { font-size:13px; color:var(--ink3); margin-top:8px; text-align:right; }
+    .not-saved { font-size:13px; color:var(--ink3); margin-top:11px; line-height:1.65; }
+    .stage { color:var(--brand); font-size:13px; font-weight:500; margin-bottom:8px; }
+    .notice { border-radius:8px; padding:12px 13px; display:flex; align-items:flex-start; gap:10px; background:var(--soft); color:var(--brand); border:1px solid var(--brandLine); font-size:13px; line-height:1.65; margin-top:14px; }
+    .notice.warn { background:var(--warnBg); color:var(--warn); border-color:#e8d8b6; }
+    .notice.danger { background:var(--dangerBg); color:var(--danger); border-color:#efc9c4; }
+    .notice-icon { display:block; flex:0 0 17px; width:17px; height:17px; border-radius:50%; color:white; background:currentColor; margin-top:2px; position:relative; }
+    .notice.warn .notice-icon { background:var(--warn); }
+    .notice-icon::before { content:"!"; color:white; font-size:12px; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; line-height:1; font-weight:600; }
+    .notice.danger .notice-icon { background:var(--danger); }
+    .notice.danger .notice-icon::before { content:"×"; font-size:15px; }
+    .notice-title { font-size:15px; font-weight:600; line-height:1.5; margin-bottom:3px; }
+    .notice .btn-row { margin-top:12px; gap:8px; }
+    .notice .btn { padding:8px 10px; }
+    .draft-section { margin-top:16px; color:var(--ink2); font-size:14px; font-weight:600; display:flex; justify-content:space-between; }
+    .draft-section span { font-size:12px; color:var(--ink3); font-weight:400; }
+    .ai-draft { background:#f2f2fa; border:1px dashed #a8aacd; padding:12px; border-radius:8px; margin-top:8px; }
+    .ai-choice { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--brand); }
+    .ai-choice .check { width:18px; height:18px; flex-basis:18px; border-radius:4px; border-color:var(--brand); background:var(--brand); margin:0; }
+    .ai-choice .check::after { content:""; width:5px; height:9px; border:solid white; border-width:0 1.5px 1.5px 0; transform:rotate(45deg); margin-top:-2px; }
+    .ai-edit { background:var(--surface); border:1px solid var(--field); border-radius:6px; padding:10px; margin-top:9px; font-size:16px; line-height:1.7; }
+    .preview { background:var(--surface); border:1px solid var(--lineStrong); border-radius:12px; padding:17px 16px; margin-top:12px; font-size:16px; line-height:1.8; }
+    .preview-title { font-size:18px; line-height:1.6; font-weight:600; margin-bottom:12px; }
+    .preview-rule { color:var(--ink2); font-size:13px; line-height:1.75; margin-top:13px; }
+    .share-range { border-bottom:1px solid var(--line); padding:13px 0 12px; font-size:14px; line-height:1.6; }
+    .share-range small { font-size:13px; color:var(--ink3); display:block; margin-top:4px; }
+    .shared-head { display:flex; align-items:center; gap:8px; color:var(--ink3); font-size:13px; margin-bottom:15px; }
+    .shared-head img { width:28px; height:28px; border-radius:7px; }
+    .shared-content { padding:22px 0; font-size:17px; line-height:1.85; white-space:pre-wrap; }
+    .shared-content strong { font-weight:500; }
+    .shared-note { border-top:1px solid var(--lineStrong); padding-top:13px; color:var(--ink3); font-size:13px; line-height:1.7; }
+    .report-link { display:flex; align-items:center; justify-content:center; min-height:44px; font-size:13px; color:var(--ink3); margin-top:7px; }
+    .state-content { padding-top:30px; }
+    .state-panel { margin-top:28px; padding:20px 0; border-top:1px solid var(--lineStrong); border-bottom:1px solid var(--lineStrong); }
+    .state-heading { font-size:22px; font-weight:600; margin:12px 0 8px; line-height:1.45; }
+    .state-copy { font-size:16px; color:var(--ink2); line-height:1.8; }
+    .state-symbol { width:38px; height:38px; border:1px solid var(--lineStrong); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--ink2); font-weight:600; font-size:21px; }
+    .state-actions { margin-top:24px; }
+    .muted-source { border:1px solid var(--line); background:var(--surface); border-radius:12px; padding:16px; margin-top:23px; }
+    .muted-source .field-label { margin-bottom:7px; }
+    .mint { --paper:#f5f9f6; --ink:#172d26; --ink2:#466257; --ink3:#5b7065; --line:#d8e5dc; --lineStrong:#bacebf; --brand:#145b4a; --soft:#def1e7; --brandLine:#9cbcac; --field:#769587; }
+    .mint .system,.mint .nav,.mint .tabbar { background:#f9fcfa; }
+    .mint-wordmark { width:52px; height:52px; flex:0 0 52px; display:flex; align-items:center; justify-content:center; color:#fff; background:var(--brand); font-size:22px; font-weight:600; border-radius:10px; }
+    .mint .hero { font-size:26px; line-height:1.4; }
+    .mint .composer { border-color:#adc7b8; }
+    .mint .path { background:var(--soft); border-radius:8px; padding:12px 18px; margin-top:20px; }
+    .mint-tab-icon { width:20px; height:20px; border:1.5px solid var(--ink3); border-radius:4px; position:relative; }
+    .mint .active .mint-tab-icon { border-color:var(--brand); }
+    .mint-tab-icon::after { content:""; position:absolute; width:10px; height:1px; left:3px; top:6px; background:currentColor; box-shadow:0 5px 0 currentColor; }
+    .decision { display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:38px; padding-top:24px; border-top:1px solid #d4d8cf; }
+    .decision h3 { font-size:17px; margin-bottom:10px; }
+    .decision p { font-size:14px; color:#5c6258; line-height:1.85; }
+    .board-footer { margin-top:34px; padding-top:20px; border-top:1px solid #d4d8cf; color:#696f63; font-size:13px; }
+    a { color:var(--brand); text-decoration-thickness:1px; text-underline-offset:3px; }
+    @media(max-width:1630px) { .grid { grid-template-columns:repeat(3,375px); } main { max-width:1245px; } }
+    @media(max-width:1220px) { .grid { grid-template-columns:repeat(2,375px); } main { max-width:842px; } .board-top { display:block; } .board-badge { display:inline-block; margin-top:18px; } .section-head { display:block; } .section-head p { margin-top:6px; } }
+    @media(max-width:815px) { .grid { grid-template-columns:375px; justify-content:center; } main { padding:28px 16px 40px; } .board-top h1 { font-size:29px; } .decision { grid-template-columns:1fr; gap:20px; } }
+    @media print { body { background:#fff; } main { max-width:none; padding:20px; } .grid { grid-template-columns:repeat(2,375px); } .screen-card { break-inside:avoid; } .phone { box-shadow:none; } .section-head { break-after:avoid; } }
+  </style>
+</head>
+<body>
+<main>
+  <div class="board-kicker">INSPIRATION NOTEBOOK / DESIGN REVIEW / 2026.10.07</div>
+  <div class="board-top">
+    <div><h1>记下一闪念，整理成可用稿</h1><p class="board-intro">把“留下想法”与“拿来使用”连起来。推荐保留暖纸、靛蓝与已有灵光标记，用清楚的文字层级、可恢复的状态和结果分享，完成一次完整的价值体验。</p></div>
+    <div class="board-badge">建议设计 · 非运行截图</div>
+  </div>
+  <p class="board-note">375 × 812px 绘制参考。所有内容、时间与数量均为设计样例；AI 文字非实际模型输出。微信胶囊与状态栏为安全区示意；分享与结构复用按已建立提案实施。此板记录审查阶段设计方向。用户已追加授权本地实现，实施结果另见验收报告；云端与发布未推进。</p>
+  <div class="legend"><span><i class="swatch" style="background:#f7f6f2"></i>暖纸 #F7F6F2</span><span><i class="swatch" style="background:#34377f"></i>靛蓝 #34377F</span><span><i class="swatch" style="background:#191a23"></i>正文 #191A23</span><span><i class="swatch" style="background:#e4a83a"></i>金色仅用于品牌灵光</span><span>正文 ≥16px · 辅助字 ≥13px · 热区 ≥44px</span></div>
+
+  <div class="section-head" id="direction-a"><h2>A · 纸页与灵光（推荐）</h2><p>保留原文、输入与连续列表，让可用稿成为清楚的下一步。</p></div>
+  <div class="grid">
+    <article class="screen-card" id="screen-home">
+      <div class="screen-label"><h3>01 / 首页 · 第一次进入</h3><p>一句价值说明，马上开始输入；不恢复示例行。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav">灵感拾光簿<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content">
+          <div class="brand-row"><img class="brand-mark" src="../../../miniprogram/assets/brand-mark.png" alt="灵感拾光簿品牌图形"><div><div class="brand-name">灵感拾光簿</div><div class="brand-sub">想法有处可留，也有处可用</div></div></div>
+          <h2 class="hero">记下一闪念，<br>整理成可用稿</h2>
+          <p class="lead">先写一句。需要时，把零散想法<br>整理成能直接使用的文字。</p>
+          <div class="composer"><div class="field-label">此刻的想法</div><div class="field">此刻想到什么？</div><div class="field-count"><span></span><span>0 / 2000</span></div><div class="btn disabled">记下来</div></div>
+          <div class="path"><span>记录</span><span class="arrow">→</span><span>补充</span><span class="arrow">→</span><span>成稿</span></div>
+          <div class="private">灵感默认仅你可见。</div>
+        </div>
+        <div class="tabbar"><div class="tab active"><img src="../../../miniprogram/assets/tabbar/record-active.png" alt=""><span>记录</span></div><div class="tab"><img src="../../../miniprogram/assets/tabbar/ideas-idle.png" alt=""><span>灵感</span></div><div class="tab"><img src="../../../miniprogram/assets/tabbar/mine-idle.png" alt=""><span>我的</span></div></div>
+      </div>
+      <p class="screen-note">输入中、保存中、成功与未知使用同一位置反馈。成功后继续补充；已确认的最近想法可在下方轻量接续。</p>
+    </article>
+
+    <article class="screen-card" id="screen-list">
+      <div class="screen-label"><h3>02 / 我的灵感 · 找回与取用</h3><p>连续文字列表；组合多条的入口有明确对象。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav">灵感拾光簿<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content">
+          <div class="heading-row"><h2 class="title">我的灵感</h2><span class="text-action">记一条灵感</span></div>
+          <div class="search"><i class="search-icon"></i>搜索正文、补充或标签</div>
+          <div class="chips"><span class="chip active">全部</span><span class="chip">有补充</span><span class="chip">筛选</span></div>
+          <div class="list-section"><strong>最近更新</strong><span class="text-action">选材成稿</span></div>
+          <span class="sample line" style="margin-top:8px">设计样例 · 以下为虚构记录</span>
+          <div class="list">
+            <div class="row"><div class="row-text">想在社区办一场旧物交换，让闲置的物品找到需要它的人。</div><span class="tag">活动想法</span><div class="row-meta"><span>刚刚</span><span>2 条补充</span></div></div>
+            <div class="review-row"><span>回看一个想法</span><span>展开</span></div>
+            <div class="row"><div class="row-text">整理大家报名的物品类别，先看看哪些可以互相交换。</div><div class="row-meta"><span>2 小时前</span><span>1 条补充</span></div></div>
+          </div>
+          <div class="hint" style="margin-top:18px">有两条相关想法时，可以一起选材成稿。</div>
+        </div>
+        <div class="tabbar"><div class="tab"><img src="../../../miniprogram/assets/tabbar/record-idle.png" alt=""><span>记录</span></div><div class="tab active"><img src="../../../miniprogram/assets/tabbar/ideas-active.png" alt=""><span>灵感</span></div><div class="tab"><img src="../../../miniprogram/assets/tabbar/mine-idle.png" alt=""><span>我的</span></div></div>
+      </div>
+      <p class="screen-note">空列表隐藏搜索与整理工具。回顾保留在第一条后、默认不展开；AI 汇总按真实能力作为次级动作。</p>
+    </article>
+
+    <article class="screen-card" id="screen-detail">
+      <div class="screen-label"><h3>03 / 详情 · 原文与补充相邻</h3><p>原文不装进卡片；补充先于标签与照片。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav"><i class="back"></i>灵感详情<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content" style="padding-top:18px">
+          <div class="detail-time"><span>设计样例 · 今天 09:20</span><span class="text-action">更多</span></div>
+          <div class="origin">想在社区办一场旧物交换，让闲置的物品找到需要它的人。</div>
+          <div class="btn-row detail-actions"><span class="btn quiet sm">继续补充</span><span class="btn quiet sm">整理成稿</span></div>
+          <div class="ai-link"><span class="ai-mark">AI</span><span>整理想法</span></div>
+          <div class="mini-composer"><div class="mini-field">又想到什么？</div><div class="mini-foot"><span>0 / 1000</span><span class="btn sm disabled">添加补充</span></div></div>
+          <div class="section-title">补充<span>2 条 · 设计样例</span></div>
+          <div class="timeline"><div class="timeline-item"><div class="timeline-meta"><span>今天 09:24</span><span>更多</span></div><div class="timeline-text">先邀请十位邻居试一次，记录大家带来的物品类别。</div></div><div class="timeline-item"><div class="timeline-meta"><span>今天 09:31</span><span>更多</span></div><div class="timeline-text">准备一张登记表，写清物品情况和交换意愿。</div></div></div>
+        </div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">修改、复制、分享与删除放在“更多”。长原文沿用浮动补充入口；键盘打开时隐藏浮动动作。</p>
+    </article>
+
+    <article class="screen-card" id="screen-material">
+      <div class="screen-label"><h3>04 / 选材成稿 · 一段一段选</h3><p>类型、来源与选择顺序同时可见。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav"><i class="back"></i>选材成稿<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content" style="padding-top:20px">
+          <h2 class="title">把相关文字放到一起</h2><p class="sub">选择想用的材料，整理成一份稿件。<br>只编排所选文字，不自动补写。</p>
+          <div class="search"><i class="search-icon"></i>搜索素材文字</div>
+          <div class="tools"><span>全部 · 已选 2</span><span>只看已选</span></div>
+          <span class="sample">设计样例 · 编号表示选择顺序</span>
+          <div class="option selected"><span class="check">1</span><div><div class="option-meta">正文 · 今天 09:20</div><div class="option-text">想在社区办一场旧物交换，让闲置物品找到需要它的人。</div></div></div>
+          <div class="option selected"><span class="check">2</span><div><div class="option-meta">补充 · 今天 09:24</div><div class="option-text">先邀请十位邻居试一次。</div><div class="source">来自：社区旧物交换的想法</div></div></div>
+          <div class="option"><span class="check"></span><div><div class="option-meta">正文 · 昨天</div><div class="option-text">做一张物品登记表。</div></div></div>
+        </div>
+        <div class="dock"><div class="hint">已选 2 段 · 来自 1 条灵感</div><div class="btn">整理成稿</div></div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">整行点选，底部主按钮始终可达。返回选择保留当前稿件；替换已编辑稿件前明确确认。</p>
+    </article>
+
+    <article class="screen-card" id="screen-output">
+      <div class="screen-label"><h3>05 / 可编辑成稿 · 拿来使用</h3><p>复制是主任务，分享出现在有用结果之后。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav"><i class="back"></i>整理成稿<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content" style="padding-top:20px">
+          <h2 class="title">整理成稿</h2><div class="draft-summary">正文 + 2 条补充 · 工作提纲</div>
+          <div class="tools"><span>调整内容</span><span>选择格式</span><span>更多</span></div>
+          <span class="sample line" style="margin-top:3px">设计样例 · 此稿已由使用者手工编辑</span>
+          <div class="draft-paper"><strong>【背景与材料】</strong><br>在社区办一场旧物交换，让闲置物品找到需要它的人。<br><br><strong>【目标】</strong><br>先邀请十位邻居试一次。<br><br><strong>【下一步】</strong><br>准备登记表，确认物品类别与交换意愿。</div>
+          <div class="draft-counter">设计样例 · 另存最多 2000 字符</div>
+          <div class="not-saved">稿件仅在本次使用中保留，<br>请先复制或另存。</div>
+        </div>
+        <div class="dock"><div class="btn">复制稿件</div><div class="btn-row"><div class="btn quiet sm">另存为新灵感</div><div class="btn plain sm">保存并预览分享</div></div></div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">模板只提供材料与空结构，不会自动填出此样例。未另存分享需用户确认保存；保存未知时保留全文。</p>
+    </article>
+
+    <article class="screen-card" id="screen-ai">
+      <div class="screen-label"><h3>06 / AI 核对 · 决定保留什么</h3><p>材料、候选内容与已保存内容保持可区分。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav"><i class="back"></i>AI 整理想法<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content" style="padding-top:19px">
+          <div class="stage">核对与保存</div><h2 class="title">保留有用的部分</h2><p class="sub">改成自己的表达，再选择保存。</p>
+          <span class="sample line">设计样例 · 非 AI 实际输出</span>
+          <div class="notice warn" style="margin-top:8px"><i class="notice-icon"></i><div>由 AI 生成，可能不准确，请核对后使用。</div></div>
+          <div class="not-saved">预览仅在本次使用中保留，采纳后才写入记录。</div>
+          <div class="draft-section">要点<span>可直接修改</span></div>
+          <div class="ai-draft"><div class="ai-choice"><span class="check"></span><span>保留这条要点</span></div><div class="ai-edit">先用一次小范围交换，了解邻居实际需要什么。</div></div>
+          <div class="draft-section">下一步<span>可直接修改</span></div>
+          <div class="ai-draft"><div class="ai-choice"><span class="check"></span><span>保留这条下一步</span></div><div class="ai-edit">列出要登记的信息，与参与者确认物品情况。</div></div>
+          <div class="hint" style="margin-top:15px">下方还有“风险”候选项，可逐条核对。</div>
+        </div>
+        <div class="dock"><div class="hint">已选 2 条 · 保存后加入补充</div><div class="btn-row" style="margin-top:0"><div class="btn plain sm">复制所选</div><div class="btn sm">保存所选 2 条</div></div></div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">草案虚线与浅底保留。真实模型、审核与额度必须单独验收；失败时可进入手工整理。</p>
+    </article>
+
+    <article class="screen-card" id="screen-share">
+      <div class="screen-label"><h3>07 / 分享预览 · 明确内容范围</h3><p>先核对文字，再主动选择微信好友。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav"><i class="back"></i>分享文字<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content" style="padding-top:20px">
+          <h2 class="title">分享这份文字</h2><p class="sub">确认对方会看到的内容。</p>
+          <div class="share-range">本次分享：当前稿件<small>照片和修改记录不会加入。</small></div>
+          <span class="sample line">设计样例 · 对方将看到</span>
+          <div class="preview" style="margin-top:8px"><div class="preview-title">周末旧物交换：<br>一份活动想法</div>在社区办一场旧物交换，让闲置物品找到需要它的人。<br><br>先邀请十位邻居试一次，准备登记表，确认物品类别与交换意愿。</div>
+          <p class="preview-rule">链接有效期30天，获得链接的人都能查看。撤销链接无法收回已复制的文字或已保存的海报。</p>
+          <div class="tools" style="margin-top:6px"><span>制作海报</span><span>我的分享</span></div>
+        </div>
+        <div class="dock"><div class="hint">准备完成后，再点击“选择微信好友”。</div><div class="btn">确认内容并准备分享</div></div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">同一主按钮按状态切换。准备成功不等于发送；改变范围或来源后重新确认，旧链接不继续发。</p>
+    </article>
+
+    <article class="screen-card" id="screen-shared">
+      <div class="screen-label"><h3>08 / 接收页 · 先读，再写自己的</h3><p>结果有价值时，自然产生继续使用的理由。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav">查看分享<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content" style="padding-top:22px">
+          <div class="shared-head"><img src="../../../miniprogram/assets/brand-mark.png" alt=""><span>来自灵感拾光簿 · 文字分享</span></div>
+          <h2 class="title">周末旧物交换：<br>一份活动想法</h2>
+          <span class="sample line">设计样例 · 本文非真实用户分享</span>
+          <div class="shared-content"><strong>【背景与材料】</strong><br>在社区办一场旧物交换，让闲置物品找到需要它的人。<br><br><strong>【目标】</strong><br>先邀请十位邻居试一次。<br><br><strong>【下一步】</strong><br>准备登记表，确认物品类别与交换意愿。</div>
+          <div class="shared-note">这是分享时的文字。原作者之后的修改不会更新到这里。</div>
+        </div>
+        <div class="dock"><div class="btn">用这个结构写自己的</div><div class="btn-row"><div class="btn plain sm">复制这份文字</div><div class="btn link sm" style="justify-content:center">举报内容</div></div></div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">新能力仅复用现有模板结构，不复制作者文字。旧分享缺模板时降级为“记下自己的想法”。</p>
+    </article>
+  </div>
+
+  <div class="section-head" id="direction-b"><h2>B · 清晰工作台 &amp; 关键异常状态</h2><p>备选方向对照一屏；三种失败保留行动出口。</p></div>
+  <div class="grid">
+    <article class="screen-card" id="screen-mint">
+      <div class="screen-label"><h3>B / 首页 · 深墨与薄荷</h3><p>更工具化的气质，需要更新品牌和语义系统。</p></div>
+      <div class="phone mint">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav">灵感拾光簿<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content">
+          <div class="brand-row"><span class="mint-wordmark">拾</span><div><div class="brand-name">灵感拾光簿</div><div class="brand-sub">记录 · 整理 · 使用</div></div></div>
+          <h2 class="hero">留下一个想法，<br>整理一份有用的稿</h2><p class="lead">先记录素材，需要时再选取、整理，<br>用于下一次表达或行动。</p>
+          <div class="composer"><div class="field-label">此刻的想法</div><div class="field">此刻想到什么？</div><div class="field-count"><span></span><span>0 / 2000</span></div><div class="btn disabled">记下来</div></div>
+          <div class="path"><span>记录素材</span><span class="arrow">→</span><span>整理成稿</span></div><div class="private">灵感默认仅你可见。</div>
+        </div>
+        <div class="tabbar"><div class="tab active"><i class="mint-tab-icon"></i><span>记录</span></div><div class="tab"><i class="mint-tab-icon"></i><span>灵感</span></div><div class="tab"><i class="mint-tab-icon"></i><span>我的</span></div></div>
+      </div>
+      <p class="screen-note">薄荷不与A混搭。B的图形为线框占位；推荐A以保留识别度，将资源投入任务与结果。</p>
+    </article>
+
+    <article class="screen-card" id="state-save">
+      <div class="screen-label"><h3>S01 / 保存未知 · 保住输入</h3><p>未知、明确拒绝与成功使用不同文案和动作。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav">灵感拾光簿<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content state-content">
+          <div class="brand-row"><img class="brand-mark" src="../../../miniprogram/assets/brand-mark.png" alt=""><div><div class="brand-name">记录想法</div><div class="brand-sub">先写下来，之后再补充。</div></div></div>
+          <span class="sample line">设计样例 · 模拟超时状态</span>
+          <div class="composer" style="margin-top:13px"><div class="field-label">此刻的想法</div><div class="field inputted">想在社区办一场旧物交换，让闲置的物品找到需要它的人。</div><div class="field-count"><span>内容保留在输入框中</span><span>26 / 2000</span></div>
+            <div class="notice warn"><i class="notice-icon"></i><div><div class="notice-title">尚未确认保存</div><p>内容还在输入框中。退出前请重试保存或复制内容。</p><div class="btn plain sm" style="margin-top:12px">复制内容</div></div></div>
+            <div class="btn">重试保存</div>
+          </div>
+          <div class="hint" style="margin-top:20px">请保持页面打开，或先复制内容。</div>
+        </div>
+        <div class="tabbar"><div class="tab active"><img src="../../../miniprogram/assets/tabbar/record-active.png" alt=""><span>记录</span></div><div class="tab"><img src="../../../miniprogram/assets/tabbar/ideas-idle.png" alt=""><span>灵感</span></div><div class="tab"><img src="../../../miniprogram/assets/tabbar/mine-idle.png" alt=""><span>我的</span></div></div>
+      </div>
+      <p class="screen-note">提示常驻，不用消失的 toast。重试复用同一记录标识，确认成功前保留输入；同会话恢复另行提案。</p>
+    </article>
+
+    <article class="screen-card" id="state-ai">
+      <div class="screen-label"><h3>S02 / AI 不可用 · 继续成稿</h3><p>保留材料，给当前任务一个有用的下一步。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav"><i class="back"></i>AI 整理想法<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content state-content">
+          <div class="stage">选择素材</div><h2 class="title">整理这条想法</h2><span class="sample line">设计样例 · 模拟服务不可用</span>
+          <div class="muted-source"><div class="field-label">这条灵感</div><div class="row-text">想在社区办一场旧物交换，让闲置物品找到需要它的人。</div><div class="source">原文与已选补充仍保留。</div></div>
+          <div class="notice warn" style="margin-top:25px"><i class="notice-icon"></i><div><div class="notice-title">暂时无法使用 AI 整理</div><p>可以先把所选文字整理成稿。</p></div></div>
+          <div class="state-actions"><div class="btn">手动整理</div><div class="btn quiet">稍后重试</div><div class="btn link">返回灵感详情</div></div>
+        </div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">明确额度/审核拒绝时显示实际原因；已知能力关闭时降低重试强调。不会提供本地伪AI结果。</p>
+    </article>
+
+    <article class="screen-card" id="state-share">
+      <div class="screen-label"><h3>S03 / 分享失效 · 给清楚去向</h3><p>失效与网络失败分别处理，不无限重试。</p></div>
+      <div class="phone">
+        <div class="system"><span>9:41</span><span class="system-right"><i class="signal"></i><i class="battery"></i></span></div>
+        <div class="nav">查看分享<div class="capsule"><span class="dots">···</span><i class="sep"></i><i class="circle"></i></div></div>
+        <div class="content state-content">
+          <div class="shared-head"><img src="../../../miniprogram/assets/brand-mark.png" alt=""><span>灵感拾光簿</span></div><span class="sample">设计样例 · 模拟分享已失效</span>
+          <div class="state-panel"><div class="state-symbol">×</div><h2 class="state-heading">分享已失效</h2><p class="state-copy">可以请分享者重新发送。<br>你也可以先记下自己的想法。</p></div>
+          <div class="state-actions"><div class="btn">记下自己的想法</div></div>
+          <div class="muted-source"><div class="field-label">从一个想法开始</div><p class="row-text">先写一句，之后继续补充。需要时，整理成可以带走的文字。</p></div>
+        </div><div class="home-indicator"></div>
+      </div>
+      <p class="screen-note">网络失败显示“暂时无法查看”与“重新读取”；已确认失效不伪造可恢复按钮，不展示原私有内容。</p>
+    </article>
+  </div>
+
+  <div class="decision"><div><h3>为什么推荐 A</h3><p>已有品牌、原文排版、连续列表和明确保存回执值得保留。用同一套暖纸与靛蓝，可以把改版资源集中在首页价值、材料接续、可编辑成稿与真实分享路径；视觉层级服务于内容本身。</p></div><div><h3>后续实施的前置证据</h3><p>先证明真实保存、读回与分享能完整走通，再验证AI、照片和接收者路径。设计稿用于讨论布局与状态；模拟器、真机、云端及用户测试需要各自留证。规格与验收见 <a href="design-spec.md">design-spec.md</a>。</p></div></div>
+  <div class="board-footer">灵感拾光簿 · 2026-10-07 产品体验审查配套视觉稿 · 本地实现按 OpenSpec 提案推进 · 尚未提交</div>
+</main>
+</body>
+</html>

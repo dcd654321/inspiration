@@ -1,0 +1,157 @@
+[
+  {
+    "file": "01-capture-empty.png",
+    "page": "pages/capture/index",
+    "note": "空输入：占位符 + 示例行；无未保存提示"
+  },
+  {
+    "file": "02-capture-typed.png",
+    "page": "pages/capture/index",
+    "note": "实际输入后：示例撤下、「尚未保存」提示出现"
+  },
+  {
+    "file": "03-capture-saved.png",
+    "page": "pages/capture/index",
+    "note": "实际点击保存：成功卡（摘录 + 继续补充/再记一条）；离线内存确认，不证明云端保存"
+  },
+  {
+    "file": "04-detail-from-capture.png",
+    "page": "pages/capture/index",
+    "note": "实际点「继续补充」：进入刚保存记录的详情并聚焦补充输入"
+  },
+  {
+    "file": "05-capture-overlimit-injected.png",
+    "page": "pages/capture/index",
+    "note": "注入超限输入（onInput 直调，模拟粘贴全文）：保留全文、显示超出 37 字符、按钮置灰"
+  },
+  {
+    "file": "06-capture-unknown-injected.png",
+    "page": "pages/capture/index",
+    "note": "setData 注入「结果未知」呈现：尚未确认保存 + 重试保存/复制内容"
+  },
+  {
+    "file": "07-capture-rejected-injected.png",
+    "page": "pages/capture/index",
+    "note": "setData 注入「确认被拒绝」呈现：未能保存 + 已知原因"
+  },
+  {
+    "file": "08-list.png",
+    "page": "pages/list/index",
+    "note": "列表：默认筛选行三个 chip；回顾行在第一条记录之后（合成样例两条）"
+  },
+  {
+    "file": "09-list-filter-panel.png",
+    "page": "pages/list/index",
+    "note": "实际点「筛选」：七天内 / 阶段 / 已合并面板"
+  },
+  {
+    "file": "10-list-review-expanded.png",
+    "page": "pages/list/index",
+    "note": "实际展开回顾行：预览 + 继续补充 / 本次先不看"
+  },
+  {
+    "file": "11-list-empty-injected.png",
+    "page": "pages/list/index",
+    "note": "setData 注入真空态：只有标题行、空态卡、主按钮"
+  },
+  {
+    "file": "12-list-failure-injected.png",
+    "page": "pages/list/index",
+    "note": "setData 注入首次读取失败：暂时无法读取灵感 + 重新读取"
+  },
+  {
+    "file": "13-detail.png",
+    "page": "pages/detail/index",
+    "note": "详情首屏：时间+更多 → 原文 → 整理成稿/继续补充 → 补充输入"
+  },
+  {
+    "file": "14-detail-more-panel.png",
+    "page": "pages/detail/index",
+    "note": "实际打开「更多」：修改正文 / 复制全文 / 分享文字 / 修改记录 / 删除灵感"
+  },
+  {
+    "file": "15-detail-lower.png",
+    "page": "pages/detail/index",
+    "note": "实际滚动：时间线 → 标记行 → 照片（在时间线之后）"
+  },
+  {
+    "file": "16-detail-supplement-sheet.png",
+    "page": "pages/detail/index",
+    "note": "实际打开补充面板：复制补充 / 修改补充 / 并入正文 / 删除补充"
+  },
+  {
+    "file": "17-detail-delete-dialog.png",
+    "page": "pages/detail/index",
+    "note": "实际进入删除确认：标题+正文+摘录与时间；不确认"
+  },
+  {
+    "file": "18-detail-compose-focus.png",
+    "page": "pages/detail/index",
+    "note": "实际聚焦补充输入：高度切换到 160px 档"
+  },
+  {
+    "file": "19-output-edit.png",
+    "page": "pages/output/index",
+    "note": "进入即有自由稿：摘要「正文 + 2条补充」+ 调整内容/选择格式/更多"
+  },
+  {
+    "file": "20-output-content-panel.png",
+    "page": "pages/output/index",
+    "note": "实际打开「调整内容」：补充可选，应用选择/取消"
+  },
+  {
+    "file": "21-output-format-panel.png",
+    "page": "pages/output/index",
+    "note": "实际打开「选择格式」：五种模板 + 不自动补写说明"
+  },
+  {
+    "file": "22-output-more-panel.png",
+    "page": "pages/output/index",
+    "note": "实际打开「更多」：文字留档"
+  },
+  {
+    "file": "23-output-archive.png",
+    "page": "pages/output/index",
+    "note": "实际进入文字留档：预览 + 复制留档文字 / 生成 TXT"
+  },
+  {
+    "file": "24-mine.png",
+    "page": "pages/mine/index",
+    "note": "我的：我的分享 / 数据与隐私 / 使用帮助（显示回顾入口、诊断信息）/ 意见反馈 / 关于"
+  },
+  {
+    "file": "25-mine-lower.png",
+    "page": "pages/mine/index",
+    "note": "我的下半部：意见反馈与关于"
+  },
+  {
+    "file": "26-feedback.png",
+    "page": "pages/feedback/index",
+    "note": "反馈页：新说明文案与置灰提交"
+  },
+  {
+    "file": "27-share-preview.png",
+    "page": "pages/share-preview/index",
+    "note": "分享预览：单一主按钮「确认内容并准备分享」+ 次入口「制作海报」；不创建链接"
+  },
+  {
+    "file": "28-shared-failure.png",
+    "page": "pages/shared/index",
+    "note": "无效令牌：暂时无法查看 + 重新读取 + 记录我的想法（离线失败，不证明真实失效逻辑）"
+  },
+  {
+    "file": "29-history-empty.png",
+    "page": "pages/history/index",
+    "note": "修改记录空态：还没有修改记录 + 返回这条灵感"
+  },
+  {
+    "file": "30-ai-disabled.png",
+    "page": "pages/ai-workbench/index",
+    "note": "AI 关闭直达：暂时无法使用此功能 + 返回灵感列表"
+  },
+  {
+    "file": "31-my-shares-empty.png",
+    "page": "pages/my-shares/index",
+    "note": "我的分享空态：还没有分享记录 + 查看我的灵感"
+  }
+]

@@ -1,49 +1,84 @@
 <view class="page">
   <view class="capture-head">
     <image class="capture-mark" src="/assets/brand-mark.png" mode="aspectFit" />
-    <view>
-      <view class="page-title">记录想法，持续完善</view>
-      <view class="page-sub">点子、计划和问题，都可以在这里记录、补充并整理使用。</view>
-    </view>
+    <view class="capture-brand">灵感拾光簿</view>
   </view>
+  <view class="capture-title">记下一闪念，<view>整理成可用稿</view></view>
+  <view class="capture-intro">先写一句。需要时，把零散想法整理成能直接使用的文字。</view>
+  <view wx:if="{{templateIntentLabel}}" class="capture-intent"><text>已选择：{{templateIntentLabel}}</text><button class="btn-link" bindtap="onClearTemplateIntent" disabled="{{saving || status === 'unknown'}}">取消</button></view>
+  <view wx:if="{{draftRecoveryNotice}}" class="recovery-note" aria-live="polite">{{draftRecoveryNotice}}</view>
 
   <view class="composer">
+    <view class="field-label">此刻的想法</view>
     <textarea
       class="editor"
       value="{{draft}}"
-      maxlength="{{maxLength}}"
-      placeholder="此刻想到什么？"
+      maxlength="-1"
+      placeholder="{{lastSavedId ? '继续写下一个想法…' : '此刻想到什么？'}}"
       placeholder-class="editor-ph"
       bindinput="onInput"
+      bindfocus="onFocus"
+      bindblur="onBlur"
+      aria-label="此刻的想法"
+      cursor-spacing="24"
       disabled="{{saving}}"
-      auto-height
+      focus="{{inputFocus}}"
     />
 
     <view class="foot">
-      <text class="count {{nearLimit ? 'count-near' : ''}}">{{draft.length}} / {{maxLength}}</text>
+      <view class="foot-hints">
+        <text wx:if="{{overBy > 0}}" class="hint-over">超出{{overBy}}字符，请缩短后保存。</text>
+        <text wx:elif="{{saving}}" class="hint-draft">正在保存，请稍候。</text>
+        <text wx:elif="{{draft && status === ''}}" class="hint-draft">尚未保存，退出后可能丢失。</text>
+      </view>
+      <text class="count {{nearLimit ? 'count-near' : ''}} {{overBy > 0 ? 'count-over' : ''}}">{{draft.length}} / {{maxLength}}</text>
     </view>
 
-    <button
+    <!-- 结果未知：超时、连接中断。不能宣布失败，也不能假装成功；
+         内容确实还在输入框里，用常驻提示给出重试与保全两条路。 -->
+    <view wx:if="{{status === 'unknown'}}" class="notice notice-warn">
+      <view class="mark"></view>
+      <view class="notice-body">
+        <view class="notice-title">尚未确认保存</view>
+        <view class="notice-text">内容还在输入框中。退出前请重试保存或复制内容。</view>
+        <view class="notice-acts">
+          <button class="btn btn-plain btn-sm" bindtap="onCopyDraft" disabled="{{saving}}">复制内容</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 确认被拒绝：服务端给了明确回执，原因按已知内容说，不编造 -->
+    <view wx:if="{{status === 'rejected'}}" class="notice notice-err">
+      <view class="mark"></view>
+      <view class="notice-body">
+        <view class="notice-title">未能保存</view>
+        <view class="notice-text">{{errorText}}</view>
+      </view>
+    </view>
+
+    <button wx:if="{{lastSavedId}}" class="btn btn-block save-btn record-another" bindtap="onRecordAnother">再记一条</button>
+    <button wx:else
       class="btn btn-block save-btn"
       bindtap="onSave"
       disabled="{{!canSave || saving}}"
-    >{{saving ? '正在记下…' : '记下来'}}</button>
+    >{{saving ? '正在记下…' : status === 'unknown' ? '重试保存' : '记下来'}}</button>
 
-    <!-- 失败提示常驻页面，不用会自动消失的 toast：用户错过之后会以为已经保存 -->
-    <view wx:if="{{error}}" class="notice notice-err">
-      <view class="mark"></view>
-      <view class="save-result">
-        <text>{{error}}</text>
-        <button wx:if="{{lastSavedId}}" class="result-link" bindtap="onViewSaved">查看这条</button>
-      </view>
-    </view>
+    <view wx:if="{{copyNotice}}" class="hint-copy">{{copyNotice}}</view>
 
-    <view wx:if="{{success}}" class="notice notice-success">
+    <!-- 输入区常驻；这里的反馈与辅助操作仅属于刚确认的上一条记录。 -->
+    <view wx:if="{{lastSavedId}}" class="notice notice-success notice-saved capture-result" aria-live="polite">
       <view class="mark"></view>
-      <view class="save-result">
-        <text>{{success}}</text>
-        <button wx:if="{{lastSavedId}}" class="result-link" bindtap="onViewSaved">查看这条</button>
+      <view class="notice-body">
+        <view class="notice-title">上一条已记下</view>
+        <view class="saved-quote">{{lastSavedExcerpt}}</view>
+        <view class="notice-acts">
+          <button class="btn-link" bindtap="onContinueSupplement">继续补充</button>
+          <button class="btn-link" bindtap="onOrganizeSaved">整理这条</button>
+        </view>
       </view>
     </view>
   </view>
+
+  <view class="capture-process">记录 <text>→</text> 补充 <text>→</text> 成稿</view>
+  <view class="capture-privacy">灵感默认仅你可见。</view>
 </view>

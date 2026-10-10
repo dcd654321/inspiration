@@ -1,0 +1,118 @@
+{
+  "source": "Current source; installed WeChat DevTools native compilers; no deployment",
+  "wxml": [
+    {
+      "file": "pages/launch/index.wxml",
+      "exitCode": 0,
+      "bytes": 41155,
+      "error": ""
+    },
+    {
+      "file": "pages/capture/index.wxml",
+      "exitCode": 0,
+      "bytes": 44963,
+      "error": ""
+    },
+    {
+      "file": "pages/list/index.wxml",
+      "exitCode": 0,
+      "bytes": 54321,
+      "error": ""
+    },
+    {
+      "file": "pages/mine/index.wxml",
+      "exitCode": 0,
+      "bytes": 42563,
+      "error": ""
+    },
+    {
+      "file": "pages/detail/index.wxml",
+      "exitCode": 0,
+      "bytes": 71130,
+      "error": ""
+    },
+    {
+      "file": "pages/history/index.wxml",
+      "exitCode": 0,
+      "bytes": 42916,
+      "error": ""
+    },
+    {
+      "file": "pages/output/index.wxml",
+      "exitCode": 0,
+      "bytes": 53081,
+      "error": ""
+    },
+    {
+      "file": "pages/material-output/index.wxml",
+      "exitCode": 0,
+      "bytes": 49136,
+      "error": ""
+    },
+    {
+      "file": "pages/ai-workbench/index.wxml",
+      "exitCode": 0,
+      "bytes": 56929,
+      "error": ""
+    },
+    {
+      "file": "pages/photo-viewer/index.wxml",
+      "exitCode": 0,
+      "bytes": 41111,
+      "error": ""
+    },
+    {
+      "file": "pages/share-preview/index.wxml",
+      "exitCode": 0,
+      "bytes": 45380,
+      "error": ""
+    },
+    {
+      "file": "pages/shared/index.wxml",
+      "exitCode": 0,
+      "bytes": 41873,
+      "error": ""
+    },
+    {
+      "file": "pages/my-shares/index.wxml",
+      "exitCode": 0,
+      "bytes": 43434,
+      "error": ""
+    },
+    {
+      "file": "pages/feedback/index.wxml",
+      "exitCode": 0,
+      "bytes": 44240,
+      "error": ""
+    },
+    {
+      "file": "pages/welcome/index.wxml",
+      "exitCode": 0,
+      "bytes": 40431,
+      "error": ""
+    }
+  ],
+  "wxss": {
+    "files": [
+      "app.wxss",
+      "pages/launch/index.wxss",
+      "pages/capture/index.wxss",
+      "pages/list/index.wxss",
+      "pages/mine/index.wxss",
+      "pages/detail/index.wxss",
+      "pages/history/index.wxss",
+      "pages/output/index.wxss",
+      "pages/material-output/index.wxss",
+      "pages/ai-workbench/index.wxss",
+      "pages/photo-viewer/index.wxss",
+      "pages/share-preview/index.wxss",
+      "pages/shared/index.wxss",
+      "pages/my-shares/index.wxss",
+      "pages/feedback/index.wxss",
+      "pages/welcome/index.wxss"
+    ],
+    "exitCode": 0,
+    "bytes": 59065,
+    "error": ""
+  }
+}

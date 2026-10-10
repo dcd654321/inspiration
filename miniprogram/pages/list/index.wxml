@@ -1,30 +1,37 @@
 <view class="page">
   <view class="page-heading">
     <view class="page-title">我的灵感</view>
-    <button class="btn-link" bindtap="onAdd">记一条</button>
+    <button class="btn-link add-link" bindtap="onAdd">记一条灵感</button>
   </view>
 
-  <view class="search-box">
-    <input value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索正文、补充或标签" aria-label="搜索正文、补充或标签" confirm-type="search" />
-    <button wx:if="{{query}}" class="btn-link" bindtap="onClearSearch">清空</button>
-  </view>
-  <view class="list-filters">
-    <button size="mini" class="filter-chip {{filter === 'all' ? 'selected' : ''}}" data-filter="all" bindtap="onFilter">全部</button>
-    <button size="mini" class="filter-chip {{filter === 'supplemented' ? 'selected' : ''}}" data-filter="supplemented" bindtap="onFilter">有补充</button>
-    <button size="mini" class="filter-chip {{filter === 'recent' ? 'selected' : ''}}" data-filter="recent" bindtap="onFilter">最近七天</button>
-    <button size="mini" class="filter-chip {{filter === 'merged' ? 'selected' : ''}}" data-filter="merged" bindtap="onFilter">已合并</button>
-  </view>
-  <view class="review-setting"><picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageFilter"><view class="stage-picker">{{stages[stageIndex].label}} · 筛选</view></picker><button wx:if="{{aiEnabled}}" class="btn-link" bindtap="onSummarize">汇总多条灵感</button></view>
-  <view wx:if="{{!loading && !error}}" class="review-setting"><text>每日回顾</text><switch checked="{{reviewEnabled}}" bindchange="onReviewSetting" color="#34377f" aria-label="每日回顾" /></view>
-  <button wx:if="{{!loading && !error && total > 0}}" class="btn btn-quiet btn-block material-entry" bindtap="onMaterialOutput">选材整理 · 组合多条灵感</button>
-  <view wx:if="{{reviewError}}" class="notice notice-warn">{{reviewError}}</view>
-  <view wx:if="{{reviewItem && !query && !stage && filter === 'all'}}" class="review-card">
-    <view class="review-heading">继续一个想法</view>
-    <view class="review-text">{{reviewItem.excerpt}}</view>
-    <view class="review-actions"><button class="btn btn-sm" data-id="{{reviewItem.id}}" data-review="true" bindtap="onOpen">继续补充</button><button class="btn-link" bindtap="onDismissReview">今天跳过</button></view>
+  <!--
+    工具区只在**已经有记录**时出现。空数据时搜索和筛选没有作用对象，
+    摆在那里只会让新用户第一眼看到一屏用不上的控件。
+    「有记录」= 有效记录或已合并记录至少有一条——仅剩已合并内容时入口仍在。
+  -->
+  <block wx:if="{{activeCount + mergedCount > 0}}">
+    <view class="search-box">
+      <input value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索正文、补充或标签" aria-label="搜索正文、补充或标签" confirm-type="search" />
+      <button wx:if="{{query}}" class="btn-link" bindtap="onClearQuery">清空搜索</button>
+    </view>
+    <view class="list-filters">
+      <button size="mini" class="filter-chip {{filter === 'all' && !panelCount ? 'selected' : ''}}" data-filter="all" bindtap="onFilter">全部</button>
+      <button size="mini" class="filter-chip {{filter === 'supplemented' ? 'selected' : ''}}" data-filter="supplemented" bindtap="onFilter">有补充</button>
+      <button size="mini" class="filter-chip {{panelCount ? 'selected' : ''}}" bindtap="onOpenPanel">筛选{{panelCount ? '·' + panelCount : ''}}</button>
+    </view>
+  </block>
+
+  <view wx:if="{{reviewError}}" class="notice notice-warn list-notice">
+    <view class="mark"></view>
+    <text>{{reviewError}}</text>
   </view>
 
-  <view wx:if="{{loading}}" class="skeleton-list">
+  <view wx:if="{{items.length && (loading || error)}}" class="refresh-status" aria-live="polite">
+    <text>{{loading ? '正在更新…' : error}}</text>
+    <button wx:if="{{!loading}}" class="btn-link" bindtap="onRetry">重试</button>
+  </view>
+
+  <view wx:if="{{loading && items.length === 0}}" class="skeleton-list">
     <view class="skeleton-row" wx:for="{{[1, 2, 3]}}" wx:key="*this">
       <view class="skeleton-line"></view>
       <view class="skeleton-line"></view>
@@ -34,56 +41,105 @@
   <block wx:elif="{{error && items.length === 0}}">
     <view class="empty error-empty">
       <view class="et">暂时无法读取灵感</view>
-      <view class="ed">这次读取没有完成，请稍后重试。</view>
+      <view class="ed">{{error}}</view>
     </view>
     <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onRetry">重新读取</button>
   </block>
 
-  <block wx:elif="{{items.length === 0 && (query || stage || filter !== 'all')}}">
-    <view class="empty"><view class="et">没有找到匹配的灵感</view><view class="ed">试试其他关键词，或清空筛选。</view></view>
-    <button class="btn btn-quiet btn-block" bindtap="onClearSearch">查看全部</button>
+  <block wx:elif="{{items.length === 0 && (query || recentOn || stage || mergedOn || filter !== 'all')}}">
+    <view class="empty"><view class="et">没有找到匹配的灵感</view><view class="ed">试试其他关键词，或清空搜索和筛选。</view></view>
+    <button class="btn btn-quiet btn-block" bindtap="onClearAll">清空搜索和筛选</button>
+  </block>
+
+  <!-- 有效记录为 0 但有已合并内容：不显示真空态，也不能让已合并的入口消失 -->
+  <block wx:elif="{{items.length === 0 && activeCount === 0 && mergedCount > 0}}">
+    <view class="empty">
+      <view class="et">现有内容都已合并</view>
+      <view class="ed">合并后的内容仍完整保留，可以单独查看。</view>
+    </view>
+    <button class="btn btn-quiet btn-block" bindtap="onShowMerged">查看已合并内容</button>
   </block>
 
   <block wx:elif="{{items.length === 0}}">
     <view class="empty">
       <image class="empty-mark" src="/assets/brand-mark.png" mode="aspectFit" />
-      <view class="et">还没有灵感</view>
-      <view class="ed">从一个想法开始，之后可以继续补充、整理并复制使用。</view>
+      <view class="et">还没有记录</view>
+      <view class="ed">从一个想法开始，之后再补充。</view>
     </view>
     <button class="btn btn-block" style="margin-top: 32rpx" bindtap="onAdd">记下第一个想法</button>
   </block>
 
   <block wx:else>
-    <view wx:if="{{error}}" class="notice notice-warn list-notice">
-      <view class="mark"></view>
-      <text>{{error}}</text>
-    </view>
-    <button wx:if="{{error}}" class="btn btn-plain btn-block" style="margin-top: 20rpx" bindtap="onRetry">重新读取</button>
-
-    <view class="list" style="margin-top: 36rpx">
-      <view
-        wx:for="{{items}}"
-        wx:key="id"
-        class="row"
-        hover-class="row-active"
-        hover-stay-time="80"
-        data-id="{{item.id}}"
-        bindtap="onOpen"
-      >
-        <view class="row-main">
-          <view class="body">{{item.excerpt}}</view>
-          <view class="item-tags"><text>{{item.merged ? '已合并' : item.stageLabel}}</text><text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text></view>
-          <view wx:if="{{item.matchText}}" class="match-snippet"><text class="match-source">{{item.matchSource}} · </text><text>{{item.matchText}}</text></view>
-          <view class="meta">
-            <text>{{item.time}}</text>
-            <block wx:if="{{item.supplements}}">
-              <view class="sep"></view>
-              <text>{{item.supplements}}</text>
-            </block>
-          </view>
-        </view>
-        <text class="row-enter">查看</text>
+    <!-- 段落头：区名与数量在左，「取用」类入口在右。这类动作属于整份列表，不属于某一条。 -->
+    <view class="list-head">
+      <view class="list-head-title">
+        <text class="k">最近更新</text>
+        <text class="v">共 {{items.length}} 条</text>
+      </view>
+      <view class="list-head-acts">
+        <button class="btn-link" bindtap="onMaterialOutput">选材成稿</button>
       </view>
     </view>
+
+    <view class="list">
+      <block wx:for="{{items}}" wx:key="id">
+        <view
+          id="row-{{item.id}}"
+          class="row"
+          hover-class="row-active"
+          hover-stay-time="80"
+          data-id="{{item.id}}"
+          bindtap="onOpen"
+        >
+          <view class="row-main">
+            <view class="body">{{item.excerpt}}</view>
+            <view wx:if="{{item.stageLabel || item.tags.length}}" class="item-tags">
+              <text wx:if="{{item.stageLabel}}">{{item.stageLabel}}</text>
+              <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+              <text wx:if="{{item.tagMore}}">+{{item.tagMore}}</text>
+            </view>
+            <view wx:if="{{item.matchText}}" class="match-snippet"><text class="match-source">{{item.matchSource}} · </text><text>{{item.matchText}}</text></view>
+            <view class="meta">
+              <text>{{item.time}}</text>
+              <block wx:if="{{item.supplements}}">
+                <view class="sep"></view>
+                <text>{{item.supplements}}</text>
+              </block>
+            </view>
+          </view>
+        </view>
+
+        <!-- 回顾入口：串在第一条记录之后，轻量一行；展开才显示内容 -->
+        <view wx:if="{{index === 0 && reviewItem}}" class="review-row">
+          <view class="review-head" bindtap="onToggleReview">
+            <text class="review-label">回看一个想法</text>
+            <text class="review-caret">{{reviewExpanded ? '收起' : '展开'}}</text>
+          </view>
+          <block wx:if="{{reviewExpanded}}">
+            <view class="review-text">{{reviewItem.excerpt}}</view>
+            <view class="review-actions">
+              <button class="btn btn-sm" data-id="{{reviewItem.id}}" data-review="true" bindtap="onOpen">继续补充</button>
+              <button class="btn-link" bindtap="onDismissReview">本次先不看</button>
+            </view>
+          </block>
+        </view>
+      </block>
+    </view>
   </block>
+
+  <!-- 筛选面板：七天内、阶段、已合并都收在这里；chip 上只显示有几个条件生效 -->
+  <view wx:if="{{panelOpen}}" class="mask" bindtap="onClosePanel">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">筛选</view>
+      <button class="sheet-item" bindtap="onToggleRecent">七天内<text class="sub">{{recentOn ? '已选择 · 只看七天内更新的记录' : '只看七天内更新的记录'}}</text></button>
+      <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageFilter">
+        <view class="sheet-item">阶段<text class="sub">{{stage ? '已选择 · ' + stages[stageIndex].label : '按整理阶段筛选'}}</text></view>
+      </picker>
+      <button class="sheet-item" bindtap="onToggleMerged">已合并<text class="sub">{{mergedOn ? '已选择 · 查看已合并的内容' : '查看已合并的内容'}}</text></button>
+      <view class="panel-acts">
+        <button class="btn btn-plain btn-sm" bindtap="onResetPanel">重置筛选</button>
+        <button class="btn btn-sm" bindtap="onClosePanel">完成</button>
+      </view>
+    </view>
+  </view>
 </view>
