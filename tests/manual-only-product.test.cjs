@@ -40,7 +40,7 @@ test('无 AI 兼容：历史生成来源及修改原文保留，手工格式不�
   const archive = buildArchiveText(item, 3);
   assert.match(archive, /过去生成的补充/); assert.match(archive, /AI 生成，请核对/);
   assert.match(archive, /更早的原文/);
-  assert.match(buildTemplateText(item, ['old_ai'], 'work'), /原始想法\n\n过去生成的补充/);
+  assert.match(buildTemplateText(item, ['old_ai'], 'work'), /原始想法\n过去生成的补充/);
   assert.deepEqual(item, before);
   const legacy = structuredClone(item);
   legacy.supplements[0].content = '历'.repeat(1500);

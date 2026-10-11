@@ -17,12 +17,19 @@
 
 .search-box { display: flex; align-items: center; gap: 16rpx; background: var(--surface); border: 1px solid var(--field-line); border-radius: 20rpx; padding: 12rpx 24rpx; margin-top: 24rpx; }
 .search-box input { flex: 1; min-width: 0; height: 76rpx; font-size: 29rpx; font-size: max(29rpx, 16px); }
-.list-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8rpx; margin: 20rpx 0; }
-.filter-chip { margin: 0; border: 1rpx solid var(--line-strong); background: transparent; border-radius: 44rpx; font-size: 25rpx; font-size: max(25rpx, 14px); padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; color: var(--ink-2); }
-/* 两层选择器：button 默认的左右内边距比设计值宽，单类选择器改不动它 */
-.list-filters .filter-chip { width: auto; flex: 0 0 auto; margin: 0; padding: 0 18rpx; box-sizing: border-box; }
+.list-filters, .stage-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8rpx; }
+.list-filters { margin: 20rpx 0 12rpx; }
+.stage-filters { margin-bottom: 20rpx; }
+.filter-chip { margin: 0; border: 1rpx solid var(--line-strong); background: transparent; border-radius: 44rpx; padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; color: var(--ink-2); }
+/* 两层选择器覆盖 button[size="mini"] 的默认字号、字重与内边距。 */
+.list-filters .filter-chip, .stage-filters .filter-chip { width: auto; flex: 1 1 auto; margin: 0; padding: 0 12rpx; box-sizing: border-box; white-space: nowrap; font-size: 24rpx; font-size: max(24rpx, 12px); font-weight: 400; min-height: max(88rpx, 44px); line-height: max(88rpx, 44px); }
+.stage-filters .filter-chip { background: var(--surface); }
 .filter-chip.selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand-line); }
+.stage-filters .filter-chip.selected { background: var(--brand-soft); }
+.list-filters .filter-chip.selected, .stage-filters .filter-chip.selected { font-weight: 500; }
 .filter-chip::after { border: 0; }
+.filter-reset { display: flex; justify-content: flex-end; margin: -12rpx 0 4rpx; }
+.filter-reset .btn-link { margin: 0; }
 
 /* 回顾入口：轻量一行，串在第一条记录之后；展开才有内容与动作 */
 .review-row {

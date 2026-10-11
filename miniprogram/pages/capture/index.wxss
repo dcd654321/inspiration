@@ -116,7 +116,6 @@
 .capture-result .notice-acts .btn-link { width: auto; margin: 0; padding-left: 0; padding-right: 0; }
 .capture-process { display: flex; align-items: center; justify-content: center; gap: 16rpx; margin-top: 28rpx; font-size: max(26rpx, 13px); color: var(--ink-2); }
 .capture-process text { color: var(--brand); }
-.capture-privacy { margin-top: 8rpx; text-align: center; font-size: max(26rpx, 13px); color: var(--ink-3); }
 .capture-intent { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; margin-top: 20rpx; padding: 4rpx 20rpx; border-left: 3rpx solid var(--brand); background: var(--brand-soft); font-size: max(26rpx, 13px); color: var(--ink-2); }
 .capture-intent text { flex: 1; min-width: 0; }
 .capture-intent .btn-link { width: auto; margin: 0; flex: 0 0 auto; }

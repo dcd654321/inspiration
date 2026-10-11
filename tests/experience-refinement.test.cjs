@@ -147,12 +147,12 @@ test('体验优化：成稿后切换格式取消保留编辑与选材顺序', as
     page.onTemplate(template('work')); assert.equal(page.data.templateId, 'free');
     page.onToggle({ currentTarget: { dataset: { key: 'ins_refine:supplement:sup_refine' } } });
     page.onToggle({ currentTarget: { dataset: { key: 'ins_refine:text' } } }); page.onGenerate();
-    assert.equal(page.data.draft, '最初的补充\n\n最初的正文');
+    assert.equal(page.data.draft, '最初的补充\n最初的正文');
     page.onInput(input('手动修改稿')); const selected = structuredClone(page.selected);
     page.onTemplate(template('work')); assert.equal(page.data.templateId, 'free'); assert.equal(page.data.draft, '手动修改稿');
     state.modals.pop().success({ confirm: false }); assert.equal(page.data.templateId, 'free'); assert.equal(page.data.draft, '手动修改稿');
     page.onTemplate(template('work')); state.modals.pop().success({ confirm: true });
-    assert.equal(page.data.templateId, 'work'); assert.match(page.data.draft, /最初的补充\n\n最初的正文/);
+    assert.equal(page.data.templateId, 'work'); assert.match(page.data.draft, /最初的补充\n最初的正文/);
     assert.deepEqual(page.selected, selected); assert.equal(state.saves.length, 0); assert.equal(state.copies.length, 0);
   });
 });

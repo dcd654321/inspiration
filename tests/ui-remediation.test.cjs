@@ -145,7 +145,7 @@ test('公众首用：保存后成功卡带摘录、补充与整理入口，只�
   }
 });
 
-test('本轮整改：列表只统计当前可见补充，不把已收起内容或照片数堆在列表行', () => {
+test('本轮整改：列表只统计当前可见补充，照片数量提示对应记录', () => {
   const pagePath = require.resolve('../miniprogram/pages/list/index');
   const previous = { Page: global.Page, getApp: global.getApp };
   let definition;
@@ -171,8 +171,8 @@ test('本轮整改：列表只统计当前可见补充，不把已收起内容�
     };
     definition.load.call(page);
     assert.strictEqual(page.data.items[0].supplements, '1 条补充');
-    assert.ok(!Object.hasOwn(page.data.items[0], 'photos'));
-    assert.doesNotMatch(read('miniprogram/pages/list/index.wxml'), /item\.photos/);
+    assert.equal(page.data.items[0].photos, 1);
+    assert.match(read('miniprogram/pages/list/index.wxml'), /item\.photos}} 张照片/);
   } finally {
     delete require.cache[pagePath];
     for (const [key, value] of Object.entries(previous)) {

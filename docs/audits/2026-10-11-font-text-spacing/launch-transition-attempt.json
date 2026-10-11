@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-10T23:25:53.014Z",
+  "cloud": false,
+  "synthetic": true,
+  "productionWrite": false,
+  "startupAttempts": 1,
+  "connectionAttempts": 1,
+  "steps": [],
+  "exceptions": [],
+  "startup": {
+    "command": "cli auto --project <isolated fixture> --auto-port 9431",
+    "status": 0,
+    "stdout": "",
+    "stderr": "- initialize\n\n(node:34744) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n√ IDE server has started, listening on http://127.0.0.1:42633\n- preparing\n- Fetching AppID () permissions\n√ Using AppID: wxed8fdc5d559d973d\n√ auto\n"
+  },
+  "startupState": {
+    "pages": [
+      "pages/launch/index"
+    ],
+    "storeReady": true,
+    "cloudEnabled": false
+  },
+  "ok": false,
+  "blocked": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'pages/capture/index'\n- 'pages/list/index'\n         ^\n\n    at shot (D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\font-text-spacing-20261011\\verify.cjs:44:14)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\font-text-spacing-20261011\\verify.cjs:57:16"
+}

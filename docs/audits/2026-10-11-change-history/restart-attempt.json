@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-10T23:49:18.783Z",
+  "cloud": false,
+  "synthetic": true,
+  "productionWrite": false,
+  "steps": [],
+  "exceptions": [],
+  "startup": {
+    "status": 0,
+    "stdout": "",
+    "stderr": "- initialize\n\n(node:19900) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n√ IDE server has started, listening on http://127.0.0.1:42633\n- preparing\n- Fetching AppID () permissions\n√ Using AppID: wxed8fdc5d559d973d\n√ auto\n"
+  },
+  "startupState": {
+    "pages": [],
+    "storeReady": true
+  },
+  "ok": false,
+  "blocked": "Error: 隔离工程页面栈未完成初始化\n    at D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\change-history-20261011\\verify.cjs:30:29"
+}

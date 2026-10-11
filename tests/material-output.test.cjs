@@ -59,10 +59,21 @@ test('跨记录选材只列有效正文补充，按选择顺序组合且来源�
   assert.deepEqual(materials.map((part) => part.content), ['正文甲', '补充甲', '补充乙', '正文乙']);
   assert.deepEqual(Object.keys(materials[0]).sort(), ['key', 'inspirationId', 'kind', 'content', 'sourceText', 'createdAt'].sort());
   const result = buildMaterialDraft(items, [materials[3], materials[1]], 'free');
-  assert.deepEqual(result, { text: '正文乙\n\n补充甲', materialCount: 2, sourceCount: 2 });
+  assert.deepEqual(result, { text: '正文乙\n补充甲', materialCount: 2, sourceCount: 2 });
   const template = buildMaterialDraft(items, [materials[3], materials[1]], 'work').text;
-  assert.ok(template.includes('正文乙\n\n补充甲'));
+  assert.ok(template.includes('正文乙\n补充甲'));
   for (const omitted of ['正文甲', '补充乙', '旧正文', '旧补充', '私人标签', 'cloud://', '收起补充']) assert.ok(!template.includes(omitted));
+  assert.equal(JSON.stringify(items), before);
+});
+
+test('选材成稿：片段间只换行一次，保留内部段落及选择顺序', () => {
+  const items = sample();
+  items[0].text = '正文第一段\n\n正文第二段\r\n\n';
+  items[0].supplements[1].content = '\r\n补充第一段\n\n补充第二段';
+  const before = JSON.stringify(items);
+  const materials = listMaterials(items);
+  const result = buildMaterialDraft(items, [materials[0], materials[1]], 'free');
+  assert.equal(result.text, '正文第一段\n\n正文第二段\n补充第一段\n\n补充第二段');
   assert.equal(JSON.stringify(items), before);
 });
 
@@ -89,6 +100,8 @@ test('跨记录选材拒绝失效来源、重复空选及三种超限且不截�
   long[0].text += '字';
   assert.throws(() => buildMaterialDraft(long, listMaterials(long), 'free'), /12000/);
   const separator = [{ id: 'ins_one', text: '字'.repeat(6000) }, { id: 'ins_two', text: '字'.repeat(5999) }];
+  assert.equal(buildMaterialDraft(separator, listMaterials(separator), 'free').text.length, 12000);
+  separator[1].text += '字';
   assert.throws(() => buildMaterialDraft(separator, listMaterials(separator), 'free'), /12000/);
 });
 
@@ -104,7 +117,7 @@ test('选材页默认不选，搜索不丢选择，取消重选排在末尾', as
     page.onToggle(event('ins_b:text')); page.onToggle(event('ins_b:text'));
     assert.equal(page.data.options.find((part) => part.key === 'ins_b:text').order, 2);
     page.onGenerate();
-    assert.equal(page.data.draft, '补充甲\n\n正文乙'); assert.equal(page.data.phase, 'edit');
+    assert.equal(page.data.draft, '补充甲\n正文乙'); assert.equal(page.data.phase, 'edit');
     assert.deepEqual(state.scrolls, [0]);
     page.onBackToSelection(); page.onResumeDraft(); assert.deepEqual(state.scrolls, [0, 0, 0]);
     assert.equal(JSON.stringify(state.items), original); assert.equal(state.copies.length, 0); assert.equal(state.saves.length, 0);

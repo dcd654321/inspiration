@@ -80,5 +80,4 @@
   </view>
 
   <view class="capture-process">记录 <text>→</text> 补充 <text>→</text> 成稿</view>
-  <view class="capture-privacy">灵感默认仅你可见。</view>
 </view>

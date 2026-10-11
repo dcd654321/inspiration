@@ -395,7 +395,7 @@ function editSupplement(inspiration, input) {
   }));
 }
 
-const FOLD_SEPARATOR = '\n\n';
+const FOLD_SEPARATOR = '\n';
 
 /**
  * 把一条补充合并进灵感：内容追加到原文末尾，本条标记为已并入并默认收起。
@@ -439,7 +439,8 @@ function foldIntoText(inspiration, input) {
 
   const nextText = item === null
     ? null
-    : (inspiration.text.length === 0 ? item.content : inspiration.text + FOLD_SEPARATOR + item.content);
+    : (inspiration.text.length === 0 ? item.content
+      : inspiration.text.replace(/[\r\n]+$/, '') + FOLD_SEPARATOR + item.content.replace(/^[\r\n]+/, ''));
   if (nextText !== null && nextText.length > LIMITS.textMaxLength) {
     errors.push({ field: 'text', code: ERROR_CODES.TEXT_TOO_LONG });
   }

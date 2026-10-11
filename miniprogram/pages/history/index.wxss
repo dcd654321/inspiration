@@ -41,6 +41,8 @@
 }
 
 .hv-t {
+  white-space: pre-wrap;
+  word-break: break-all;
   font-size: 29rpx;
   font-size: max(29rpx, 16px);
   line-height: 1.72;
@@ -73,6 +75,8 @@
 }
 
 .hv-now-t {
+  white-space: pre-wrap;
+  word-break: break-all;
   font-size: 29rpx;
   font-size: max(29rpx, 16px);
   line-height: 1.72;
@@ -103,3 +107,7 @@
   line-height: 1.7;
   margin-top: 12rpx;
 }
+
+.history-subject, .history-state { font-size: max(26rpx, 13px); color: var(--ink-3); line-height: 1.6; margin-bottom: 16rpx; }
+.history-section-title { font-size: max(28rpx, 14px); font-weight: 500; color: var(--ink-2); margin: 24rpx 0 12rpx; }
+.supplement-history { margin-top: 48rpx; }

@@ -54,6 +54,30 @@ async function withPage(name, run) {
   }
 }
 
+test('时间显示：列表详情补充及修改记录均完整到秒，不改原时间戳', async () => {
+  const start = new Date(2026, 9, 10, 21, 47, 3).getTime();
+  let item = core.createInspiration({ id: 'ins_review', text: '最初的想法', now: start });
+  item = core.appendSupplement(item, { id: 'sup_first', content: '第一条补充', now: start + 14000 });
+  item = core.updateText(item, { text: '修改后的想法', historyId: 'tex_first', now: start + 42000 });
+  item = core.appendSupplement(item, { id: 'sup_hidden', content: '已收起的补充', now: start + 43000 });
+  item = { ...item, updatedAt: start + 44000, supplements: item.supplements.map(supplement =>
+    supplement.id === 'sup_hidden' ? { ...supplement, foldedAt: start + 44000 } : supplement) };
+  for (const name of ['list', 'detail', 'history']) await withPage(name, async ({ page, state }) => {
+    state.items = [structuredClone(item)];
+    const before = JSON.stringify(state.items);
+    await page.load();
+    if (name === 'list') assert.equal(page.data.items[0].time, '2026-10-10 21:47:47');
+    if (name === 'detail') {
+      assert.equal(page.data.time, '2026-10-10 21:47:47');
+      assert.equal(page.data.supplements[0].time, '2026-10-10 21:47:17');
+      assert.equal(page.data.supplements[0].label, '这条补充 · 2026-10-10 21:47:17');
+      assert.equal(page.data.hidden[0].time, '2026-10-10 21:47:46');
+    }
+    if (name === 'history') assert.equal(page.data.versions[0].time, '2026-10-10 21:47:45');
+    assert.equal(JSON.stringify(state.items), before);
+  });
+});
+
 test('复核：单条整理迟到读取不回填旧页面或账户', async () => {
   for (const stale of ['unloaded', 'account', 'newer']) await withPage('output', async ({ page, app, store }) => {
     const wait = deferred(); app.ensureReady = () => wait.promise;
@@ -318,6 +342,66 @@ test('交互修复：继续补充可重复请求焦点普通进入不请求', as
   });
 });
 
+test('列表筛选：顶部条件即时组合，主类型切换保留时间和阶段', async () => {
+  await withPage('list', async ({ page, state }) => {
+    const now = Date.now(), day = 86400000;
+    const make = (id, ago, stage, supplemented) => {
+      let item = core.createInspiration({ id, text: '散步路线 ' + id, now: now - ago * day });
+      if (supplemented) item = core.appendSupplement(item, { id: 'sup_' + id, content: '路线补充', now: now - ago * day });
+      return { ...item, stage };
+    };
+    state.items = [make('ins_ready', 1, 'ready', true), make('ins_plain', 2, 'ready', false),
+      make('ins_old', 10, 'ready', true), make('ins_seed', 1, 'seed', true),
+      { ...make('ins_merged', 1, 'ready', false), mergedInto: 'ins_ready' },
+      { ...make('ins_deleted', 1, 'ready', true), deletedAt: now }];
+    const before = JSON.stringify(state.items);
+    const shown = () => page.data.items.map(item => item.id).sort();
+    const main = filter => page.onFilter({ currentTarget: { dataset: { filter } } });
+    page.load();
+    main('supplemented');
+    assert.deepEqual(shown(), ['ins_old', 'ins_ready', 'ins_seed']);
+    page.onToggleRecent();
+    assert.deepEqual(shown(), ['ins_ready', 'ins_seed']);
+    page.onStageFilter({ currentTarget: { dataset: { index: '3' } } });
+    assert.deepEqual(shown(), ['ins_ready']);
+    page.onToggleMerged();
+    assert.equal(page.data.filter, 'all'); assert.equal(page.data.mergedOn, true);
+    assert.deepEqual(shown(), ['ins_merged']);
+    main('supplemented');
+    assert.equal(page.data.mergedOn, false); assert.deepEqual(shown(), ['ins_ready']);
+    page.onToggleMerged(); main('all');
+    assert.equal(page.data.mergedOn, false);
+    assert.equal(page.data.recentOn, true); assert.equal(page.data.stage, 'ready');
+    assert.deepEqual(shown(), ['ins_plain', 'ins_ready']);
+    page.onToggleMerged(); page.onToggleMerged();
+    assert.equal(page.data.filter, 'all'); assert.equal(page.data.mergedOn, false);
+    assert.deepEqual(shown(), ['ins_plain', 'ins_ready']);
+    assert.equal(JSON.stringify(state.items), before); assert.equal(state.saves.length, 0);
+  });
+});
+
+test('列表筛选：重置保留搜索，非法阶段索引不改变条件或结果', async () => {
+  await withPage('list', async ({ page, state }) => {
+    state.items.push(core.createInspiration({ id: 'ins_other', text: '其他内容', now: Date.now() }));
+    page.onSearch(input('散步'));
+    page.onFilter({ currentTarget: { dataset: { filter: 'supplemented' } } });
+    page.onToggleRecent(); page.onStageFilter({ currentTarget: { dataset: { index: 2 } } });
+    page.onToggleMerged();
+    const before = structuredClone(page.data);
+    for (const index of [-1, page.data.stages.length, 1.5, '无效']) {
+      page.onStageFilter({ currentTarget: { dataset: { index } } });
+      assert.deepEqual(page.data, before, String(index));
+    }
+    page.onResetFilters();
+    assert.equal(page.data.query, '散步'); assert.equal(page.data.filter, 'all');
+    assert.equal(page.data.recentOn, false); assert.equal(page.data.mergedOn, false);
+    assert.equal(page.data.stage, ''); assert.equal(page.data.stageIndex, 0);
+    assert.deepEqual(page.data.items.map(item => item.id), ['ins_review']);
+    page.onClearAll(); assert.equal(page.data.query, ''); assert.equal(page.data.items.length, 2);
+    assert.equal(state.saves.length, 0);
+  });
+});
+
 test('交互修复：同一可信会话刷新失败保留列表查询和阅读位置', async () => {
   await withPage('list', async ({ page, state, app, store }) => {
     page.onSearch(input('散步')); page.savedScrollTop = 500; page.anchorId = 'ins_review';
@@ -346,6 +430,9 @@ test('交互修复：账户锁定或变化立即清除列表条件和旧内容',
   for (const change of ['scope', 'epoch', 'store', 'locked']) {
     await withPage('list', async ({ page, app, store }) => {
       page.onSearch(input('散步')); page.savedScrollTop = 500; page.anchorId = 'ins_review';
+      page.onFilter({ currentTarget: { dataset: { filter: 'supplemented' } } });
+      page.onToggleRecent(); page.onStageFilter({ currentTarget: { dataset: { index: 3 } } });
+      if (['scope', 'epoch'].includes(change)) page.onToggleMerged();
       if (change === 'scope') app.globalData.cacheScope = 'b'.repeat(32);
       if (change === 'epoch') app.globalData.sessionEpoch++;
       if (change === 'store') app.globalData.store = Object.assign({}, store);
@@ -353,6 +440,9 @@ test('交互修复：账户锁定或变化立即清除列表条件和旧内容',
       const pending = deferred(); app.ensureReady = () => pending.promise;
       const loading = page.onShow();
       assert.equal(page.data.items.length, 0, change); assert.equal(page.data.query, '', change);
+      assert.equal(page.data.filter, 'all', change); assert.equal(page.data.recentOn, false, change);
+      assert.equal(page.data.mergedOn, false, change); assert.equal(page.data.stage, '', change);
+      assert.equal(page.data.stageIndex, 0, change); assert.equal(page.savedScrollTop, 0, change);
       assert.equal(page.anchorId, '', change); page.onHide();
       pending.resolve(store); await loading; assert.equal(page.data.items.length, 0, change);
     });

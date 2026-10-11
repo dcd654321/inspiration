@@ -15,9 +15,16 @@
       <button wx:if="{{query}}" class="btn-link" bindtap="onClearQuery">清空搜索</button>
     </view>
     <view class="list-filters">
-      <button size="mini" class="filter-chip {{filter === 'all' && !panelCount ? 'selected' : ''}}" data-filter="all" bindtap="onFilter">全部</button>
-      <button size="mini" class="filter-chip {{filter === 'supplemented' ? 'selected' : ''}}" data-filter="supplemented" bindtap="onFilter">有补充</button>
-      <button size="mini" class="filter-chip {{panelCount ? 'selected' : ''}}" bindtap="onOpenPanel">筛选{{panelCount ? '·' + panelCount : ''}}</button>
+      <button size="mini" class="filter-chip {{filter === 'all' && !mergedOn ? 'selected' : ''}}" aria-pressed="{{filter === 'all' && !mergedOn}}" data-filter="all" bindtap="onFilter">全部</button>
+      <button size="mini" class="filter-chip {{filter === 'supplemented' && !mergedOn ? 'selected' : ''}}" aria-pressed="{{filter === 'supplemented' && !mergedOn}}" data-filter="supplemented" bindtap="onFilter">有补充</button>
+      <button size="mini" class="filter-chip {{recentOn ? 'selected' : ''}}" aria-pressed="{{recentOn}}" bindtap="onToggleRecent">七天内</button>
+      <button size="mini" class="filter-chip {{mergedOn ? 'selected' : ''}}" aria-pressed="{{mergedOn}}" bindtap="onToggleMerged">已合并</button>
+    </view>
+    <view class="stage-filters" aria-label="按整理阶段筛选">
+      <button wx:for="{{stages}}" wx:key="id" size="mini" class="filter-chip {{stageIndex === index ? 'selected' : ''}}" aria-pressed="{{stageIndex === index}}" data-index="{{index}}" bindtap="onStageFilter">{{item.label}}</button>
+    </view>
+    <view wx:if="{{filter !== 'all' || recentOn || stage || mergedOn}}" class="filter-reset">
+      <button class="btn-link" bindtap="onResetFilters">重置筛选</button>
     </view>
   </block>
 
@@ -105,6 +112,10 @@
                 <view class="sep"></view>
                 <text>{{item.supplements}}</text>
               </block>
+              <block wx:if="{{item.photos}}">
+                <view class="sep"></view>
+                <text>{{item.photos}} 张照片</text>
+              </block>
             </view>
           </view>
         </view>
@@ -127,19 +138,4 @@
     </view>
   </block>
 
-  <!-- 筛选面板：七天内、阶段、已合并都收在这里；chip 上只显示有几个条件生效 -->
-  <view wx:if="{{panelOpen}}" class="mask" bindtap="onClosePanel">
-    <view class="sheet" catchtap="noop">
-      <view class="sheet-title">筛选</view>
-      <button class="sheet-item" bindtap="onToggleRecent">七天内<text class="sub">{{recentOn ? '已选择 · 只看七天内更新的记录' : '只看七天内更新的记录'}}</text></button>
-      <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageFilter">
-        <view class="sheet-item">阶段<text class="sub">{{stage ? '已选择 · ' + stages[stageIndex].label : '按整理阶段筛选'}}</text></view>
-      </picker>
-      <button class="sheet-item" bindtap="onToggleMerged">已合并<text class="sub">{{mergedOn ? '已选择 · 查看已合并的内容' : '查看已合并的内容'}}</text></button>
-      <view class="panel-acts">
-        <button class="btn btn-plain btn-sm" bindtap="onResetPanel">重置筛选</button>
-        <button class="btn btn-sm" bindtap="onClosePanel">完成</button>
-      </view>
-    </view>
-  </view>
 </view>

@@ -10,22 +10,24 @@
 
   <block wx:elif="{{missing}}">
     <view class="empty">
-      <view class="et">找不到这条灵感</view>
-      <view class="ed">它可能已被删除，可以返回列表查找其他记录。</view>
+      <view class="et">{{missingTitle}}</view>
+      <view class="ed">{{missingHint}}</view>
     </view>
-    <button class="btn btn-block" style="margin-top: 32rpx" bindtap="onBackToList">返回灵感列表</button>
+    <button wx:if="{{missingSupplement}}" class="btn btn-block" style="margin-top: 32rpx" bindtap="onBack">返回这条灵感</button>
+    <button wx:else class="btn btn-block" style="margin-top: 32rpx" bindtap="onBackToList">返回灵感列表</button>
   </block>
 
   <block wx:else>
+    <view wx:if="{{subjectLabel}}" class="history-subject">{{subjectLabel}}</view>
     <view class="hv-now">
-      <view class="hv-now-k">当前内容</view>
+      <view class="hv-now-k">{{currentLabel}}</view>
       <view class="hv-now-t">{{current}}</view>
     </view>
 
     <block wx:if="{{versionCount === 0}}">
       <view class="hv-empty">
         <view class="et">还没有修改记录</view>
-        <view class="ed">正文还没有改过。修改后，旧内容会保留在这里。</view>
+        <view class="ed">{{emptyHint}}</view>
       </view>
       <button class="btn btn-plain btn-block" bindtap="onBack">返回这条灵感</button>
     </block>
@@ -34,10 +36,26 @@
       <view class="history-head">共 {{versionCount}} 条修改记录</view>
 
       <!-- 只读。没有编辑入口，也没有删除入口——这是「你说过的话不会被悄悄抹掉」的界面体现 -->
-      <view class="history-list">
+      <view wx:if="{{versions.length}}" class="history-section-title">{{historyTitle}}（{{versions.length}}）</view>
+      <view wx:if="{{versions.length}}" class="history-list">
         <view wx:for="{{versions}}" wx:key="id" class="hv">
           <view class="hv-m">修改于 {{item.time}}</view>
           <view class="hv-t">{{item.text}}</view>
+        </view>
+      </view>
+      <view wx:for="{{supplementHistories}}" wx:key="id" wx:for-item="supplement" class="supplement-history">
+        <view class="history-section-title">{{supplement.label}}</view>
+        <view wx:if="{{supplement.state}}" class="history-state">{{supplement.state}}</view>
+        <view class="hv-now">
+          <view class="hv-now-k">当前补充</view>
+          <view class="hv-now-t">{{supplement.current}}</view>
+        </view>
+        <view class="history-section-title">补充修改记录（{{supplement.versions.length}}）</view>
+        <view class="history-list">
+          <view wx:for="{{supplement.versions}}" wx:key="id" class="hv">
+            <view class="hv-m">修改于 {{item.time}}</view>
+            <view class="hv-t">{{item.text}}</view>
+          </view>
         </view>
       </view>
     </block>

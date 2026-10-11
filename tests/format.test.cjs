@@ -69,9 +69,11 @@ test('补零：日期部分始终是两位', () => {
 
 // ---------------------------------------------------------------- 绝对时间
 
-test('绝对时间格式为 YYYY-MM-DD HH:mm，各段补零', () => {
-  const ts = new Date(2020, 0, 5, 9, 7, 0).getTime();
-  assert.strictEqual(formatAbsolute(ts), '2020-01-05 09:07');
+test('绝对时间格式为 YYYY-MM-DD HH:mm:ss，各段补零', () => {
+  const ts = new Date(2020, 0, 5, 9, 7, 3).getTime();
+  assert.strictEqual(formatAbsolute(ts), '2020-01-05 09:07:03');
+  assert.strictEqual(formatAbsolute(ts - 3000), '2020-01-05 09:07:00');
+  assert.strictEqual(formatAbsolute(new Date(2020, 0, 5, 9, 7, 59).getTime() + 1000), '2020-01-05 09:08:00');
 });
 
 test('绝对时间对非法输入返回空串', () => {

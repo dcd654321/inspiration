@@ -29,7 +29,7 @@ function buildMaterialDraft(items, selections, templateId) {
     sources.add(current.inspirationId); parts.push(current.content);
   }
   if (sources.size > MATERIAL_LIMITS.sources) throw Error('每次最多使用二十条灵感，请减少来源。');
-  const text = parts.join('\n\n');
+  const text = parts.reduce((text, part) => text.replace(/[\r\n]+$/, '') + '\n' + part.replace(/^[\r\n]+/, ''));
   if (text.length > MATERIAL_LIMITS.chars) throw Error('所选素材合计超过 12000 字，请减少选择。');
   return { text: buildTemplateText({ text, supplements: [] }, [], templateId), materialCount: parts.length, sourceCount: sources.size };
 }

@@ -32,7 +32,9 @@ const IN_SCOPE = [
   ['optimize-product-experience-20261007', 'product-experience'],
   ['remove-ai-integration', 'manual-only-product'],
   ['repair-snapshot-version-safety', 'snapshot-version-safety'],
-  ['repair-capture-continuity', 'capture-continuity']
+  ['repair-capture-continuity', 'capture-continuity'],
+  ['repair-detail-photo-tags', 'detail-photo-tags'],
+  ['repair-change-history', 'change-history']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */

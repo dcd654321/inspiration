@@ -1,0 +1,9 @@
+{
+  "synthetic": true,
+  "cloud": false,
+  "before": {
+    "pages": [],
+    "ready": true
+  },
+  "error": "Error: Uncaught [object Object]"
+}
