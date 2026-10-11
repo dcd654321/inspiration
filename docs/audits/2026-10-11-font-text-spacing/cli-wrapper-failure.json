@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-10T23:25:42.369Z",
+  "cloud": false,
+  "synthetic": true,
+  "productionWrite": false,
+  "startupAttempts": 1,
+  "connectionAttempts": 0,
+  "steps": [],
+  "exceptions": [],
+  "startup": {
+    "command": "cli auto --project <isolated fixture> --auto-port 9431",
+    "status": 4294967295,
+    "stdout": "[error] Please ensure that the IDE has been properly installed\n",
+    "stderr": "- initialize\n\n(node:20284) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n× initialize error: Error: EPERM: operation not permitted, open 'C:\\Users\\dcd\\AppData\\Local\\微信开发者工具\\User Data\\e4cc3cc84838fa3f9edd5df113f1ec8e\\Default\\.cli', Error: EPERM: operation not permitted, open 'C:\\Users\\dcd\\AppData\\Local\\微信开发者工具\\User Data\\e4cc3cc84838fa3f9edd5df113f1ec8e\\Default\\.cli'\n    at Object.writeFileSync (node:fs:2426:20)\n    at E:\\weixinDevTool\\微信web开发者工具\\resources\\app.asar.unpacked\\js\\common\\cli\\index.js:129:43058\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n"
+  },
+  "ok": false,
+  "blocked": "Error: CLI启动未成功：- initialize\n\n(node:20284) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n× initialize error: Error: EPERM: operation not permitted, open 'C:\\Users\\dcd\\AppData\\Local\\微信开发者工具\\User Data\\e4cc3cc84838fa3f9edd5df113f1ec8e\\Default\\.cli', Error: EPERM: operation not permitted, open 'C:\\Users\\dcd\\AppData\\Local\\微信开发者工具\\User Data\\e4cc3cc84838fa3f9edd5df113f1ec8e\\Default\\.cli'\n    at Object.writeFileSync (node:fs:2426:20)\n    at E:\\weixinDevTool\\微信web开发者工具\\resources\\app.asar.unpacked\\js\\common\\cli\\index.js:129:43058\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n\n    at D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\font-text-spacing-20261011\\verify.cjs:31:54\n    at Object.<anonymous> (D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\font-text-spacing-20261011\\verify.cjs:83:3)\n    at Module._compile (node:internal/modules/cjs/loader:1929:14)\n    at Object..js (node:internal/modules/cjs/loader:2060:10)\n    at Module.load (node:internal/modules/cjs/loader:1651:32)\n    at Module._load (node:internal/modules/cjs/loader:1443:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47"
+}

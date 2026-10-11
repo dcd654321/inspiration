@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-10T14:18:37.776Z",
+  "source": "D:\\codex\\coding\\inspiration-miniprogram\\miniprogram",
+  "results": [
+    {
+      "exe": "wcc.exe",
+      "count": 14,
+      "ok": true,
+      "status": 0,
+      "stderr": "",
+      "compiledBytes": 164739
+    },
+    {
+      "exe": "wcsc.exe",
+      "count": 15,
+      "ok": true,
+      "status": 0,
+      "stderr": "",
+      "compiledBytes": 64118
+    }
+  ]
+}

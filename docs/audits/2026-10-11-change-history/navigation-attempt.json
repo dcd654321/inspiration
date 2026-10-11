@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-10T23:46:36.906Z",
+  "cloud": false,
+  "synthetic": true,
+  "productionWrite": false,
+  "steps": [
+    {
+      "name": "01-supplement-only-history-entry",
+      "route": "pages/detail/index",
+      "screenshot": "01-supplement-only-history-entry.png",
+      "data": {
+        "historyCount": 1,
+        "sheetHistoryCount": 0,
+        "missing": false,
+        "text": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。"
+      }
+    }
+  ],
+  "exceptions": [],
+  "startup": {
+    "status": 0,
+    "stdout": "",
+    "stderr": "- initialize\n\n(node:15480) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n√ IDE server has started, listening on http://127.0.0.1:42633\n- preparing\n- Fetching AppID () permissions\n√ Using AppID: wxed8fdc5d559d973d\n√ auto\n"
+  },
+  "startupState": {
+    "pages": [
+      "pages/launch/index"
+    ],
+    "storeReady": true
+  },
+  "ok": false,
+  "blocked": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'pages/detail/index'\n- 'pages/history/index'\n         ^\n\n    at shot (D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\change-history-20261011\\verify.cjs:36:68)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\change-history-20261011\\verify.cjs:49:12"
+}

@@ -8,6 +8,14 @@
 
 ## 0. 文档地图
 
+2026-10-11 修改记录修复：`repair-change-history` 补齐正文与补充历史查看及文字留档。详情 `historyCount` 统计正文和现存补充旧版本总数，补充操作面板使用自身 `contentHistory` 数量。`pages/history` 接收 `{ id, supplementId? }`：未指定补充时显示正文及有历史的补充分组，指定时只显示该补充，缺失不回退。历史只读、完整文字保留换行、版本按修改时间倒序，页面隐藏及过期读取仍受账户与页面守卫约束。留档正文历史读取 `text`，补充历史读取 `content`。数据字段与保存协议不变；界面见 `ui-design.md` §4、§8。
+
+2026-10-11 字号与文字间距：列表顶部筛选使用 `max(24rpx, 12px)` 常规字重，选中项使用 500 字重，保留至少 44px 点击高度。并入正文、单条整理和跨灵感选材均在文字片段之间只插入一个换行，移除拼接边界原有的连续换行，保留片段内部的段落及来源历史；已有记录和会话稿件不自动重排。界面说明见 `docs/ui-design.md` §3、§8—9。
+
+2026-10-10 列表筛选：`pages/list` 在搜索框下直接显示记录类型、七天内与四个阶段选项，选择后立即调用 `load()`，列表不再使用筛选遮罩、底部面板或阶段选择器。`filter` 与 `mergedOn` 表示互斥记录类型；`recentOn` 和 `stage/stageIndex` 可叠加。`onStageFilter(event)` 读取按钮的 `dataset.index` 并校验阶段索引。`onResetFilters()` 清全部筛选并保留 `query`；账户变化清全部查询和筛选。界面与验证条件见 `docs/ui-design.md` §3，覆盖记录见 `docs/spec-coverage.md` 的「搜索有效文字」。
+
+2026-10-10 详情照片与标签修复：`openspec/changes/repair-detail-photo-tags/` 定义已有照片展示和标签编辑状态修复。详情内部 `organizationSummary(tagsDraft, stageIndex)` 将编辑值转为摘要；展开后的 `orgDirty` 仅描述当前表单未保存，普通 `load()` 保留标签草稿，resetDraft/账户变化与确认保存后恢复记录值。照片重读与补充确认使用普通 load；补充确认只清空本次补充输入。`onPhotoImageError(event)` 只在当前 store、照片 ID 与 src 匹配时将该缩略图置为失败。私有照片读取不满足作用域条件时不下载并返回失败占位；失效页面结果仍丢弃。接口与数据库字段不变。
+
 2026-10-09 全量复查：当前页面、记录入口与反馈读取修复见 §28 和 `docs/FULL-REVIEW-20261009.md`。本次仅修改本地源码与验证材料。
 
 2026-10-08 移除 AI 集成：`openspec/changes/remove-ai-integration/` 定义当前记录与手动整理版本。§5.4、§5.5、§6、§7.2、§7.12、§15.3、§19 为已撤下功能的历史说明，不再作为当前开发或启用要求；已有来源与合并字段保留兼容，详见 §27。历史审查与截图记录当时的页面，不代表当前发布包。
@@ -764,12 +772,14 @@ info()            → { keys, currentSize, limitSize }   // 绑定 wx.getStorage
 ```js
 // 模块级导出
 formatRelative(ts, now)  → string   // 刚刚 / N 分钟前 / N 小时前 / 昨天 / N 天前 / YYYY-MM-DD
-formatAbsolute(ts)       → string   // YYYY-MM-DD HH:mm
+formatAbsolute(ts)       → string   // YYYY-MM-DD HH:mm:ss
 summarize(text, max)     → string   // 取首行，超长截断加省略号
 countLabel(count, unit)  → string   // 为 0 时返回空串
 ```
 
-**按经过时间分桶，不做日历日运算。** 日历日要用本地时区算当天零点，结果依赖运行环境的时区，测试没法稳定断言；经过时间桶对同一组 `(ts, now)` 永远给同一个结果。代价是「昨天」按 24—48 小时计，与严格日历日可能差几小时——这个精度对「上次什么时候动的」足够了。
+2026-10-10 按用户要求，列表与详情的更新时间、补充的记录时间、修改记录及所有既有绝对时间调用统一显示 `YYYY-MM-DD HH:mm:ss`，各段补零，使用原时间戳，不改写历史数据。列表排序及顶部更新时间仍取 updatedAt；补充记录取 createdAt，修改记录取 replacedAt。详情内部 `decorateSupplement(supplement, all)` 与列表内部 `decorate(inspiration)` 不再接收当前时刻。
+
+以下相对时间分桶仅是保留的 formatRelative 兼容函数行为，当前记录页面不再调用：**按经过时间分桶，不做日历日运算。** 日历日要用本地时区算当天零点，结果依赖运行环境的时区，测试没法稳定断言；经过时间桶对同一组 `(ts, now)` 永远给同一个结果。代价是「昨天」按 24—48 小时计，与严格日历日可能差几小时。
 
 阈值本身是**产品决定**，所以 `tests/format.test.cjs` 把每个边界都断言了：改阈值就会红，逼着人回头确认设计。
 

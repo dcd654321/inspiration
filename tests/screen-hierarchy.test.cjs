@@ -33,22 +33,24 @@ test('首屏减负：列表没有记录时不渲染搜索与筛选', () => {
   assert.match(page, /bindtap="onShowMerged"/);
 });
 
-test('列表：默认筛选行只放三个 chip，七天内/阶段/已合并进筛选面板', () => {
+test('列表：全部筛选条件置于顶部，阶段直接选择且没有弹窗', () => {
   const page = read('miniprogram/pages/list/index.wxml');
   const filters = page.indexOf('class="list-filters"');
   const head = page.indexOf('class="list-head"');
   assert.ok(filters >= 0 && head > filters);
-  // 默认行：全部 / 有补充 / 筛选
+  const controls = page.slice(filters, head);
+  // 主类型、时间与阶段都在结果区之前，点击即生效。
   assert.match(page, /data-filter="all"/);
   assert.match(page, /data-filter="supplemented"/);
-  assert.ok(page.indexOf('筛选{{panelCount') > filters, '筛选 chip 应在默认行内');
-  // 面板内承载三个高级条件
-  const panel = page.indexOf('class="sheet"');
-  assert.ok(panel >= 0);
-  assert.ok(page.indexOf('bindtap="onToggleRecent"') > panel, '七天内应在面板内');
-  assert.ok(page.indexOf('bindchange="onStageFilter"') > panel, '阶段应在面板内');
-  assert.ok(page.indexOf('bindtap="onToggleMerged"') > panel, '已合并应在面板内');
-  assert.match(page, /bindtap="onResetPanel">重置筛选</);
+  assert.match(controls, /bindtap="onToggleRecent"/);
+  assert.match(controls, /bindtap="onToggleMerged"/);
+  assert.match(controls, /<button\b[^>]*bindtap="onStageFilter"/);
+  assert.match(controls, /data-index="{{index}}"/);
+  assert.match(controls, /wx:for="{{stages}}"/);
+  assert.match(controls, /bindtap="onResetFilters"[^>]*>重置筛选</);
+  assert.doesNotMatch(page, /<picker\b|class="mask"|class="sheet"|onOpenPanel|onClosePanel|onResetPanel|panelCount|panelOpen/);
+  const logic = read('miniprogram/pages/list/index.js');
+  assert.doesNotMatch(logic, /panelOpen|panelCount|onOpenPanel|onClosePanel|onResetPanel/);
   // 选材成稿属于整份列表，放在段落头
   assert.ok(page.indexOf('选材成稿') > head);
   assert.doesNotMatch(page, /AI 汇总|onSummarize/);
@@ -159,12 +161,12 @@ test('修改记录：没有历史时说明原因并给一条回去的路', () =>
   const page = read('miniprogram/pages/history/index.wxml');
   const logic = read('miniprogram/pages/history/index.js');
   assert.match(page, /还没有修改记录/);
-  assert.match(page, /正文还没有改过。修改后，旧内容会保留在这里。/);
+  assert.match(logic, /正文和补充还没有改过。修改后，旧内容会保留在这里。/);
   assert.match(page, /bindtap="onBack">返回这条灵感</);
   assert.match(logic, /onBack\(\)/);
   // 读取失败与确认缺失分开：网络问题不能说成「已删除」
   assert.match(page, /暂时无法读取灵感/);
-  assert.match(page, /找不到这条灵感/);
+  assert.match(logic, /找不到这条灵感/);
   assert.match(logic, /readError/);
   // 只读承诺不变：没有编辑或删除入口
   assert.doesNotMatch(page, /bindtap="onEdit|bindtap="onDelete/);
@@ -251,7 +253,7 @@ test('记录页：结果未知与确认被拒绝分开，成功卡带摘录与�
   assert.doesNotMatch(page, /editor-example|例如：把周末散步路线/);
 });
 
-test('详情页：顺序为 更多 → 原文 → 轻量动作 → 补充输入 → 时间线 → 标记 → 照片', () => {
+test('详情页：照片紧随正文动作，单行缩略图不挤进补充时间线', () => {
   const page = read('miniprogram/pages/detail/index.wxml');
   const head = page.indexOf('class="detail-head"');
   const origin = page.indexOf('class="origin"');
@@ -262,10 +264,10 @@ test('详情页：顺序为 更多 → 原文 → 轻量动作 → 补充输入 
   const photos = page.indexOf('class="photos-section"');
   assert.ok(head >= 0 && origin > head, '更多入口应在原文之前');
   assert.ok(actions > origin, '轻量动作应在原文之后');
-  assert.ok(compose > actions, '补充输入应在动作之后');
+  assert.ok(photos > actions && photos < compose, '照片应在正文动作后、补充输入前');
+  assert.match(page, /class="photo-strip" scroll-x/, '照片数量增加时只横向扩展');
   assert.ok(timeline > compose, '时间线应在补充输入之后');
   assert.ok(org > timeline, '标签与阶段应在时间线之后');
-  assert.ok(photos > org, '照片应在标签行之后');
   // 低频操作全部收进「更多」面板
   const morePanel = page.indexOf('class="sheet-title">这条灵感');
   assert.ok(morePanel >= 0, '缺少页内「更多」面板');
@@ -307,9 +309,11 @@ test('详情页：补充菜单与确认弹窗使用定稿动作名，摘录有�
   assert.match(logic, /确定删除这条补充吗？/);
   const styles = read('miniprogram/app.wxss');
   assert.match(styles, /\.dialog-quote-t[\s\S]*?-webkit-line-clamp:\s*4/);
-  // 标记表单：保存标记 / 取消，取消恢复进入前的值
+  // 标签与阶段表单：保存标签与阶段 / 取消
   assert.match(page, /bindtap="onCancelOrganization"[^>]*>取消</);
-  assert.match(page, /保存标记/);
+  assert.match(page, /保存标签与阶段/);
+  assert.match(page, /编辑标签与阶段/);
+  assert.doesNotMatch(page, /修改标记|保存标记/);
 });
 
 test('详情页：读取失败与确认缺失分开，都给出可执行的返回', () => {

@@ -1,11 +1,11 @@
-const { formatRelative, summarize, countLabel } = require('../../core/format');
+const { formatAbsolute, summarize, countLabel } = require('../../core/format');
 const { activeSupplements, isDeleted, isMerged } = require('../../core/inspiration');
 const { searchInspirations } = require('../../services/discovery');
 const { STAGES } = require('../../services/organization');
 const { startCapture } = require('../../services/capture-entry');
 
 /** 把一条灵感转成列表项要显示的样子。转换集中在这里，WXML 里就只做渲染。 */
-function decorate(inspiration, now) {
+function decorate(inspiration) {
   const activeCount = activeSupplements(inspiration).length;
   const merged = Boolean(inspiration.mergedInto);
   const stage = STAGES.find((x) => x.id === inspiration.stage) || STAGES[0];
@@ -13,8 +13,9 @@ function decorate(inspiration, now) {
   return {
     id: inspiration.id,
     excerpt: summarize(inspiration.text, 60),
-    time: formatRelative(inspiration.updatedAt, now),
+    time: formatAbsolute(inspiration.updatedAt),
     supplements: countLabel(activeCount, '条补充'),
+    photos: (inspiration.photos || []).length,
     // 默认阶段「想法」不单独占行——它没有区分度，占一行只是噪音
     stageLabel: merged ? '已合并' : (stage.id === STAGES[0].id ? '' : stage.label),
     tags: tags.slice(0, 2),
@@ -32,7 +33,7 @@ function syncAccount(page, app) {
     page.anchorId = '';
     page.setData({ items: [], activeCount: 0, mergedCount: 0, reviewItem: null, reviewExpanded: false,
       reviewError: '', error: '', query: '', filter: 'all', recentOn: false, mergedOn: false,
-      stage: '', stageIndex: 0, panelOpen: false, panelCount: 0 });
+      stage: '', stageIndex: 0 });
   }
   page.listStore = store;
   page.listEpoch = sessionEpoch;
@@ -45,15 +46,13 @@ Page({
     loading: true,
     error: '',
     query: '',
-    // 默认筛选行只放「全部 / 有补充」；七天内、阶段、已合并都进筛选面板
+    // 条件在顶部直接选择；七天内与阶段可叠加到当前记录类型上。
     filter: 'all',
     recentOn: false,
     mergedOn: false,
     stage: '',
     stages: [{ id: '', label: '全部阶段' }].concat(STAGES),
     stageIndex: 0,
-    panelOpen: false,
-    panelCount: 0,
     activeCount: 0,
     mergedCount: 0,
     reviewItem: null,
@@ -93,7 +92,7 @@ Page({
   resetViewState() {
     this.savedScrollTop = 0;
     this.anchorId = '';
-    this.setData({ query: '', filter: 'all', recentOn: false, mergedOn: false, stage: '', stageIndex: 0, panelOpen: false, panelCount: 0 });
+    this.setData({ query: '', filter: 'all', recentOn: false, mergedOn: false, stage: '', stageIndex: 0 });
   },
 
   load(options) {
@@ -124,7 +123,7 @@ Page({
         // 回顾行串在第一条记录之后；列表不足两条时不占位，不留空容器
         if (review && plainView && active.length >= 2) {
           const item = review.getRecommendation(active);
-          reviewItem = item ? decorate(item, now) : null;
+          reviewItem = item ? decorate(item) : null;
         }
       } catch (err) { reviewError = '回顾设置暂时无法保存，请稍后重试。'; }
 
@@ -135,11 +134,10 @@ Page({
           recent: this.data.recentOn,
           stage: this.data.stage,
           now
-        }).map((result) => Object.assign(decorate(result.item, now), { matchText: result.matchText, matchSource: result.matchSource })),
+        }).map((result) => Object.assign(decorate(result.item), { matchText: result.matchText, matchSource: result.matchSource })),
         activeCount: active.length,
         mergedCount,
         reviewItem, reviewError,
-        panelCount: (this.data.recentOn ? 1 : 0) + (this.data.stage ? 1 : 0) + (this.data.mergedOn ? 1 : 0),
         loading: false,
         error: ''
       }, () => { if (opts.restoreScroll) this.restoreScroll(); });
@@ -187,27 +185,26 @@ Page({
   onFilter(event) {
     const filter = event.currentTarget.dataset.filter;
     if (!['all', 'supplemented'].includes(filter)) return;
-    this.setData({ filter }); this.load();
+    this.setData({ filter, mergedOn: false }); this.load();
   },
 
-  /** 面板本体上的点击不该穿透到遮罩，否则点哪都关。 */
-  noop() {},
-
-  onOpenPanel() { this.setData({ panelOpen: true }); },
-  onClosePanel() { this.setData({ panelOpen: false }); },
   onToggleRecent() { this.setData({ recentOn: !this.data.recentOn }); this.load(); },
-  onToggleMerged() { this.setData({ mergedOn: !this.data.mergedOn }); this.load(); },
-  onStageFilter(event) { const index = Number(event.detail.value); this.setData({ stageIndex: index, stage: this.data.stages[index].id }); this.load(); },
-  // 重置筛选只清面板内的条件，不清搜索词——要全清有「清空搜索和筛选」
-  onResetPanel() {
-    this.setData({ recentOn: false, mergedOn: false, stage: '', stageIndex: 0, panelOpen: false });
+  onToggleMerged() { this.setData({ mergedOn: !this.data.mergedOn, filter: 'all' }); this.load(); },
+  onStageFilter(event) {
+    const index = Number(event.currentTarget.dataset.index);
+    if (!Number.isInteger(index) || !this.data.stages[index]) return;
+    this.setData({ stageIndex: index, stage: this.data.stages[index].id }); this.load();
+  },
+  // 重置所有筛选，保留搜索词。
+  onResetFilters() {
+    this.setData({ filter: 'all', recentOn: false, mergedOn: false, stage: '', stageIndex: 0 });
     this.load();
   },
   onClearAll() {
-    this.setData({ query: '', filter: 'all', recentOn: false, mergedOn: false, stage: '', stageIndex: 0, panelOpen: false });
+    this.setData({ query: '', filter: 'all', recentOn: false, mergedOn: false, stage: '', stageIndex: 0 });
     this.load();
   },
-  onShowMerged() { this.setData({ mergedOn: true, panelOpen: false }); this.load(); },
+  onShowMerged() { this.setData({ mergedOn: true, filter: 'all' }); this.load(); },
 
   onToggleReview() { this.setData({ reviewExpanded: !this.data.reviewExpanded }); },
   onDismissReview() {

@@ -16,7 +16,7 @@ function sample() {
     supplements: [
       { id: 'sup_b', content: '第二条补充', createdAt: 3000, source: 'ai', mergedInto: null, foldedAt: null, contentHistory: [] },
       { id: 'sup_a', content: '第一条补充', createdAt: 2000, mergedInto: null, foldedAt: null,
-        contentHistory: [{ id: 'chg_1', text: '第一条旧稿', replacedAt: 2500 }] },
+        contentHistory: [{ id: 'chg_1', content: '第一条旧稿', replacedAt: 2500 }] },
       { id: 'sup_fold', content: '已并入正文的内容', createdAt: 1500, mergedInto: null, foldedAt: 3200, contentHistory: [] },
       { id: 'sup_merge', content: '已合并的内容', createdAt: 3500, mergedInto: 'sup_b', foldedAt: null, contentHistory: [] }
     ],
@@ -27,14 +27,25 @@ function sample() {
 test('复制正文与当前补充：按时间排列且不重复已收起内容', () => {
   const item = sample();
   assert.deepStrictEqual(currentSupplements(item).map((entry) => entry.id), ['sup_a', 'sup_b']);
-  assert.strictEqual(buildUseText(item), '当前正文\n\n第一条补充\n\n第二条补充');
+  assert.strictEqual(buildUseText(item), '当前正文\n第一条补充\n第二条补充');
   assert.strictEqual(buildUseText(item, []), '当前正文');
 });
 
 test('选择补充生成使用稿：只带选中项且不修改来源', () => {
   const item = sample();
   const before = JSON.stringify(item);
-  assert.strictEqual(buildUseText(item, ['sup_b', 'sup_fold']), '当前正文\n\n第二条补充');
+  assert.strictEqual(buildUseText(item, ['sup_b', 'sup_fold']), '当前正文\n第二条补充');
+  assert.strictEqual(JSON.stringify(item), before);
+});
+
+test('整理成稿：边界只换行一次，保留内部段落且来源不变', () => {
+  const item = sample();
+  item.text = '正文第一段\n\n正文第二段\r\n\r\n';
+  item.supplements[1].content = '\n\r\n第一条补充\n\n内部段落\r\n\n';
+  item.supplements[0].content = '\r\n第二条补充';
+  const before = JSON.stringify(item);
+  assert.strictEqual(buildUseText(item), '正文第一段\n\n正文第二段\n第一条补充\n\n内部段落\n第二条补充');
+  assert.strictEqual(buildUseText(item, []), item.text);
   assert.strictEqual(JSON.stringify(item), before);
 });
 
@@ -77,12 +88,12 @@ test('输出页可选择、编辑、复制，并另存独立灵感', async () =>
     await page.onLoad({ id: original.id });
     assert.strictEqual(page.data.options.length, 2);
     // 进入即有可编辑的自由稿，补充默认全选——看结果不必先做选择
-    assert.strictEqual(page.data.draft, '当前正文\n\n第一条补充\n\n第二条补充');
+    assert.strictEqual(page.data.draft, '当前正文\n第一条补充\n第二条补充');
     assert.strictEqual(page.data.summary, '正文 + 2条补充');
     page.onToggleSupplement({ currentTarget: { dataset: { id: 'sup_a' } } });
     page.onApply();
     // 未编辑过：应用选择直接替换，不走确认
-    assert.strictEqual(page.data.draft, '当前正文\n\n第二条补充');
+    assert.strictEqual(page.data.draft, '当前正文\n第二条补充');
     assert.strictEqual(page.data.summary, '正文 + 1条补充');
     page.onDraftInput({ detail: { value: '整理后的可用文字' } });
     page.onCopyDraft();
@@ -269,7 +280,7 @@ test('详情页可分别复制正文、正文与补充、单条补充，原记�
     page.onSheetCopy();
     assert.deepStrictEqual(copied, [
       '当前正文',
-      '当前正文\n\n第一条补充\n\n第二条补充',
+      '当前正文\n第一条补充\n第二条补充',
       '第一条补充'
     ]);
     assert.strictEqual(original.text, '当前正文');

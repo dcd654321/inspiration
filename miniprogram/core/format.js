@@ -19,10 +19,9 @@ function pad(n) {
 }
 
 /**
- * 绝对时间，`YYYY-MM-DD HH:mm`。
+ * 绝对时间，`YYYY-MM-DD HH:mm:ss`。
  *
- * 用在原文历史上：那里要把几个版本放在一起比，相对时间（「3 天前」）看不出先后，
- * 也看不出是同一天改的还是隔了很久。
+ * 记录页面与历史均显示到秒，保留同一分钟内的先后顺序。
  *
  * 用本地时区——**跨时区运行可能差几小时**，这是刻意的取舍，见文件头。
  */
@@ -30,7 +29,7 @@ function formatAbsolute(ts) {
   if (typeof ts !== 'number' || !Number.isFinite(ts) || ts <= 0) return '';
   const d = new Date(ts);
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
-    + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
 }
 
 /**

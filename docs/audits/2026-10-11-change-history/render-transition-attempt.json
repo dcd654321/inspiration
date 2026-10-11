@@ -1,0 +1,99 @@
+{
+  "at": "2026-10-10T23:48:19.218Z",
+  "cloud": false,
+  "synthetic": true,
+  "productionWrite": false,
+  "steps": [
+    {
+      "name": "01-supplement-only-history-entry",
+      "route": "pages/detail/index",
+      "screenshot": "01-supplement-only-history-entry.png",
+      "data": {
+        "historyCount": 1,
+        "sheetHistoryCount": 0,
+        "missing": false,
+        "text": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。"
+      }
+    },
+    {
+      "name": "02-all-history-supplement-only",
+      "route": "pages/history/index",
+      "screenshot": "02-all-history-supplement-only.png",
+      "data": {
+        "versionCount": 1,
+        "current": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。",
+        "versions": [],
+        "supplementHistories": [
+          {
+            "id": "demo_s1",
+            "current": "补充新版：路线控制在九十分钟内。\n新版第二行：补充雨天安排。",
+            "label": "补充 · 2026-10-08 07:48:29",
+            "state": "",
+            "versions": [
+              {
+                "id": "demo_hist_s1",
+                "text": "补充初稿：路线控制在两小时内。\n旧稿第二行：记下休息点。",
+                "time": "2026-10-09 07:48:29"
+              }
+            ]
+          }
+        ],
+        "currentLabel": "当前正文",
+        "missingTitle": "找不到这条灵感",
+        "missing": false
+      }
+    },
+    {
+      "name": "03-single-supplement-menu",
+      "route": "pages/detail/index",
+      "screenshot": "03-single-supplement-menu.png",
+      "data": {
+        "historyCount": 1,
+        "sheetHistoryCount": 1,
+        "missing": false,
+        "text": "整理一份城市周末散步指南，记录街区里值得停留的小店和公共空间。"
+      }
+    },
+    {
+      "name": "04-single-supplement-history",
+      "route": "pages/history/index",
+      "screenshot": "04-single-supplement-history.png",
+      "data": {
+        "versionCount": 1,
+        "current": "补充新版：路线控制在九十分钟内。\n新版第二行：补充雨天安排。",
+        "versions": [
+          {
+            "id": "demo_hist_s1",
+            "text": "补充初稿：路线控制在两小时内。\n旧稿第二行：记下休息点。",
+            "time": "2026-10-09 07:48:29"
+          }
+        ],
+        "supplementHistories": [],
+        "currentLabel": "当前补充",
+        "missingTitle": "找不到这条灵感",
+        "missing": false
+      }
+    }
+  ],
+  "exceptions": [],
+  "startup": {
+    "status": 0,
+    "stdout": "",
+    "stderr": "- initialize\n\n(node:21248) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n√ IDE server has started, listening on http://127.0.0.1:42633\n- preparing\n- Fetching AppID () permissions\n√ Using AppID: wxed8fdc5d559d973d\n√ auto\n"
+  },
+  "startupState": {
+    "pages": [
+      "pages/launch/index"
+    ],
+    "storeReady": true
+  },
+  "lastPage": {
+    "pages": [
+      "pages/capture/index",
+      "pages/detail/index",
+      "pages/history/index"
+    ]
+  },
+  "ok": false,
+  "blocked": "TypeError: Cannot read properties of undefined (reading 'tap')\n    at D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\change-history-20261011\\verify.cjs:69:89\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}

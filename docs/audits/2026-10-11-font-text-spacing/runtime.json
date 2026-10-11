@@ -1,0 +1,1002 @@
+{
+  "at": "2026-10-10T23:27:38.277Z",
+  "cloud": false,
+  "synthetic": true,
+  "productionWrite": false,
+  "startupAttempts": 1,
+  "connectionAttempts": 1,
+  "steps": [
+    {
+      "name": "01-default-top-filters",
+      "route": "pages/list/index",
+      "screenshot": "01-default-top-filters.png",
+      "state": {
+        "filter": "all",
+        "recentOn": false,
+        "mergedOn": false,
+        "stage": "",
+        "stageIndex": 0,
+        "query": "",
+        "items": [
+          "demo_1",
+          "demo_2"
+        ]
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          [
+            {
+              "id": "",
+              "dataset": {
+                "filter": "all"
+              },
+              "left": 20,
+              "right": 95.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 75.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "filter": "supplemented"
+              },
+              "left": 99.5,
+              "right": 187,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 191,
+              "right": 278.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 282.5,
+              "right": 370,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 0
+              },
+              "left": 20,
+              "right": 116.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 96.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 1
+              },
+              "left": 120.5,
+              "right": 193,
+              "top": 193,
+              "bottom": 240,
+              "width": 72.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 2
+              },
+              "left": 197,
+              "right": 281.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 3
+              },
+              "left": 285.5,
+              "right": 370,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            }
+          ],
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 140,
+            "bottom": 187,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 193,
+            "bottom": 240,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 256,
+            "bottom": 302,
+            "width": 350,
+            "height": 46
+          },
+          [
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "02-supplemented-immediate",
+      "route": "pages/list/index",
+      "screenshot": "02-supplemented-immediate.png",
+      "state": {
+        "filter": "supplemented",
+        "recentOn": false,
+        "mergedOn": false,
+        "stage": "",
+        "stageIndex": 0,
+        "query": "",
+        "items": [
+          "demo_1"
+        ]
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          [
+            {
+              "id": "",
+              "dataset": {
+                "filter": "all"
+              },
+              "left": 20,
+              "right": 95.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 75.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "filter": "supplemented"
+              },
+              "left": 99.5,
+              "right": 187,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 191,
+              "right": 278.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 282.5,
+              "right": 370,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 0
+              },
+              "left": 20,
+              "right": 116.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 96.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 1
+              },
+              "left": 120.5,
+              "right": 193,
+              "top": 193,
+              "bottom": 240,
+              "width": 72.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 2
+              },
+              "left": 197,
+              "right": 281.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 3
+              },
+              "left": 285.5,
+              "right": 370,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            }
+          ],
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 140,
+            "bottom": 187,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 193,
+            "bottom": 240,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 305,
+            "bottom": 351,
+            "width": 350,
+            "height": 46
+          },
+          [
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "03-stage-immediate",
+      "route": "pages/list/index",
+      "screenshot": "03-stage-immediate.png",
+      "state": {
+        "filter": "supplemented",
+        "recentOn": false,
+        "mergedOn": false,
+        "stage": "growing",
+        "stageIndex": 2,
+        "query": "",
+        "items": [
+          "demo_1"
+        ]
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          [
+            {
+              "id": "",
+              "dataset": {
+                "filter": "all"
+              },
+              "left": 20,
+              "right": 95.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 75.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "filter": "supplemented"
+              },
+              "left": 99.5,
+              "right": 187,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 191,
+              "right": 278.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 282.5,
+              "right": 370,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 0
+              },
+              "left": 20,
+              "right": 116.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 96.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 1
+              },
+              "left": 120.5,
+              "right": 193,
+              "top": 193,
+              "bottom": 240,
+              "width": 72.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 2
+              },
+              "left": 197,
+              "right": 281.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 3
+              },
+              "left": 285.5,
+              "right": 370,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            }
+          ],
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 140,
+            "bottom": 187,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 193,
+            "bottom": 240,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 305,
+            "bottom": 351,
+            "width": 350,
+            "height": 46
+          },
+          [
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "04-time-and-stage",
+      "route": "pages/list/index",
+      "screenshot": "04-time-and-stage.png",
+      "state": {
+        "filter": "supplemented",
+        "recentOn": true,
+        "mergedOn": false,
+        "stage": "growing",
+        "stageIndex": 2,
+        "query": "",
+        "items": [
+          "demo_1"
+        ]
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          [
+            {
+              "id": "",
+              "dataset": {
+                "filter": "all"
+              },
+              "left": 20,
+              "right": 95.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 75.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "filter": "supplemented"
+              },
+              "left": 99.5,
+              "right": 187,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 191,
+              "right": 278.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 282.5,
+              "right": 370,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 0
+              },
+              "left": 20,
+              "right": 116.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 96.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 1
+              },
+              "left": 120.5,
+              "right": 193,
+              "top": 193,
+              "bottom": 240,
+              "width": 72.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 2
+              },
+              "left": 197,
+              "right": 281.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 3
+              },
+              "left": 285.5,
+              "right": 370,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            }
+          ],
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 140,
+            "bottom": 187,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 193,
+            "bottom": 240,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 305,
+            "bottom": 351,
+            "width": 350,
+            "height": 46
+          },
+          [
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "05-reset",
+      "route": "pages/list/index",
+      "screenshot": "05-reset.png",
+      "state": {
+        "filter": "all",
+        "recentOn": false,
+        "mergedOn": false,
+        "stage": "",
+        "stageIndex": 0,
+        "query": "",
+        "items": [
+          "demo_1",
+          "demo_2"
+        ]
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          [
+            {
+              "id": "",
+              "dataset": {
+                "filter": "all"
+              },
+              "left": 20,
+              "right": 95.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 75.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "filter": "supplemented"
+              },
+              "left": 99.5,
+              "right": 187,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 191,
+              "right": 278.5,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {},
+              "left": 282.5,
+              "right": 370,
+              "top": 140,
+              "bottom": 187,
+              "width": 87.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 0
+              },
+              "left": 20,
+              "right": 116.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 96.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 1
+              },
+              "left": 120.5,
+              "right": 193,
+              "top": 193,
+              "bottom": 240,
+              "width": 72.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 2
+              },
+              "left": 197,
+              "right": 281.5,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            },
+            {
+              "id": "",
+              "dataset": {
+                "index": 3
+              },
+              "left": 285.5,
+              "right": 370,
+              "top": 193,
+              "bottom": 240,
+              "width": 84.5,
+              "height": 47
+            }
+          ],
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 140,
+            "bottom": 187,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 193,
+            "bottom": 240,
+            "width": 350,
+            "height": 47
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 256,
+            "bottom": 302,
+            "width": 350,
+            "height": 46
+          },
+          [
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "500"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            },
+            {
+              "fontSize": "12px",
+              "fontWeight": "400"
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "startup": {
+    "command": "cli auto --project <isolated fixture> --auto-port 9431",
+    "status": 0,
+    "stdout": "",
+    "stderr": "- initialize\n\n(node:27040) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n√ IDE server has started, listening on http://127.0.0.1:42633\n- preparing\n- Fetching AppID () permissions\n√ Using AppID: wxed8fdc5d559d973d\n√ auto\n"
+  },
+  "startupState": {
+    "pages": [
+      "pages/launch/index"
+    ],
+    "storeReady": true,
+    "cloudEnabled": false
+  },
+  "ok": true
+}

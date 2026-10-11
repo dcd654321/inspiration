@@ -3,7 +3,8 @@ const config = require('../config/cloud');
 const { getCloudClient } = require('./cloud-client');
 
 async function loadPrivatePhotos(photos, { cacheScope, isCurrent, getClient = getCloudClient }) {
-  if (!/^[a-f0-9]{32}$/.test(cacheScope || '') || !Array.isArray(photos) || !isCurrent()) return [];
+  if (!Array.isArray(photos) || !isCurrent()) return [];
+  if (!/^[a-f0-9]{32}$/.test(cacheScope || '')) return photos.map((photo) => ({ id: photo.id, src: '', failed: true }));
   if (!photos.length) return [];
   let client;
   try { client = await getClient(); } catch (err) { return isCurrent() ? photos.map((photo) => ({ id: photo.id, src: '', failed: true })) : []; }

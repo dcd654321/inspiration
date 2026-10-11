@@ -60,6 +60,24 @@
       <button wx:if="{{!merged}}" class="btn btn-plain btn-sm" bindtap="onLocateCompose" disabled="{{pending !== '' || editing || editingSupplementId}}">继续补充</button>
     </view>
 
+    <!-- 已关联照片紧随正文，以单行缩略图展示，点击可查看大图 -->
+    <view wx:if="{{photosEnabled || photos.length}}" class="photos-section">
+      <view class="section-head">
+        <text class="k">照片</text><text class="v">{{photos.length}} 张</text>
+        <button wx:if="{{photosEnabled && !merged}}" class="btn-link photo-add" bindtap="onAddPhoto" disabled="{{photoBusy || pending || photos.length >= photosMax}}" loading="{{photoBusy}}">{{photos.length >= photosMax ? '最多 ' + photosMax + ' 张' : '添加照片'}}</button>
+      </view>
+      <scroll-view wx:if="{{photos.length}}" class="photo-strip" scroll-x>
+        <view wx:for="{{photos}}" wx:key="id" class="photo-cell">
+          <image wx:if="{{item.src}}" class="photo-preview" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" data-src="{{item.src}}" bindtap="onPreviewPhoto" binderror="onPhotoImageError" />
+          <button wx:elif="{{item.failed}}" class="photo-preview photo-retry" bindtap="onReloadPhoto">照片未加载<text>点击重试</text></button>
+          <view wx:else class="photo-preview photo-loading">照片加载中…</view>
+          <button wx:if="{{photosEnabled && !merged}}" class="btn-link photo-delete" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy || pending}}">删除照片</button>
+        </view>
+      </scroll-view>
+      <view class="hint-line">{{photos.length ? '点击照片查看大图，仅你可见。' : '可添加照片，和这条灵感一起查看。'}}</view>
+      <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
+    </view>
+
     <!-- 补充是详情页的主动作：输入框紧随原文，已有补充在输入框下方 -->
     <view wx:if="{{!editing && !editingSupplementId && !merged}}" class="detail-next">
       <view class="compose">
@@ -179,28 +197,21 @@
 
     <!-- 标签与阶段：一行摘要，点开才是表单；取消恢复进入前的值 -->
     <view wx:if="{{!merged && !editing && !editingSupplementId}}" class="organization">
+      <view class="field-label">标签与阶段</view>
       <view class="org-summary" bindtap="onToggleOrganization">
         <text class="org-value">{{orgSummary}}</text>
-        <text class="org-toggle">{{orgOpen ? '收起' : '修改标记'}}</text>
+        <text class="org-toggle">{{orgOpen ? '收起' : '编辑标签与阶段'}}</text>
       </view>
       <block wx:if="{{orgOpen}}">
         <input class="tag-input" value="{{tagsDraft}}" bindinput="onTagsInput" maxlength="64" disabled="{{pending !== ''}}" placeholder="标签，以逗号分隔，最多五个" aria-label="标签" />
         <picker range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStageSelect" disabled="{{pending !== ''}}"><view class="stage-picker">阶段：{{stages[stageIndex].label}} · 选择</view></picker>
+        <view wx:if="{{orgDirty}}" class="draft-hint">{{pending === 'organize' ? '正在保存，请稍候。' : '尚未保存，请点击「保存标签与阶段」。'}}</view>
         <view class="org-acts">
-          <button class="btn btn-sm" bindtap="onSaveOrganization" disabled="{{pending !== ''}}">{{pending === 'organize' ? '保存中…' : '保存标记'}}</button>
+          <button class="btn btn-sm" bindtap="onSaveOrganization" disabled="{{pending !== ''}}">{{pending === 'organize' ? '保存中…' : '保存标签与阶段'}}</button>
           <button class="btn btn-plain btn-sm" bindtap="onCancelOrganization" disabled="{{pending !== ''}}">取消</button>
         </view>
       </block>
     </view>
-
-    <!-- 照片在标签行之后：不夹在输入与时间线之间 -->
-    <view wx:if="{{photosEnabled || photos.length}}" class="photos-section">
-      <view class="section-head"><text class="k">照片</text><text class="v">{{photos.length}} / 9</text></view>
-      <view class="photo-grid"><view wx:for="{{photos}}" wx:key="id" class="photo-cell"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" bindtap="onPreviewPhoto" /><button wx:elif="{{item.failed}}" class="btn-link" bindtap="onReloadPhoto">重新加载照片</button><button wx:else class="btn-link" data-id="{{item.id}}" bindtap="onPreviewPhoto">照片加载中</button><button wx:if="{{photosEnabled && !merged}}" class="btn-link" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy}}">删除照片</button></view></view>
-      <button wx:if="{{photosEnabled && !merged}}" class="btn btn-plain btn-block" bindtap="onAddPhoto" disabled="{{photoBusy || pending}}" loading="{{photoBusy}}">添加照片</button>
-      <view class="hint-line">照片仅用于这条灵感，不加入分享。</view>
-    </view>
-    <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
 
     <view wx:if="{{provenance.length}}" class="provenance"><view class="section-head"><text class="k">汇总来源</text></view><button wx:for="{{provenance}}" wx:key="id" class="btn-link source-link" data-id="{{item.id}}" bindtap="onOpenSource" disabled="{{!item.exists}}">{{item.label}}</button></view>
 
@@ -213,13 +224,13 @@
   <!-- 长正文滚离原文后出现的定位入口；键盘打开时隐藏 -->
   <button wx:if="{{floatVisible}}" class="float-supplement" bindtap="onLocateCompose" aria-label="继续补充">继续补充</button>
 
-  <!-- 页内「更多」：修改正文、复制全文、分享文字、修改记录、删除灵感 -->
+  <!-- 页内「更多」：修改正文、复制灵感、分享灵感、修改记录、删除灵感 -->
   <view wx:if="{{moreVisible}}" class="mask" bindtap="onCloseMore">
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">这条灵感</view>
       <button wx:if="{{!merged}}" class="sheet-item" bindtap="onMoreEditText" disabled="{{pending !== ''}}">修改正文<text class="sub">旧内容会保留在修改记录中</text></button>
-      <button class="sheet-item" bindtap="onMoreCopy" disabled="{{pending !== ''}}">复制全文<text class="sub">可选仅复制正文，或正文与当前补充</text></button>
-      <button class="sheet-item" bindtap="onMoreShare" disabled="{{pending !== ''}}">分享文字<text class="sub">先确认对方会看到什么</text></button>
+      <button class="sheet-item" bindtap="onMoreCopy" disabled="{{pending !== ''}}">复制灵感<text class="sub">可选仅复制正文，或正文与当前补充</text></button>
+      <button class="sheet-item" bindtap="onMoreShare" disabled="{{pending !== ''}}">分享灵感<text class="sub">先确认对方会看到什么</text></button>
       <button wx:if="{{historyCount > 0}}" class="sheet-item" bindtap="onMoreHistory" disabled="{{pending !== ''}}">修改记录（{{historyCount}}）</button>
       <button class="sheet-item sheet-danger" bindtap="onMoreDelete" disabled="{{pending !== ''}}">删除灵感<text class="sub">正文、补充和照片会一并删除，无法撤销</text></button>
       <button class="sheet-cancel" bindtap="onCloseMore" disabled="{{pending !== ''}}">取消</button>
@@ -232,6 +243,7 @@
       <view class="sheet-title">{{sheetTargetLabel}}</view>
 
       <button class="sheet-item" bindtap="onSheetCopy" disabled="{{pending !== ''}}" aria-label="复制这条补充">复制补充</button>
+      <button wx:if="{{sheetHistoryCount > 0}}" class="sheet-item" bindtap="onSheetHistory" disabled="{{pending !== ''}}">修改记录（{{sheetHistoryCount}}）</button>
 
       <block wx:if="{{sheetIsHidden}}">
         <button class="sheet-item" bindtap="onSheetRestore" disabled="{{pending !== ''}}" aria-label="恢复为补充">恢复为补充<text class="sub">回到时间线继续使用</text></button>

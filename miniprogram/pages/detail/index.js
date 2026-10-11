@@ -1,6 +1,6 @@
 const { LIMITS, createId } = require('../../core/limits');
 const inspiration = require('../../core/inspiration');
-const { formatRelative, formatAbsolute } = require('../../core/format');
+const { formatAbsolute } = require('../../core/format');
 const { buildUseText } = require('../../services/content-output');
 const { STAGES, organize } = require('../../services/organization');
 const { loadPrivatePhotos } = require('../../services/private-photos');
@@ -39,15 +39,22 @@ function guardDraft(hasDraft) {
 
 function guardDetailDraft(data) {
   guardDraft(Boolean(data.supplementDraft ||
+    data.orgDirty ||
     (data.editing && data.editDraft !== data.text) ||
     (data.editingSupplementId && data.supplementEditDraft !== data.supplementEditOriginal)));
 }
 
-function decorateSupplement(supplement, now, all) {
+function organizationSummary(tagsDraft, stageIndex) {
+  const tags = tagsDraft.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
+  return (STAGES[stageIndex] || STAGES[0]).label + (tags.length ? ' · ' + tags.join('、') : ' · 未加标签');
+}
+
+function decorateSupplement(supplement, all) {
   return {
     id: supplement.id,
     content: supplement.content,
-    time: formatRelative(supplement.createdAt, now),
+    historyCount: (supplement.contentHistory || []).length,
+    time: formatAbsolute(supplement.createdAt),
     // 操作面板的标题要标明操作对象，不能让用户猜点的是哪条
     label: '这条补充 · ' + formatAbsolute(supplement.createdAt),
     // AI 产出必须带标记：规范要求如实标注，不得把本地结果说成 AI 生成
@@ -102,6 +109,7 @@ Page({
     sheetVisible: false,
     sheetTargetId: '',
     sheetTargetLabel: '',
+    sheetHistoryCount: 0,
     sheetIsHidden: false,
 
     // 补充的行内修改
@@ -124,8 +132,8 @@ Page({
     isAi: false, merged: false, provenance: [],
     tagsDraft: '', stageIndex: 0, stages: STAGES,
     /* 整理标记默认收起：它是整理期才关心的表单，每次都摊开会把补充时间线推得很远 */
-    orgOpen: false, orgSummary: '',
-    photosEnabled: false, photos: [], photoError: '', photoBusy: false,
+    orgOpen: false, orgSummary: '', orgDirty: false,
+    photosEnabled: false, photos: [], photoError: '', photoBusy: false, photosMax: LIMITS.photosPerInspiration,
     provenanceSupplementId: '', supplementEditMax: LIMITS.supplementMaxLength,
     error: '', pending: ''
   },
@@ -173,6 +181,7 @@ Page({
     const app = getApp();
     const store = app && app.globalData && app.globalData.store;
     if (this.loadedStore && this.loadedStore !== store) {
+      opts.resetDraft = true;
       this.pendingSupplement = null; this.pendingTextEdit = null; this.pendingSupplementEdit = null;
     }
     if (this.loadedEpoch !== app.globalData.sessionEpoch) opts.resetDraft = true;
@@ -192,9 +201,9 @@ Page({
     }
 
     const drafts = app.globalData.drafts;
-    const now = Date.now();
     const tags = item.tags || [];
-    const stageLabel = (STAGES[Math.max(0, STAGES.findIndex((x) => x.id === item.stage))] || STAGES[0]).label;
+    const stageIndex = Math.max(0, STAGES.findIndex((x) => x.id === item.stage));
+    const keepOrganization = !opts.resetDraft && this.data.orgOpen;
     const next = {
       ready: true,
       photosEnabled: Boolean(app.globalData.photos), photos: (item.photos || []).map((photo) => ({ id: photo.id, src: '', failed: false })),
@@ -202,21 +211,24 @@ Page({
       loadError: false,
       text: item.text,
       isAi: item.source === 'ai', merged: Boolean(item.mergedInto),
-      tagsDraft: tags.join('，'),
-      stageIndex: Math.max(0, STAGES.findIndex((x) => x.id === item.stage)),
+      tagsDraft: keepOrganization ? this.data.tagsDraft : tags.join('，'),
+      stageIndex: keepOrganization ? this.data.stageIndex : stageIndex,
       // 收起后仍要看得见当前状态，否则折叠就等于把信息藏起来
-      orgSummary: stageLabel + (tags.length ? ' · ' + tags.join('、') : ' · 未加标签'),
-      orgOpen: this.data.orgOpen,
+      orgSummary: keepOrganization ? organizationSummary(this.data.tagsDraft, this.data.stageIndex) : organizationSummary(tags.join('，'), stageIndex),
+      orgOpen: keepOrganization,
+      orgDirty: keepOrganization && this.data.orgDirty,
       provenance: (item.summarySources || []).map((id) => { const source = store.getInspiration(id); return { id, exists: Boolean(source), label: source ? (id === item.id ? '此条灵感的旧正文（见修改记录）' : source.text) : '来源已删除' }; }),
-      time: formatRelative(item.updatedAt, now),
-      supplements: inspiration.activeSupplements(item).map((s) => decorateSupplement(s, now, item.supplements)),
+      time: formatAbsolute(item.updatedAt),
+      supplements: inspiration.activeSupplements(item).map((s) => decorateSupplement(s, item.supplements)),
       hidden: inspiration.mergedSupplements(item)
         .concat(inspiration.foldedSupplements(item))
-        .map((s) => decorateSupplement(s, now, item.supplements)),
-      historyCount: (item.textHistory || []).length
+        .map((s) => decorateSupplement(s, item.supplements)),
+      historyCount: (item.textHistory || []).length + (item.supplements || [])
+        .reduce((count, supplement) => count + (supplement.contentHistory || []).length, 0)
     };
 
     if (opts.resetDraft) {
+      this.orgOriginal = null;
       // 草稿从会话草稿区取回：切页回来时输入框里还应该有它
       next.supplementDraft = drafts ? drafts.get(this.id) : '';
       next.canAddSupplement = next.supplementDraft.trim().length > 0;
@@ -474,18 +486,36 @@ Page({
 
   onToggleOrganization() {
     if (this.data.pending) return;
+    if (this.data.orgOpen) { this.onCancelOrganization(); return; }
     if (!this.data.orgOpen) {
       // 取消时恢复到展开前的值；保存失败时保留输入（不重置记录）
       this.orgOriginal = { tagsDraft: this.data.tagsDraft, stageIndex: this.data.stageIndex };
     }
     this.setData({ orgOpen: !this.data.orgOpen });
   },
-  onTagsInput(event) { if (!this.data.pending) this.setData({ tagsDraft: event.detail.value }); },
-  onStageSelect(event) { if (!this.data.pending) this.setData({ stageIndex: Number(event.detail.value) }); },
+  onTagsInput(event) {
+    if (this.data.pending || this.visible === false) return;
+    const tagsDraft = event.detail.value;
+    const original = this.orgOriginal || this.data;
+    this.setData({ tagsDraft, orgSummary: organizationSummary(tagsDraft, this.data.stageIndex),
+      orgDirty: tagsDraft !== original.tagsDraft || this.data.stageIndex !== original.stageIndex, error: '' });
+    guardDetailDraft(this.data);
+  },
+  onStageSelect(event) {
+    if (this.data.pending || this.visible === false) return;
+    const stageIndex = Number(event.detail.value);
+    if (!Number.isInteger(stageIndex) || !STAGES[stageIndex]) return;
+    const original = this.orgOriginal || this.data;
+    this.setData({ stageIndex, orgSummary: organizationSummary(this.data.tagsDraft, stageIndex),
+      orgDirty: this.data.tagsDraft !== original.tagsDraft || stageIndex !== original.stageIndex, error: '' });
+    guardDetailDraft(this.data);
+  },
   onCancelOrganization() {
     if (this.data.pending) return;
     const original = this.orgOriginal || { tagsDraft: this.data.tagsDraft, stageIndex: this.data.stageIndex };
-    this.setData({ tagsDraft: original.tagsDraft, stageIndex: original.stageIndex, orgOpen: false, error: '' });
+    this.setData({ tagsDraft: original.tagsDraft, stageIndex: original.stageIndex,
+      orgSummary: organizationSummary(original.tagsDraft, original.stageIndex), orgOpen: false, orgDirty: false, error: '' });
+    guardDetailDraft(this.data);
   },
   async onSaveOrganization() {
     if (this.data.pending || !this.currentStore()) return;
@@ -493,11 +523,11 @@ Page({
     try { next = organize(getApp().globalData.store.getInspiration(this.id), { tags: this.data.tagsDraft.split(/[,，]/).map((x) => x.trim()).filter(Boolean), stage: STAGES[this.data.stageIndex].id, now: Date.now() }); }
     catch (err) { this.setData({ error: err.message }); return; }
     this.setData({ pending: 'organize' });
-    const result = await this.persist(next, '整理信息未保存，请稍后重试。');
+    const result = await this.persist(next, '标签与阶段未保存，请稍后重试。');
     if (result.stale) return;
     // 保存成功就收起：收起行里已经写着结果，表单没必要继续摊着
     this.setData({ pending: '', error: result.ok ? this.data.error : result.message, orgOpen: result.ok ? false : this.data.orgOpen });
-    if (result.ok) this.load();
+    if (result.ok) { this.orgOriginal = null; this.load(); }
   },
   async onRestoreInspiration() {
     if (this.data.pending || !this.currentStore()) return;
@@ -540,6 +570,12 @@ Page({
     wx.navigateTo({ url: '/pages/photo-viewer/index?id=' + encodeURIComponent(this.id) + '&photo=' + encodeURIComponent(event.currentTarget.dataset.id) });
   },
   onReloadPhoto() { this.load(); },
+  onPhotoImageError(event) {
+    if (!this.currentStore()) return;
+    const { id, src } = event.currentTarget.dataset;
+    this.setData({ photos: this.data.photos.map((photo) => photo.id === id && photo.src === src
+      ? Object.assign({}, photo, { src: '', failed: true }) : photo) });
+  },
   onDeletePhoto(event) {
     const store = this.currentStore();
     if (this.data.photoBusy || this.data.pending || !store) return;
@@ -628,8 +664,7 @@ Page({
 
     this.pendingSupplement = null;
     this.setData({ pending: '', supplementDraft: '', canAddSupplement: false, composeFocus: false, composeRequestedFocus: false });
-    guardDraft(false);
-    this.load({ resetDraft: true });
+    this.load();
     wx.showToast({ title: '已添加补充', icon: 'none' });
     if (getApp().globalData.metrics) getApp().globalData.metrics.track('supplement_saved');
   },
@@ -654,6 +689,7 @@ Page({
       sheetVisible: true,
       sheetTargetId: id,
       sheetTargetLabel: target.label,
+      sheetHistoryCount: target.historyCount,
       // 已收起的补充不提供「修改」：它已经不在时间线上正常显示，
       // 先恢复再改，用户才看得清自己在改什么
       sheetIsHidden: this.data.hidden.some((s) => s.id === id)
@@ -662,7 +698,18 @@ Page({
 
   onSheetDismiss() {
     if (this.data.pending) return;
-    this.setData({ sheetVisible: false, sheetTargetId: '', sheetTargetLabel: '', sheetIsHidden: false });
+    this.setData({ sheetVisible: false, sheetTargetId: '', sheetTargetLabel: '', sheetIsHidden: false, sheetHistoryCount: 0 });
+  },
+
+  onSheetHistory() {
+    const store = this.currentStore();
+    if (this.data.pending || !store) return;
+    const id = this.data.sheetTargetId;
+    const item = store.getInspiration(this.id);
+    const target = item && (item.supplements || []).find((supplement) => supplement.id === id);
+    if (!target || !(target.contentHistory || []).length) return;
+    this.onSheetDismiss();
+    wx.navigateTo({ url: '/pages/history/index?id=' + encodeURIComponent(this.id) + '&supplementId=' + encodeURIComponent(id) });
   },
 
   /** 修改：切到行内编辑。与原文编辑同一套规则，旧内容进这条补充自己的历史。 */

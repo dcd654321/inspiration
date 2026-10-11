@@ -26,7 +26,7 @@ function buildUseText(item, selectedIds) {
   currentSupplements(item).forEach((supplement) => {
     if (!selected || selected.has(supplement.id)) parts.push(supplement.content);
   });
-  return parts.join('\n\n');
+  return parts.reduce((text, part) => text.replace(/[\r\n]+$/, '') + '\n' + part.replace(/^[\r\n]+/, ''));
 }
 
 /** 模板只提供结构和空项，不推断用户意图、不补写事实。 */
@@ -44,12 +44,12 @@ function buildTemplateText(item, selectedIds, templateId) {
   return layouts[templateId][0] + '\n' + text + layouts[templateId][1];
 }
 
-function historyLines(entries) {
+function historyLines(entries, field) {
   if (!Array.isArray(entries) || entries.length === 0) return ['无'];
   const lines = [];
   entries.slice().sort((a, b) => a.replacedAt - b.replacedAt).forEach((entry, index) => {
     lines.push((index + 1) + '. 修改于 ' + formatAbsolute(entry.replacedAt));
-    lines.push(entry.text);
+    lines.push(entry[field]);
     if (index < entries.length - 1) lines.push('');
   });
   return lines;
@@ -69,7 +69,7 @@ function buildArchiveText(item, generatedAt) {
     '',
     '【原文修改记录】'
   ];
-  lines.push(...historyLines(item.textHistory));
+  lines.push(...historyLines(item.textHistory, 'text'));
   lines.push('', '【补充】');
 
   const supplements = Array.isArray(item.supplements) ? item.supplements.slice().sort(byCreatedAt) : [];
@@ -81,7 +81,7 @@ function buildArchiveText(item, generatedAt) {
     lines.push((index + 1) + '. ' + formatAbsolute(supplement.createdAt) + source + state);
     lines.push(supplement.content);
     lines.push('修改记录：');
-    lines.push(...historyLines(supplement.contentHistory));
+    lines.push(...historyLines(supplement.contentHistory, 'content'));
   });
 
   return lines.join('\n');

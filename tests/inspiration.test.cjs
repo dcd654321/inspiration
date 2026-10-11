@@ -621,7 +621,7 @@ test('合并进灵感：内容追加到末尾，本条收起，原文旧版本�
   const insp = withThreeSupplements();
   const folded = foldIntoText(insp, { supplementId: 'sup_3', historyId: 'tex_1', now: NOW + 4000 });
 
-  assert.strictEqual(folded.text, '做一个记账小程序\n\n数据量太小的话看不出来');
+  assert.strictEqual(folded.text, '做一个记账小程序\n数据量太小的话看不出来');
   assert.strictEqual(folded.textHistory.length, 1);
   assert.strictEqual(folded.textHistory[0].text, '做一个记账小程序');
   assert.strictEqual(folded.textHistory[0].id, 'tex_1');
@@ -649,8 +649,20 @@ test('合并后原文仍可编辑，合并前的版本还在历史里', () => {
   assert.strictEqual(edited.text, '又改了一次');
   assert.deepStrictEqual(
     edited.textHistory.map((v) => v.text),
-    ['做一个记账小程序', '做一个记账小程序\n\n数据量太小的话看不出来']
+    ['做一个记账小程序', '做一个记账小程序\n数据量太小的话看不出来']
   );
+});
+
+test('并入正文：边界只换行一次，保留内部段落及来源历史', () => {
+  const text = '正文第一段\n\n正文第二段\r\n\r\n';
+  const content = '\r\n\n补充第一段\n\n补充第二段';
+  const original = appendSupplement(createInspiration({ text, id: 'insp_spacing', now: NOW }),
+    { content, id: 'sup_spacing', now: NOW + 1 });
+  const folded = foldIntoText(original, { supplementId: 'sup_spacing', historyId: 'tex_spacing', now: NOW + 2 });
+  assert.strictEqual(folded.text, '正文第一段\n\n正文第二段\n补充第一段\n\n补充第二段');
+  assert.strictEqual(folded.textHistory[0].text, text);
+  assert.strictEqual(folded.supplements[0].content, content);
+  assert.strictEqual(original.text, text);
 });
 
 test('合并撑破正文上限时整条拒绝，不做截断', () => {
