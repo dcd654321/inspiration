@@ -24,6 +24,7 @@ const CODE = {
 const SAFE_SEGMENT = /^[A-Za-z0-9_]{1,64}$/;
 const { createPhotoLifecycle } = require('./photo-lifecycle');
 const { validRecord } = require('./record-validation');
+const { settleMonitoring } = require('./operations-monitor');
 
 function ok(data) {
   return { ok: true, data };
@@ -77,7 +78,6 @@ function createRepository(options) {
   const opts = options || {};
   const db = opts.db;
   const now = opts.now;
-  const beforeRemove = opts.beforeRemove;
   const photosEnabled = opts.photosEnabled === true && typeof opts.validatePhoto === 'function' && typeof opts.removeFiles === 'function';
   const photoLifecycle = photosEnabled ? createPhotoLifecycle(opts) : null;
 
@@ -114,7 +114,7 @@ function createRepository(options) {
    *      这是「你说过的话不会被悄悄抹掉」在服务端唯一的落点——客户端自己不去删，
    *      不构成保证。
    */
-  async function push(accountKey, payload) {
+  async function push(accountKey, payload, context) {
     const identityField = findIdentityField(payload);
     if (identityField) {
       return err('IDENTITY_FIELD_REJECTED', '请求体不得包含身份字段');
@@ -194,6 +194,10 @@ function createRepository(options) {
     const written = await db.compareAndSwap(accountKey, doc.version, next);
     if (!written) return err(CODE.conflict);
 
+    if (typeof opts.onCommitted === 'function') {
+      await settleMonitoring(() => opts.onCommitted({ accountKey, sourceUserId: context && context.sourceUserId, before: doc, after: next }), opts.onMonitorFailure);
+    }
+
     return ok({ version: next.version, applied });
   }
 
@@ -228,10 +232,6 @@ function createRepository(options) {
     // 在可恢复的清理协议完成前，拒绝带照片的删除，不制造“照片已删一部分”的假回滚。
     if (fileIds.length > 0) return err(CODE.photoDeleteUnavailable, '这条含照片，暂时无法安全删除');
     if (data.baseVersion !== doc.version) return err(CODE.conflict);
-
-    // 撤销相关分享先于删除；若撤销失败，源记录保持原样。
-    // 并发导致后面的 CAS 失败时分享可能已撤销，属于保守的失败关闭。
-    if (typeof beforeRemove === 'function') await beforeRemove(accountKey, data.inspirationId);
 
     const next = Object.assign({}, doc, {
       inspirations: doc.inspirations.filter((item) => item.id !== data.inspirationId)

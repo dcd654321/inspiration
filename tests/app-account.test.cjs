@@ -80,3 +80,29 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
     }
   }
 });
+
+test('运营启动绑定和结束异常不阻止可信账户读取或后台清理', async () => {
+  const appPath = require.resolve('../miniprogram/app');
+  const previous = { App: global.App, wx: global.wx };
+  let definition;
+  try {
+    global.App = value => { definition = value; };
+    global.wx = { cloud: sharedCloud({ async callFunction({ name }) {
+      assert.equal(name, 'linggan_api');
+      return { result: { ok: true, data: { cacheScope: A, generation: 1, version: 1, inspirations: [
+        { id: 'a', text: '仍能读取的正文', updatedAt: 1, deletedAt: null, mergedInto: null }
+      ] } } };
+    } }) };
+    delete require.cache[appPath]; require(appPath);
+    const app = { ...definition, globalData: { ...definition.globalData } };
+    app.operationsMonitor = { start() { throw Error('monitor start'); }, bindAccount() { throw Error('monitor bind'); },
+      requestFinished: () => Promise.reject(Error('monitor perf')), end: () => Promise.reject(Error('monitor end')),
+      error() { throw Error('monitor error'); } };
+    assert.doesNotThrow(() => app.onShow());
+    assert.ok(await app.ensureReady());
+    assert.equal(app.globalData.accountError, ''); assert.equal(app.globalData.store.listInspirations()[0].text, '仍能读取的正文');
+    assert.doesNotThrow(() => { app.onError(); app.onUnhandledRejection(); app.onHide(); });
+    assert.equal(app.globalData.store, null); assert.equal(app.globalData.cacheScope, '');
+    await new Promise(resolve => setImmediate(resolve));
+  } finally { delete require.cache[appPath]; for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete global[key]; else global[key] = value; } }
+});

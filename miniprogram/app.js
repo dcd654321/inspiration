@@ -8,6 +8,7 @@ const { createWxPhotos } = require('./services/wx-photo');
 const { createUsageMetrics } = require('./services/usage-metrics');
 const { getCloudClient } = require('./services/cloud-client');
 const { createSessionDrafts, sameContext } = require('./services/session-drafts');
+const { createOperationsMonitor, monitorSafely } = require('./services/operations-monitor');
 
 App({
   globalData: {
@@ -29,6 +30,7 @@ App({
   },
 
   onLaunch() {
+    this.setupOperationsMonitor();
     if (!cloudConfig.enabled) {
       this.globalData.accountError = '当前无法确认账户，请稍后再试。';
       return;
@@ -50,10 +52,13 @@ App({
 
   onShow() {
     this.globalData.foreground = true;
+    this.setupOperationsMonitor();
+    monitorSafely(this.operationsMonitor, 'start');
     if (cloudConfig.enabled && wx.cloud) this.refreshAccount();
   },
 
   onHide() {
+    monitorSafely(this.operationsMonitor, 'end');
     this.globalData.foreground = false;
     this.globalData.sessionEpoch += 1;
     this.globalData.store = null;
@@ -72,6 +77,22 @@ App({
     return this.refreshAccount();
   },
 
+  setupOperationsMonitor() {
+    if (this.operationsMonitor) return;
+    let envVersion = 'develop';
+    try { const info = wx.getAccountInfoSync(); envVersion = info.miniProgram.envVersion; } catch (_) { /* 默认开发版。 */ }
+    try { this.operationsMonitor = createOperationsMonitor({ envVersion }); }
+    catch (_) { this.operationsMonitor = null; }
+  },
+
+  onError() {
+    monitorSafely(this.operationsMonitor, 'error', 'APP_ERROR');
+  },
+
+  onUnhandledRejection() {
+    monitorSafely(this.operationsMonitor, 'error', 'UNHANDLED_REJECTION', 'unhandled_rejection');
+  },
+
   refreshAccount() {
     if (this.globalData.readyPromise) return this.globalData.readyPromise;
     if (!cloudConfig.enabled || !wx.cloud) return Promise.resolve(null);
@@ -83,7 +104,10 @@ App({
     this.globalData.metrics = null;
     const epoch = ++this.globalData.sessionEpoch;
     this.globalData.drafts = createCaptureDrafts();
-    const transport = createWxTransport({ functionName: cloudConfig.apiFunction });
+    const transport = createWxTransport({ functionName: cloudConfig.apiFunction,
+      onRequestFinished: (...args) => {
+        if (epoch === this.globalData.sessionEpoch && this.globalData.foreground) monitorSafely(this.operationsMonitor, 'requestFinished', ...args);
+      } });
     const pending = (async () => {
       try {
         await getCloudClient();
@@ -101,6 +125,8 @@ App({
         });
         this.globalData.store = store;
         this.globalData.cacheScope = response.data.cacheScope;
+        if (this.globalData.foreground) monitorSafely(this.operationsMonitor, 'bindAccount', response.data.cacheScope, response.data.generation,
+          () => epoch === this.globalData.sessionEpoch && this.globalData.cacheScope === response.data.cacheScope);
         const context = { cacheScope: response.data.cacheScope, generation: response.data.generation };
         if (!sameContext(this.draftOwner, context)) this.accountDrafts = createCaptureDrafts();
         this.draftOwner = context;

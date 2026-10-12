@@ -31,10 +31,12 @@ const IN_SCOPE = [
   ['repair-page-session-races', 'page-session-safety'],
   ['optimize-product-experience-20261007', 'product-experience'],
   ['remove-ai-integration', 'manual-only-product'],
+  ['remove-text-sharing', 'text-sharing-removal'],
   ['repair-snapshot-version-safety', 'snapshot-version-safety'],
   ['repair-capture-continuity', 'capture-continuity'],
   ['repair-detail-photo-tags', 'detail-photo-tags'],
-  ['repair-change-history', 'change-history']
+  ['repair-change-history', 'change-history'],
+  ['add-operations-monitor', 'operations-monitor']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */

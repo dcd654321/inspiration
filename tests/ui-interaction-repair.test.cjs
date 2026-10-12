@@ -147,15 +147,6 @@ test('复核：过期留档文件只清理自身不回填', async () => {
   });
 });
 
-test('复核：文件发送迟到回执不修改新页面', async () => {
-  for (const outcome of ['success', 'fail']) await withPage('output', async ({ page, app }) => {
-    let share; global.wx.shareFileMessage = (options) => { share = options; };
-    page.setData({ txtPath: '待发送文件' }); page.onShareTxt();
-    app.globalData.sessionEpoch++; page.setData({ error: '新反馈', notice: '新状态', busy: false }); share[outcome]();
-    assert.equal(page.data.error, '新反馈'); assert.equal(page.data.notice, '新状态'); assert.equal(page.data.busy, false);
-  });
-});
-
 test('复核：单条另存迟到回执不标记重新进入的新稿', async () => {
   await withPage('output', async ({ page, state }) => {
     const wait = deferred(); state.save = () => wait.promise;

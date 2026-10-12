@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-12",
+  "scope": "native compilation only",
+  "wxml": {
+    "compiler": "E:\\weixinDevTool\\微信web开发者工具\\resources\\app.asar.unpacked\\node_modules\\wcc-exec\\wcc.exe",
+    "files": [
+      "pages/welcome/index.wxml",
+      "pages/photo-viewer/index.wxml",
+      "pages/output/index.wxml",
+      "pages/mine/index.wxml",
+      "pages/history/index.wxml",
+      "pages/material-output/index.wxml",
+      "pages/detail/index.wxml",
+      "pages/launch/index.wxml",
+      "pages/capture/index.wxml",
+      "pages/feedback/index.wxml",
+      "pages/list/index.wxml"
+    ],
+    "exitCode": 0,
+    "diagnostics": [],
+    "count": 11
+  },
+  "wxss": {
+    "compiler": "E:\\weixinDevTool\\微信web开发者工具\\resources\\app.asar.unpacked\\node_modules\\wcc-exec\\wcsc.exe",
+    "files": [
+      "pages/welcome/index.wxss",
+      "pages/photo-viewer/index.wxss",
+      "pages/output/index.wxss",
+      "app.wxss",
+      "pages/mine/index.wxss",
+      "pages/material-output/index.wxss",
+      "pages/capture/index.wxss",
+      "pages/launch/index.wxss",
+      "pages/detail/index.wxss",
+      "pages/feedback/index.wxss",
+      "pages/list/index.wxss",
+      "pages/history/index.wxss"
+    ],
+    "exitCode": 0,
+    "diagnostics": [],
+    "count": 12
+  },
+  "cloudCalls": false,
+  "deviceAcceptance": false,
+  "renderingVerified": false
+}

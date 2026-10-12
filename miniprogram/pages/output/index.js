@@ -4,7 +4,7 @@ const { formatAbsolute } = require('../../core/format');
 const { currentSupplements, buildTemplateText, buildArchiveText, USE_TEMPLATES } = require('../../services/content-output');
 const { setDraftLeaveAlert } = require('../../services/draft-alert');
 const { draftContext, sourceVersion } = require('../../services/session-drafts');
-const { shareConfirmedDraft } = require('../../services/result-share');
+const { monitorSafely } = require('../../services/operations-monitor');
 
 function guardDraft(data) {
   setDraftLeaveAlert(Boolean(data.draftEdited && data.draft.trim() && !data.savedSame));
@@ -372,7 +372,7 @@ Page({
     try {
       wx.setClipboardData({
         data: text,
-        success: () => { if (!this.current(version)) return; this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。', noticeLink: false }, () => fitSheetScroll(this)); if (text === this.data.draft && app.globalData.metrics) app.globalData.metrics.track('output_copied'); },
+        success: () => { if (!this.current(version)) return; this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。', noticeLink: false }, () => fitSheetScroll(this)); if (text === this.data.draft) { if (app.globalData.metrics) app.globalData.metrics.track('output_copied'); monitorSafely(app.operationsMonitor, 'event', 'output_copied'); } },
         fail: () => { if (this.current(version)) this.setData({ error: '复制未完成，请重试。', notice: '' }, () => fitSheetScroll(this)); }
       });
     } catch (err) {
@@ -453,11 +453,6 @@ Page({
     wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.savedId) });
   },
 
-  onShareDraft() {
-    const version = this.loadVersion;
-    shareConfirmedDraft(this, { isCurrent: () => this.current(version), save: () => this.onSaveAsNew() });
-  },
-
   // ------------------------------------------------------------ 文字留档
 
   onCreateTxt() {
@@ -484,33 +479,15 @@ Page({
           this.setData({
             busy: false,
             txtPath: filePath,
-            notice: 'TXT 已生成。可点击下方按钮，自己选择发送到哪里。'
+            notice: 'TXT 已生成。'
           }, () => fitSheetScroll(this));
+          const app = getApp();
+          monitorSafely(app.operationsMonitor, 'event', 'output_exported');
         },
         fail: () => { if (this.current(version)) this.setData({ busy: false, error: '文件生成失败，可先复制留档文字。' }, () => fitSheetScroll(this)); }
       });
     } catch (err) {
       if (this.current(version)) this.setData({ busy: false, error: '文件生成失败，可先复制留档文字。' }, () => fitSheetScroll(this));
-    }
-  },
-
-  onShareTxt() {
-    if (!this.data.txtPath || this.data.busy || !this.current()) return;
-    const version = this.loadVersion;
-    if (typeof wx.shareFileMessage !== 'function') {
-      this.setData({ error: '当前设备无法发送 TXT 文件，可复制留档文字。', notice: '' });
-      return;
-    }
-    this.setData({ busy: true, error: '', notice: '' });
-    try {
-      wx.shareFileMessage({
-        filePath: this.data.txtPath,
-        fileName: '灵感文字留档.txt',
-        success: () => { if (this.current(version)) this.setData({ busy: false, notice: 'TXT 已发送。外部副本不会随原记录删除。' }); },
-        fail: () => { if (this.current(version)) this.setData({ busy: false, error: '文件未发送，可重试或复制留档文字。' }); }
-      });
-    } catch (err) {
-      if (this.current(version)) this.setData({ busy: false, error: '文件未发送，可重试或复制留档文字。' });
     }
   }
 });

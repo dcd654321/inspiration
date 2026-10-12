@@ -74,7 +74,7 @@
           <button wx:if="{{photosEnabled && !merged}}" class="btn-link photo-delete" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy || pending}}">删除照片</button>
         </view>
       </scroll-view>
-      <view class="hint-line">{{photos.length ? '点击照片查看大图，仅你可见。' : '可添加照片，和这条灵感一起查看。'}}</view>
+      <view class="hint-line">{{photos.length ? '点击照片查看大图。' : '可添加照片，和这条灵感一起查看。'}}</view>
       <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
     </view>
 
@@ -224,13 +224,12 @@
   <!-- 长正文滚离原文后出现的定位入口；键盘打开时隐藏 -->
   <button wx:if="{{floatVisible}}" class="float-supplement" bindtap="onLocateCompose" aria-label="继续补充">继续补充</button>
 
-  <!-- 页内「更多」：修改正文、复制灵感、分享灵感、修改记录、删除灵感 -->
+  <!-- 页内「更多」：修改正文、复制灵感、修改记录、删除灵感 -->
   <view wx:if="{{moreVisible}}" class="mask" bindtap="onCloseMore">
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">这条灵感</view>
       <button wx:if="{{!merged}}" class="sheet-item" bindtap="onMoreEditText" disabled="{{pending !== ''}}">修改正文<text class="sub">旧内容会保留在修改记录中</text></button>
       <button class="sheet-item" bindtap="onMoreCopy" disabled="{{pending !== ''}}">复制灵感<text class="sub">可选仅复制正文，或正文与当前补充</text></button>
-      <button class="sheet-item" bindtap="onMoreShare" disabled="{{pending !== ''}}">分享灵感<text class="sub">先确认对方会看到什么</text></button>
       <button wx:if="{{historyCount > 0}}" class="sheet-item" bindtap="onMoreHistory" disabled="{{pending !== ''}}">修改记录（{{historyCount}}）</button>
       <button class="sheet-item sheet-danger" bindtap="onMoreDelete" disabled="{{pending !== ''}}">删除灵感<text class="sub">正文、补充和照片会一并删除，无法撤销</text></button>
       <button class="sheet-cancel" bindtap="onCloseMore" disabled="{{pending !== ''}}">取消</button>

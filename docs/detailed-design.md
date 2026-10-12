@@ -1,12 +1,16 @@
 # 详细设计
 
 > 状态（2026-10-08）：§1—11 保留 MVP 基础设计；§12 起记录后续变更。§17 的云确认方案覆盖 §2、§3、§5、§13 的设备持久快照、离线队列与照片暂存约定；§27 的 `remove-ai-integration` 覆盖 AI 生成、草案、工作台与模型部署要求。
-> 当前小程序包含 14 个页面、2 个云函数（`linggan_api` / `linggan_maintenance`）与 12 个服务端 action；旧设备持久化、离线队列和照片落盘实现已移到包外 `qa/legacy/`，仅供历史规范测试。自动化测试最新结果以 `docs/VERIFICATION.md` 为准。
+> 当前小程序包含 11 个页面、2 个云函数（`linggan_api` / `linggan_maintenance`）与 6 个服务端 action；旧设备持久化、离线队列和照片落盘实现已移到包外 `qa/legacy/`，仅供历史规范测试。自动化测试最新结果以 `docs/VERIFICATION.md` 为准。
 > 本文档描述**接口、状态及错误**；凡某节写的是当时的目标方案而实现已改，该节会显式标注「由 §X 覆盖」，未标注的不代表已实现。
 > 各能力的平台启用、云端部署与真机验收**均未完成**，本地代码完成不等于能力可用。
 > **热度提炼已暂缓**（见 `proposal.md` 非目标），本文档不含热度实现细节，仅在 §10 保留占位说明。
 
 ## 0. 文档地图
+
+2026-10-12 文字内容分享移除：`openspec/changes/remove-text-sharing/` 定义当前发布范围。§14 的内容分享与举报、§15.1 的分享配额、§25 的公开读取与分享用途承接、§26 的结果分享，以及 §12 的 TXT 直接发送均为历史要求，由 §30 覆盖；保留意见反馈、普通欢迎页转发、复制与文件导出。数据库兼容与历史清理见 `database-design.md` §17，页面变化见 `ui-design.md` §16。
+
+2026-10-11 运营接入：`add-operations-monitor` 定义前台会话、最小化客户端事件与服务端确认事件，接口见本文 §29，事件字段见 `database-design.md` §16。本地实现不包含云部署或真机验收。
 
 2026-10-11 修改记录修复：`repair-change-history` 补齐正文与补充历史查看及文字留档。详情 `historyCount` 统计正文和现存补充旧版本总数，补充操作面板使用自身 `contentHistory` 数量。`pages/history` 接收 `{ id, supplementId? }`：未指定补充时显示正文及有历史的补充分组，指定时只显示该补充，缺失不回退。历史只读、完整文字保留换行、版本按修改时间倒序，页面隐藏及过期读取仍受账户与页面守卫约束。留档正文历史读取 `text`，补充历史读取 `content`。数据字段与保存协议不变；界面见 `ui-design.md` §4、§8。
 
@@ -40,9 +44,9 @@
 | 规范里哪条实现了、哪条没有 | `docs/spec-coverage.md` | —— |
 | 哪次改动验证了什么、没验证什么 | `docs/VERIFICATION.md` | —— |
 | **怎么把云端接起来** | `docs/DEPLOYMENT.md`、`deployment/product/` | 代码怎么改（那是本文档的事） |
-| 当前产品与本地发布范围 | `openspec/changes/remove-ai-integration/`、本文 §27 | 远端删除、部署或重新审核通过的证明 |
+| 当前产品与本地发布范围 | `openspec/changes/remove-ai-integration/`、`openspec/changes/remove-text-sharing/`、本文 §27、§30 | 远端删除、部署或重新审核通过的证明 |
 | product 部署范围与发布验收 | `openspec/changes/deploy-product-release/`、`deployment/product/`（AI 要求由 `remove-ai-integration` 覆盖） | 真实清理或 Git 合并授权 |
-| 分享与反馈的目标、场景 | `openspec/changes/add-sharing-feedback/` | 当前实现证据 |
+| 意见反馈与普通转发 | 本文 §30；`openspec/changes/add-sharing-feedback/` 保留历史内容分享场景 | 当前实现证据 |
 | 搜索、回顾、用途模板与生产可靠性 | `openspec/changes/complete-product-workflows/`、本文 §15 | 云端部署已完成的证明 |
 | 跨灵感手动选材 | `openspec/changes/add-material-output/`、本文 §16 | AI 汇总、批量留档或云端部署 |
 | **卡在用户那边的凭据、决策、素材** | `docs/PENDING-INPUT.md` | —— |
@@ -81,7 +85,7 @@ core/       纯函数，零 wx 依赖。npm test 直接覆盖
 - `core/` 不得 require `services/` 或任何页面模块，不得引用 `wx.*`。
 - `services/` 之间不得循环依赖。
 - `pages/` 只调 `services/` 与 `core/limits`，不自己判断业务规则。
-- 云函数入口只做受信上下文/授权校验并转发给 `server/`。`cloudfunctions/linggan_api/index.js` 承载 12 个业务 action，`linggan_maintenance/index.js` 承载保留期清理。业务逻辑在 `server/`，可脱离云环境单测。
+- 云函数入口只做受信上下文/授权校验并转发给 `server/`。`cloudfunctions/linggan_api/index.js` 承载 6 个业务 action，`linggan_maintenance/index.js` 承载保留期清理。业务逻辑在 `server/`，可脱离云环境单测。
 - `server/` 是构建产物的唯一来源。`scripts/build-cloud.cjs` 把它同步进**两个**云函数目录，`npm run check` 断言产物与源码一致——不同步即视为失败。
 
 ## 2. 云函数协议
@@ -100,7 +104,7 @@ core/       纯函数，零 wx 依赖。npm test 直接覆盖
 
 `server/wx-identity.js` 的 `getCallerIdentity(context)` 只处理 `cloud.getWXContext()` 的可信结果：跨账号时要求 `FROM_APPID` 与 `FROM_OPENID` 成对完整，来源 AppID 必须为 `wxed8fdc5d559d973d`；不完整来源不可回退 `APPID/OPENID`。无跨账号字段的直连也仅接受本项目 AppID。返回 `{ appid, openid, accountKey }` 或 null，哈希仍为 SHA-256(appid + `|` + openid) 前 32 位。API 与 AI 共用此逻辑，请求体身份仍由协议层拒绝。
 
-分享内容审核、AI 审核及小程序码通过 `cloud.openapi({ appid: 来源AppID })` 指定本项目，openid 取同一可信来源。官方 wx-server-sdk 2.6.3 包的 openapi 代理实现已核对支持此配置；实际跨账号审核授权及小程序码归属仍需平台验收。
+历史分享内容审核、AI 审核及小程序码曾通过 `cloud.openapi({ appid: 来源AppID })` 指定本项目，openid 取同一可信来源。官方 wx-server-sdk 2.6.3 包的 openapi 代理实现已核对支持此配置；实际跨账号审核授权及小程序码归属仍需平台验收。
 
 ### 2.1 信封
 
@@ -126,22 +130,16 @@ wx.cloud.callFunction({
 
 ### 2.3 动作表
 
-`linggan_api` 认识全部 12 个动作（`server/protocol.js`）。当前没有 `expand`、`summarize` 或其他模型 action。
+`linggan_api` 认识全部 6 个动作（`server/protocol.js`）。当前没有 `share.*`、`feedback.reportShare`、`expand`、`summarize` 或其他模型 action；旧内容分享动作返回 `INVALID_ACTION`，不访问业务数据。
 
 | action | payload | 成功返回 data | 说明 |
 | --- | --- | --- | --- |
 | `snapshot.pull` | `{}` | `{ cacheScope, generation, version, inspirations[], photosEnabled, storagePrefix, serverTime }` | 拉取账户全量快照；`cacheScope` 仅用于本机缓存分区，不作为认证凭据 |
 | `snapshot.push` | `{ baseVersion, generation, upserts[] }` | `{ version, applied[] }` | `baseVersion` 与 `generation` 必填；按版本增量写入。`upserts` 为新增或更新的整条灵感，单次至多 21 条、`id` 不得重复 |
-| `inspiration.delete` | `{ inspirationId, baseVersion, generation }` | `{ deletedPhotos, version }`；已不存在时含 `alreadyAbsent: true` | 版本与代际必填。删除前先撤销该来源的全部有效分享；含照片时委托照片闭环（§15.5） |
+| `inspiration.delete` | `{ inspirationId, baseVersion, generation }` | `{ deletedPhotos, version }`；已不存在时含 `alreadyAbsent: true` | 版本与代际必填；含照片时委托照片闭环（§15.5） |
 | `photo.delete` | `{ inspirationId, photoId, baseVersion, generation }` | `{ version, deletedPhotos }`；已不存在时含 `alreadyAbsent: true` | 单张照片的独立删除动作。照片能力关闭时返回 `PHOTO_DELETE_UNAVAILABLE`，**不得**用推送静默丢弃文件引用 |
-| `share.create` | `{ inspirationId, selectedSupplementIds[], baseVersion, generation, channelIntent }` \(+\) `requestId` | `{ shareId, token, expiresAt, preview }` | 只允许这五个键；`channelIntent` 仅 `chat` / `timeline_poster`。见 §14.2 |
-| `share.get` | `{ token }` | `{ title, body, createdAt, expiresAt }` | 持令牌只读，读者不必是所有者；无效/过期/撤销/源删除统一 `SHARE_UNAVAILABLE` |
-| `share.listMine` | `{ before? }` | `{ items[], nextBefore }` | 本人分享列表，每页 20；不返回令牌、哈希与密文 |
-| `share.revoke` | `{ shareId }` | `{ revoked: true }` | 仅所有者，重复操作幂等 |
-| `share.qr` | `{ token }` | `{ pngBase64 }` | 为仍有效的令牌生成小程序码，供本机海报绘制 |
 | `feedback.create` | `{ category, body }` | `{ feedbackId, category, body, status, createdAt, updatedAt }` | `category` 仅 `bug` / `idea` / `other`；正文 10—1000 字 |
 | `feedback.listMine` | `{ before? }` | `{ items[], nextBefore }` | 只返回本人反馈，每页 20 |
-| `feedback.reportShare` | `{ token, body }` | 同 `feedback.create` | 由有效令牌定位分享，内部以 `share_report` 落库；客户端不能指定所有者或目标账户 |
 
 原文可以直接改写，所以服务端**不再校验 `text` 不可变**（原 `IMMUTABLE_TEXT` 已撤销）。取而代之的是一条更本质的约束：
 
@@ -150,7 +148,7 @@ wx.cloud.callFunction({
 两条容易记错的实现事实：
 
 - **没有 `feedback.submit`**，提交反馈走的是 `feedback.create`。
-- **`share.*` 与 `feedback.*` 不走传输层 requestId 内存缓存**（§2.1 的缓存只对非这两类前缀的动作生效）。它们各自用实体级唯一索引与 `requestDigest` 保证幂等，缓存与否必须在服务端重查，不能从缓存兜底返回。
+- **`feedback.*` 不走传输层 requestId 内存缓存**，使用实体级唯一索引与 `requestDigest` 保证幂等，必须在服务端重查，不能从缓存兜底返回。
 
 ### 2.4 删除的执行顺序
 
@@ -193,7 +191,7 @@ wx.cloud.callFunction({
 | `PHOTO_CLEANUP_PENDING` | 云文件尚未全部删除，任务已登记 | 保留任务与记录，稍后重试；**不得**报告删除完成 |
 | `PHOTO_RECOVERY_UNAVAILABLE` | 含照片的冲突切换遇到旧服务端或照片能力关闭 | 保持原冲突状态，不切换 |
 
-**分享与反馈**：`share.*` 与 `feedback.*` 的专属码（`SHARE_NOT_CONFIGURED`、`SHARE_UNAVAILABLE`、`SHARE_LIMIT`、`SHARE_CONTENT_REJECTED`、`SHARE_REVIEW_UNAVAILABLE`、`SHARE_RETRY_UNAVAILABLE`、`SHARE_TOO_LONG`、`BACKUP_PENDING`、`TOKEN_OR_QR_FAILED`、`FEEDBACK_LIMIT`、`RATE_LIMITED`、`RATE_LIMIT_UNAVAILABLE`）与页面处置见 §14.4；这些动作不过传输层缓存，必须由服务端重查决定结果。
+**历史分享与当前反馈**：历史 `share.*` 与当前 `feedback.*` 的专属码（`SHARE_NOT_CONFIGURED`、`SHARE_UNAVAILABLE`、`SHARE_LIMIT`、`SHARE_CONTENT_REJECTED`、`SHARE_REVIEW_UNAVAILABLE`、`SHARE_RETRY_UNAVAILABLE`、`SHARE_TOO_LONG`、`BACKUP_PENDING`、`TOKEN_OR_QR_FAILED`、`FEEDBACK_LIMIT`、`RATE_LIMITED`、`RATE_LIMIT_UNAVAILABLE`）与页面处置见 §14.4；这些动作不过传输层缓存，必须由服务端重查决定结果。
 
 **会话与历史设备错误**（不来自云端）：`LOCAL_WRITE_FAILED` 仅为 §7.5 的历史持久化错误，`ACCOUNT_SESSION_CHANGED` 为账户会话已切换、迟到结果作废（见 §15.5）。§6 的 AI 专属错误已撤下。
 
@@ -203,7 +201,7 @@ wx.cloud.callFunction({
 
 | 函数 | 承载 | 环境变量（非密钥） | 密钥 | 云调用权限 | 平台超时 |
 | --- | --- | --- | --- | --- | --- |
-| `linggan_api` | §2.3 的 12 个 action | `LINGGAN_SHARE_KEY_ID`、`LINGGAN_SHARE_CREATE_ENABLED`、`LINGGAN_SHARE_CODE_VERSION`、`LINGGAN_PHOTOS_ENABLED`、`LINGGAN_STORAGE_PREFIX` | `LINGGAN_SHARE_TOKEN_KEY`（32 字节 hex）、`LINGGAN_SHARE_PREVIOUS_KEYS`（轮换映射） | `security.msgSecCheck`、`wxacode.getUnlimited` | 未在仓库声明 |
+| `linggan_api` | §2.3 的 6 个 action | `LINGGAN_PHOTOS_ENABLED`、`LINGGAN_STORAGE_PREFIX` | 无文字分享密钥 | 无内容审核或内容小程序码调用 | 未在仓库声明 |
 | `linggan_maintenance` | 保留期清理 | `LINGGAN_MAINTENANCE_ENABLED`（默认关闭） | `LINGGAN_MAINTENANCE_TOKEN`（≥32 字符） | 无 | 未在仓库声明 |
 
 三条要记住的事实：
@@ -860,7 +858,7 @@ removePhotos(fileIds) → Promise<{ ok, removed, failed }>
 
 ```js
 // 模块级导出
-createRepository({ db, now, beforeRemove?, photosEnabled?, validatePhoto?, removeFiles? }) → Repository
+createRepository({ db, now, photosEnabled?, validatePhoto?, removeFiles?, onCommitted?, onMonitorFailure? }) → Repository
 emptyAccount(accountKey, now)              → Account        // 初始账户文档
 ```
 
@@ -888,7 +886,7 @@ removePhoto(accountKey, payload)        → Promise<Result>   // 单张照片，
 
 ```js
 // 模块级导出
-createProtocol({ repository, requestCache, cacheTtlMs, now }) → Protocol
+createProtocol({ repository, feedback?, requestCache, cacheTtlMs, now }) → Protocol
 ```
 
 ```js
@@ -981,7 +979,7 @@ send(action, payload, meta) → Promise<Result>
 
 本节属于独立变更 `openspec/changes/add-content-output/`，不改变账户文档字段。`services/content-output.js` 只读传入的灵感对象：`currentSupplements(item)` 返回按创建时间排序的有效补充；`buildUseText(item, selectedIds)` 生成正文与选中补充的干净纯文本；`buildArchiveText(item, generatedAt)` 生成带时间、历史和收起标记的留档文本。三者不写存储，也不调用 `wx`。
 
-`pages/detail` 的复制入口收在页内「更多」面板，操作反馈仍内联在页面；`pages/output` 进入即构建可编辑的自由稿（补充默认全选），工具行为「调整内容 / 选择格式 / 更多」，面板改动先暂存、点「应用选择 / 应用格式」才写回，用户手工改过稿件时先弹替换确认。整理稿另存时调用既有 `createInspiration` 和 `store.saveInspiration`，因此沿用 2000 字上限、账户隔离和保存状态。TXT 文件由页面在用户点击后写入 `wx.env.USER_DATA_PATH`，页面继续提供文字预览；用户再次点击后才调用 `wx.shareFileMessage` 选择发送去向。离开页面时尽力清理小程序内的临时文件。不自动分享，不含照片；外部副本不会随原记录删除，页面明确提醒。
+`pages/detail` 的复制入口收在页内「更多」面板，操作反馈仍内联在页面；`pages/output` 进入即构建可编辑的自由稿（补充默认全选），工具行为「调整内容 / 选择格式 / 更多」，面板改动先暂存、点「应用选择 / 应用格式」才写回，用户手工改过稿件时先弹替换确认。整理稿另存时调用既有 `createInspiration` 和 `store.saveInspiration`，因此沿用 2000 字上限、账户隔离和保存状态。TXT 文件由页面在用户点击后写入 `wx.env.USER_DATA_PATH`，页面继续提供文字预览；直接发送逻辑已由 §30 移除。离开页面时尽力清理小程序内的临时文件。不自动分享，不含照片；外部副本不会随原记录删除，页面明确提醒。
 
 ## 13. 云同步整改（`repair-cloud-sync`）
 
@@ -1019,7 +1017,9 @@ send(action, payload, meta) → Promise<Result>
 
 应用启动及每次回到前台先置 `store = null`，再拉取当前受信账户作用域；拉取失败时不打开任何个人缓存。拉取成功后构建对应分区的 store 并触发有限重试。页面必须等待启动结果再展示数据；切换账户时原页面先清空已渲染的旧数据。首次离线无法验证身份时，保留输入草稿但暂停持久化，不把内容写入猜测的账户。
 
-## 14. 分享与意见反馈（`add-sharing-feedback`，本地代码已实现、平台待验收）
+## 14. 分享与意见反馈（`add-sharing-feedback`，内容分享为历史）
+
+文字内容分享与举报已由 §30 撤下；本节保留历史设计。当前普通转发与意见反馈接口见 §30。
 
 本节是分享与反馈的实施设计，已有对应本地代码，但不是已上线能力。详情页的 TXT 发送仍不能作为可撤销分享；“我的”页将微信原生反馈与本产品内意见反馈分开。新页面与云函数动作已写入源码；新集合、索引、权限、审核云调用、正式部署与真机体验**尚未取得验证证据**。字段和索引见 `docs/database-design.md` §10。
 
@@ -1085,7 +1085,9 @@ send(action, payload, meta) → Promise<Result>
 
 ## 15. 剩余能力实施
 
-### 15.1 分享可靠性
+### 15.1 分享可靠性（历史）
+
+分享创建、读取与配额已由 §30 撤下；现行反馈配额见 §30.2，历史保留期清理仍保留。
 
 公开文字审核使用 `security.msgSecCheck` v2，OpenID 从当前可信微信上下文获取，scene=4。文本按 Unicode 字符拆分为每块至多 600 字符，逐块要求返回码 0 且 `result.suggest=pass`；缺少上下文、审核异常、未知结论均不创建分享。该适配器需受控云调用验证。
 
@@ -1228,7 +1230,9 @@ getInspiration()
 App 原账户草稿 Map 改成最后一次确认账户与代际的一套补充草稿，重新确认同账户可接续，跨账户或账户代际变化清空；补充草稿最多 32 条、30 分钟未更新过期，页面恢复容器与补充草稿均不保留无限账户分区。
 
 
-## 25. 分享范围、公开读取与用途承接（2026-10-07）
+## 25. 分享范围、公开读取与用途承接（2026-10-07，分享部分为历史）
+
+公开读取、分享范围与接收用途承接已由 §30 撤下；已确认记录的合法 `templateId` 字段继续兼容。以下分享接口仅描述当时的实现。
 
 对应 `optimize-product-experience-20261007` 的 Q08、Q10、Q11，用户已授权本地实现。以下规则覆盖 §14.2 的默认全选和 §14.3 的公开响应白名单；不放宽分享创建审核、可信微信上下文、限流、有效期、撤销或源删除校验。远端代码和真机分享待另行验收。
 
@@ -1244,7 +1248,9 @@ App 原账户草稿 Map 改成最后一次确认账户与代际的一套补充�
 
 AI 来源标签本轮不新增。现有正文并入 AI 补充和手动另存没有完整可追溯来源元数据，仅从当前正文 `source` 推断可能遗漏；须后续明确来源协议再传播，不把手动模板稿标成 AI 输出。
 
-## 26. 结果分享与用途入口（2026-10-07）
+## 26. 结果分享与用途入口（2026-10-07，历史）
+
+结果分享、接收用途意图已由 §30 移除；记录入口与同账户稿件接续继续使用现有会话保护。以下流程不再进入当前发布包。
 
 `services/result-share.js` 导出 `shareConfirmedDraft(page, { isCurrent, save })`。已确认同文字的 savedId 直接进入分享预览；未另存先确认“保存后预览分享”，只执行现有受信保存。取消、重复点击、页面隐藏、稿件改动、未知保存或来源变化均不导航。弹窗与另存回执再次核对页面会话和逐字稿件，不触发自动分享。两个成稿页另存时仅附当次合法 templateId，未知重试保持原 item 及模板不变。
 
@@ -1277,3 +1283,55 @@ AI 来源标签本轮不新增。现有正文并入 AI 补充和手动另存没�
 快照版本一致性修复见 `repair-snapshot-version-safety`：内部 `serialWrite(work)` 在公开写方法调用时捕获版本/代际，实际串行执行前复核；变化则返回 CONFLICT / STALE_GENERATION。push 相同内容及删除缺失对象的回执先核对 baseVersion；注册的照片清理任务继续按原任务幂等恢复。成功回执超过本地版本加一时，必须完整回读并核对操作结果；回读失败保留原版本，不能只给旧快照赋新版本。接口及数据库字段不变，不增加持久队列或自动合并。
 
 回退可恢复本次本地差异；恢复生成式 AI 前须重新确认主体、类目、资质和启用授权。远端 AI 资源若需停用或删除，另行核对精确目标、影响和恢复边界。
+
+## 29. 运营看板接口（2026-10-11）
+
+`services/operations-monitor.js` 导出 `createOperationsMonitor(options)` 和 `monitorSafely(monitor,method,...args)`；实例提供 `start()`、`bindAccount(scope,accountGeneration,isCurrent)`、`end()`、`event(type,payload,eventId?)`、`requestFinished(functionName,durationMs,code?)`、`error(code,type?)`。默认通过当前共享客户端调用 `monitorApi`；请求信封见 `add-operations-monitor/design.md`，两类请求均携带可信快照的 accountGeneration。可信账户绑定后发送 start，累计从 start 确认开始；心跳与 end 等待 start 并按会话串行，心跳 60 秒，最多一次即时内存重试。新会话、账户和代际失效取消旧回执；onHide 最后发送累计 end 后停止心跳。payload 白名单只接收 route/functionName/code/durationMs/sessionId/envVersion，错误文字和业务内容不采集。绑定前最多 8 条白名单事件仅留本次会话内存，离开丢弃。monitorSafely 处理同步抛错和异步拒绝，账户读取、后台清理及成功复制/TXT 状态不受影响。
+
+`repository.push(accountKey,payload,context?)` 新增可选受信上下文 `{sourceUserId}`；`createRepository` 接受可选 `onCommitted({accountKey,sourceUserId,before,after})` 和 `onMonitorFailure(code)`。hook 仅在实际 CAS 写入成功后执行，最多等待 500 毫秒；异常或超时只报告固定码，迟到拒绝被处理，仍返回已提交保存确认。`server/operations-monitor.js` 提供 `createCommittedMonitor({db,now,onFailure})`，比较新增记录、补充和新记录的自有 templateId，以确定性 id create-once 写入事件。客户端函数耗时通过 wx-transport 的可选 `onRequestFinished` 回调报告，monitorApi 自身不经此 transport。
+
+事件事务重读可信账户代际后，通过 `db.command.inc(1)` update 同一账户顶层 `_monitorFence`，再 add 事件；与账户代际变化产生写冲突，SDK 重试后重新校验。该可选字段不改变业务 version、内容或快照协议，业务 CAS 的字段 update 保留它。事件事务失败与已成功业务提交隔离；当前无账户清空入口，空初访 generation=1 不因统计创建业务账户。
+
+## 30. 移除文字内容分享（2026-10-12）
+
+对应 `remove-text-sharing`。当前发布包移除文字分享预览、接收与本人分享列表，删除 token、内容小程序码、文字海报、结果分享与公开读取专用模块。详情、两个成稿页和我的页仅撤下失效入口；页面不增加私密性、类目或审核整改说明。普通转发仍使用固定品牌标题、图片与欢迎页，不携带用户正文、记录标识或令牌。
+
+### 30.1 意见反馈模块签名
+
+```js
+// server/feedback.js
+createFeedbackService({ db, now?, randomBytes?, rateLimit }) → FeedbackService
+// FeedbackService 实例
+createFeedback(accountKey, payload, requestId) → Promise<Result>
+listFeedback(accountKey, payload) → Promise<Result>
+// server/cloud-feedback-db.js
+createCloudFeedbackDb({ db, now? }) → FeedbackDb
+// FeedbackDb 实例
+findFeedbackByRequest(accountKey, requestId) → Promise<Feedback | null>
+insertFeedback(doc) → Promise<void>
+listFeedback(accountKey, before, limit) → Promise<Feedback[]>
+countFeedbackSince(accountKey, since) → Promise<number>
+// miniprogram/services/feedback.js
+createFeedbackClient({ transport?, client?, newRequestId? }) → FeedbackClient
+// FeedbackClient 实例
+send(action, payload, requestId?) → Promise<Result>
+newRequestId() → string
+```
+
+`createProtocol` 注入 `feedback`，仅分发 `feedback.create` 与 `feedback.listMine`。受信身份、白名单参数、稳定 requestId、失败保留输入、分页及页面/账户守卫继续生效。`rateLimit` 未注入或不可用时失败关闭。反馈摘要保持 `SHA256(JSON.stringify([category, text, null]))`，兼容已存在普通反馈的重复提交。新提交只允许 `bug/idea/other`；历史 `share_report` 记录按原类别读取，不新建举报，不返回关联对象或后台字段。
+
+### 30.2 删除、配额与历史兼容
+
+```js
+createPhotoLifecycle({ db, now, removeFiles, validatePhoto }) → PhotoLifecycle
+// PhotoLifecycle 实例
+remove(accountKey, data, photoId) → Promise<Result>
+```
+
+`createRepository` 和 `createPhotoLifecycle` 不再接收或调用 `beforeRemove`；记录删除仅按当前版本、代际和照片清理协议执行。运营提交 hook 与照片清理/CAS 状态保持现有约束。维护函数保留历史分享快照保留期清理，不提供创建、内容读取、小程序码或撤销接口；本地改动不操作远端集合与已有记录。
+
+新反馈继续写入 `relatedShareId:null`、`reportDayKey:null`，`dedupeKey` 使用独立随机键，字段清单见数据库设计 §10.2 与 §17。反馈事务只更新 `dayStart/feedbackCount/updatedAt`；旧 `shareCount/activeShares` 可留存，不校验、不读取、不写入。首次配额初始化只计数当日反馈，不读取 `linggan_shares`。反馈每日 5 条与提交幂等、事务回滚约束保持。
+
+### 30.3 文件输出
+
+详情与两种成稿保留复制；单条成稿的文字留档由明确点击生成会话内 TXT 临时文件并按会话清理。删除“发送 TXT 文件”按钮及 `wx.shareFileMessage`，不自动发送或发布内容。普通欢迎页转发与这些文件操作独立。

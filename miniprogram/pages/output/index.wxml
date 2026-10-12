@@ -41,7 +41,6 @@
     <view wx:if="{{error}}" class="notice {{saveUnknown ? 'notice-warn' : 'notice-err'}}"><view class="mark"></view><text>{{error}}</text></view>
     <button class="btn btn-block main-action" bindtap="onCopyDraft" disabled="{{busy || !draft.length}}">复制稿件</button>
     <button class="btn btn-quiet btn-block secondary-action" bindtap="onSaveAsNew" disabled="{{busy || sourceStale || !canSaveAs}}">{{busy ? '正在另存…' : saveUnknown ? '重试确认保存' : (savedSame ? '已另存' : '另存为新灵感')}}</button>
-    <button class="btn btn-plain btn-block secondary-action" bindtap="onShareDraft" disabled="{{busy || saveUnknown || sourceStale || !draft.length}}">{{savedSame ? '分享这份稿件' : '保存并预览分享'}}</button>
     <view wx:if="{{noticeLink}}" class="saved-link"><button class="btn btn-link" bindtap="onOpenSaved">查看新灵感</button></view>
 
     <view wx:if="{{notice}}" class="notice notice-success"><view class="mark"></view><text>{{notice}}</text></view>
@@ -101,7 +100,6 @@
       <view class="archive-acts">
         <button class="btn btn-block main-action" bindtap="onCopyArchive" disabled="{{busy}}">复制留档文字</button>
         <button class="btn btn-quiet btn-block secondary-action" bindtap="onCreateTxt" disabled="{{busy}}">{{busy ? '正在处理…' : '生成 TXT 文件'}}</button>
-        <button wx:if="{{txtPath}}" class="btn btn-quiet btn-block secondary-action" bindtap="onShareTxt" disabled="{{busy}}">发送 TXT 文件</button>
       </view>
       <view wx:if="{{error}}" class="notice notice-err"><view class="mark"></view><text>{{error}}</text></view>
       <view wx:if="{{notice}}" class="notice notice-success"><view class="mark"></view><text>{{notice}}</text></view>

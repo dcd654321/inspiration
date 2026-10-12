@@ -13,8 +13,7 @@ const crypto = require('node:crypto');
 
 const ACTIONS = [
   'snapshot.pull', 'snapshot.push', 'inspiration.delete', 'photo.delete',
-  'share.create', 'share.get', 'share.listMine', 'share.revoke', 'share.qr',
-  'feedback.create', 'feedback.listMine', 'feedback.reportShare'
+  'feedback.create', 'feedback.listMine'
 ];
 
 const PROTOCOL_CODE = {
@@ -50,7 +49,7 @@ function requestFingerprint(action, payload) {
 function createProtocol(options) {
   const opts = options || {};
   const repository = opts.repository || createRepository(opts);
-  const sharing = opts.sharing || null;
+  const feedback = opts.feedback || null;
   const requestCache = opts.requestCache || null;
   const cacheTtlMs = typeof opts.cacheTtlMs === 'number' ? opts.cacheTtlMs : 10 * 60 * 1000;
   const now = opts.now;
@@ -81,9 +80,8 @@ function createProtocol(options) {
     // 传输层幂等：同一 requestId 只可重试相同的动作与参数。
     // 与实体级幂等（按 id upsert）是两回事，两者都要有——前者防的是「请求重复到达」，
     // 后者防的是「同一份数据被提交多次」。
-    // 分享的只读结果与撤销状态有关，绝不能命中旧的传输层成功缓存。
-    // 创建动作在新集合里做跨实例幂等，反馈也有持久去重键。
-    const cacheKey = requestCache && !/^(share|feedback)\./.test(request.action) &&
+    // 反馈使用持久请求摘要保证跨实例幂等，列表每次读取当前状态。
+    const cacheKey = requestCache && !/^feedback\./.test(request.action) &&
       typeof request.requestId === 'string' && request.requestId.length > 0
       ? accountKey + ':' + request.requestId
       : null;
@@ -112,29 +110,17 @@ function createProtocol(options) {
         if (request.action === 'snapshot.pull') {
           response = await repository.pull(accountKey);
         } else if (request.action === 'snapshot.push') {
-          response = await repository.push(accountKey, request.payload);
+          response = await repository.push(accountKey, request.payload, { sourceUserId: context.sourceUserId });
         } else if (request.action === 'inspiration.delete') {
           response = await repository.remove(accountKey, request.payload);
         } else if (request.action === 'photo.delete') {
           response = await repository.removePhoto(accountKey, request.payload);
-        } else if (!sharing) {
+        } else if (!feedback) {
           response = fail('SERVICE_UNAVAILABLE', '这项服务暂时不可用');
-        } else if (request.action === 'share.create') {
-          response = await sharing.createShare(accountKey, request.payload, request.requestId);
-        } else if (request.action === 'share.get') {
-          response = await sharing.getShare(accountKey, request.payload);
-        } else if (request.action === 'share.listMine') {
-          response = await sharing.listMine(accountKey, request.payload);
-        } else if (request.action === 'share.revoke') {
-          response = await sharing.revokeShare(accountKey, request.payload);
-        } else if (request.action === 'share.qr') {
-          response = await sharing.getShareCode(accountKey, request.payload);
         } else if (request.action === 'feedback.create') {
-          response = await sharing.createFeedback(accountKey, request.payload, request.requestId);
-        } else if (request.action === 'feedback.listMine') {
-          response = await sharing.listFeedback(accountKey, request.payload);
+          response = await feedback.createFeedback(accountKey, request.payload, request.requestId);
         } else {
-          response = await sharing.reportShare(accountKey, request.payload, request.requestId);
+          response = await feedback.listFeedback(accountKey, request.payload);
         }
       } catch (err) {
         // 未预期的异常一律收敛成一个稳定的码，不把堆栈透给客户端

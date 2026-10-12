@@ -5,7 +5,7 @@ const path = require('node:path');
 const core = require('../miniprogram/core/inspiration');
 const { createSessionDrafts } = require('../miniprogram/services/session-drafts');
 
-async function withPage(name, query, run, intent) {
+async function withPage(name, query, run) {
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   const file = require.resolve(path.join('..', 'miniprogram/pages', name, 'index.js'));
   let definition;
@@ -15,8 +15,7 @@ async function withPage(name, query, run, intent) {
     getConfirmedRevision: () => ({ baseVersion: 1, generation: 1 }),
     async saveInspiration(next) { state.saves.push(next); if (state.result.ok) state.items.push(next); return state.result; } };
   const sessionDrafts = createSessionDrafts(); sessionDrafts.bind({ cacheScope: 'a'.repeat(32), generation: 1 });
-  const app = { globalData: { store, sessionEpoch: 1, cacheScope: 'a'.repeat(32), sessionDrafts,
-    sharedTemplateIntent: intent }, ensureReady: async () => store };
+  const app = { globalData: { store, sessionEpoch: 1, cacheScope: 'a'.repeat(32), sessionDrafts }, ensureReady: async () => store };
   try {
     global.Page = value => { definition = value; }; global.getApp = () => app;
     global.wx = { showModal: opts => state.modals.push(opts), navigateTo: opts => state.routes.push(opts.url),
@@ -116,7 +115,7 @@ test('连续记录：再记一条不改写提交中、隐藏页、未知请求�
   ];
   for (const scenario of cases) await withPage('capture', {}, async ({ page, state }) => {
     page.setData(Object.assign({ lastSavedId: 'saved-first', lastSavedExcerpt: '第一条已确认的内容',
-      lastSavedTemplateId: 'work', draftRecoveryNotice: '已接续这次已记下的想法。', inputFocus: false }, scenario.data));
+      draftRecoveryNotice: '已接续这次已记下的想法。', inputFocus: false }, scenario.data));
     page.visible = scenario.visible;
     page.pendingSave = scenario.pending || null;
     const before = structuredClone(page.data);
@@ -212,62 +211,44 @@ test('连续记录：未知保存确认后复用标识，下一条使用新的�
   });
 });
 
-test('成稿传播：单多结果显式确认另存后直达预览，同稿不重复写入', async () => {
+test('成稿另存：单多结果保存用途与正文，同稿不重复写入', async () => {
   for (const name of ['output', 'material-output']) await withPage(name, { id: 'idea', template: 'work' }, async ({ page, state }) => {
     if (name === 'material-output') { page.onToggle({ currentTarget: { dataset: { key: page.data.options[0].key } } }); page.onGenerate('work'); }
     assert.match(page.data.draft, /【背景与材料】/);
-    page.onShareDraft(); page.onShareDraft();
-    assert.equal(state.modals.length, 1); assert.equal(state.saves.length, 0);
-    assert.ok(state.modals[0].confirmText.length <= 4); assert.ok(state.modals[0].cancelText.length <= 4);
-    await state.modals[0].success({ confirm: false }); assert.equal(state.saves.length, 0);
-    page.onShareDraft(); await state.modals[1].success({ confirm: true });
+    await (name === 'output' ? page.onSaveAsNew() : page.onSave());
     assert.equal(state.saves.length, 1); assert.equal(state.saves[0].templateId, 'work');
-    assert.equal(state.routes[0], '/pages/share-preview/index?id=' + state.saves[0].id);
-    page.onShareDraft(); assert.equal(state.saves.length, 1); assert.equal(state.routes.length, 2);
+    assert.equal(state.saves[0].text, page.data.draft);
+    await (name === 'output' ? page.onSaveAsNew() : page.onSave());
+    assert.equal(state.saves.length, 1);
+    page.onOpenSaved();
+    assert.equal(state.routes[0], '/pages/detail/index?id=' + state.saves[0].id);
   });
 });
 
-test('成稿传播：未知保存和过期确认不跳转，保留稿件及稳定另存标识', async () => {
+test('成稿另存：未知保存不跳转，保留稿件并复用稳定标识', async () => {
   for (const name of ['output', 'material-output']) await withPage(name, { id: 'idea' }, async ({ page, state }) => {
     if (name === 'material-output') { page.onToggle({ currentTarget: { dataset: { key: page.data.options[0].key } } }); page.onGenerate(); }
     const text = page.data.draft; state.result = { ok: false, code: 'NETWORK' };
-    page.onShareDraft(); await state.modals[0].success({ confirm: true });
+    await (name === 'output' ? page.onSaveAsNew() : page.onSave());
     assert.equal(state.routes.length, 0); assert.equal(page.data.draft, text); assert.equal(page.data.saveUnknown, true);
-    page.onShareDraft(); assert.equal(state.modals.length, 1);
     state.result = { ok: true, synced: true };
     await (name === 'output' ? page.onSaveAsNew() : page.onSave());
     assert.equal(state.saves[0].id, state.saves[1].id);
-    page.onShareDraft(); assert.equal(state.routes.length, 1);
+    assert.equal(page.data.savedId, state.saves[1].id);
+    assert.equal(state.routes.length, 0);
     if (name === 'output') page.onDraftInput({ detail: { value: text + '新的编辑' } }); else page.onInput({ detail: { value: text + '新的编辑' } });
-    page.onShareDraft(); const prompt = state.modals.at(-1); page.onHide();
-    await prompt.success({ confirm: true }); assert.equal(state.saves.length, 2); assert.equal(state.routes.length, 1);
+    assert.notEqual(page.data.savedDraft, page.data.draft);
+    page.onHide(); await page.onShow();
+    assert.equal(page.data.draft, text + '新的编辑');
+    assert.equal(state.saves.length, 2); assert.equal(state.routes.length, 0);
   });
 });
 
-test('成稿用途：接收意图只消费一次并保持空正文，确认首记后带入自己的结构', async () => {
-  await withPage('capture', {}, async ({ page, app, state }) => {
-    assert.equal(page.data.draft, ''); assert.equal(page.data.templateIntentLabel, '工作提纲');
-    assert.equal(app.globalData.sharedTemplateIntent, undefined); assert.equal(state.saves.length, 0);
-    page.onInput({ detail: { value: '我的社区活动计划' } }); await page.onSave(); page.onOrganizeSaved();
-    assert.equal(state.saves[0].templateId, undefined);
-    assert.equal(state.routes[0], '/pages/output/index?id=' + state.saves[0].id + '&template=work');
-    page.onClearTemplateIntent(); assert.equal(page.data.templateIntentId, '');
-  }, { templateId: 'work', epoch: 1, expiresAt: Date.now() + 300000, body: '不得复制的作者原文' });
-});
-
-test('成稿用途：非法过期和旧账户意图丢弃，慢账户准备保留输入且复核用途代次', async () => {
-  for (const intent of [{ templateId: 'bad', epoch: 1, expiresAt: Date.now() + 300000 },
-    { templateId: 'work', epoch: 0, expiresAt: Date.now() + 300000 }, { templateId: 'work', epoch: 1, expiresAt: 1 }]) {
-    await withPage('capture', {}, async ({ page, app }) => {
-      assert.equal(page.data.templateIntentId, ''); assert.equal(app.globalData.sharedTemplateIntent, undefined);
-    }, intent);
-  }
+test('记录与整理：慢账户准备保留输入，非法整理格式回到自由稿', async () => {
   await withPage('capture', {}, async ({ page, app, store }) => {
     page.onInput({ detail: { value: '我已经写了一半' } });
-    app.globalData.sharedTemplateIntent = { templateId: 'video', epoch: 1, expiresAt: Date.now() + 300000 };
     app.ensureReady = async () => { app.globalData.sessionEpoch++; return store; };
-    await page.onShow(); assert.equal(page.data.draft, '我已经写了一半'); assert.equal(page.data.templateIntentId, '');
-    page.onClearTemplateIntent(); assert.equal(page.data.draft, '我已经写了一半');
+    await page.onShow(); assert.equal(page.data.draft, '我已经写了一半');
   });
   await withPage('output', { id: 'idea', template: 'bad' }, async ({ page }) => {
     assert.equal(page.data.templateId, 'free'); assert.doesNotMatch(page.data.draft, /【背景与材料】/);
@@ -283,29 +264,30 @@ test('选材恢复：空搜索一键返回全部素材并保留已选顺序', as
   });
 });
 
-test('成稿用途：空记录页不提示未完成，已保存卡片不挡接收者自己的新输入', async () => {
+test('记录入口：空页不提示未完成，新记录入口消费已保存卡片', async () => {
   await withPage('capture', {}, async ({ page, app }) => {
     page.onHide(); await page.onShow(); assert.equal(page.data.draftRecoveryNotice, '');
     page.onInput({ detail: { value: '已经保存的想法' } }); await page.onSave();
     page.onHide(); await page.onShow(); assert.ok(page.data.lastSavedId); assert.match(page.data.draftRecoveryNotice, /已记下/);
-    app.globalData.sharedTemplateIntent = { templateId: 'work', epoch: 1, expiresAt: Date.now() + 300000 };
+    app.globalData.captureStartIntent = { epoch: 1, expiresAt: Date.now() + 300000 };
     await page.onShow(); assert.equal(page.data.lastSavedId, ''); assert.equal(page.data.draft, '');
-    assert.equal(page.data.draftRecoveryNotice, ''); assert.equal(page.data.templateIntentId, 'work');
+    assert.equal(page.data.draftRecoveryNotice, ''); assert.equal(app.globalData.captureStartIntent, undefined);
   });
 });
 
-test('成稿传播：分享返回保留已确认编辑稿，已存来源变化时清除旧确认而保留文字', async () => {
+test('成稿接续：返回保留已确认编辑稿，已存来源变化时清除旧确认而保留文字', async () => {
   for (const name of ['output', 'material-output']) await withPage(name, { id: 'idea' }, async ({ page, state }) => {
     if (name === 'material-output') { page.onToggle({ currentTarget: { dataset: { key: page.data.options[0].key } } }); page.onGenerate(); }
-    const text = '手工编辑后的最终稿，取消分享后还需要继续使用。';
+    const text = '手工编辑后的最终稿，返回后还需要继续使用。';
     if (name === 'output') page.onDraftInput({ detail: { value: text } }); else page.onInput({ detail: { value: text } });
-    page.onShareDraft(); await state.modals[0].success({ confirm: true });
+    await (name === 'output' ? page.onSaveAsNew() : page.onSave());
     const savedId = page.data.savedId;
     page.onHide(); await page.onShow();
     assert.equal(page.data.draft, text); assert.equal(page.data.savedId, savedId); assert.equal(page.data.phase, 'edit');
-    page.onShareDraft(); assert.equal(state.saves.length, 1); assert.equal(state.routes.length, 2);
+    await (name === 'output' ? page.onSaveAsNew() : page.onSave());
+    assert.equal(state.saves.length, 1); assert.equal(state.routes.length, 0);
     page.onHide(); state.items = state.items.filter(row => row.id !== savedId); await page.onShow();
     assert.equal(page.data.draft, text); assert.equal(page.data.savedId, '');
-    page.onShareDraft(); assert.equal(state.modals.length, 2); assert.equal(state.routes.length, 2);
+    assert.equal(state.saves.length, 1); assert.equal(state.routes.length, 0);
   });
 });

@@ -17,7 +17,7 @@ function sources(dir) {
 
 test('无 AI 发布包：全部客户端依赖可解析且不包含模型调用或生成入口', () => {
   const files = sources(path.join(root, 'miniprogram'));
-  assert.equal(require('../miniprogram/app.json').pages.length, 14);
+  assert.equal(require('../miniprogram/app.json').pages.length, 11);
   for (const file of files) {
     const body = fs.readFileSync(file, 'utf8');
     assert.doesNotMatch(body, /linggan_ai|LINGGAN_AI|pages\/ai-workbench|onAiExpand|onAiSummarize|require\(['"][^'"]*\/(?:ai|ai-workflow|ai-contract)['"]\)/, path.relative(root, file));

@@ -64,8 +64,7 @@ test('我的页说明展开与入口导航不依赖账户读取，不生成无�
     assert.equal(page.data.expandedInfo, 'privacy', '非法项不改变已展开说明');
     toggle('privacy');
     assert.equal(page.data.expandedInfo, '');
-    page.onOpenMyShares();
-    assert.equal(opened, '/pages/my-shares/index');
+    assert.equal(typeof page.onOpenMyShares, 'undefined');
     page.onOpenFeedback();
     assert.equal(opened, '/pages/feedback/index');
     assert.equal(accountReads, 0, '说明与导航不应读取账户');

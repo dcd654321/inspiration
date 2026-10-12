@@ -4,10 +4,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const crypto = require('node:crypto');
 const { memoryCloudDatabase } = require('./helpers/cloud-db.cjs');
-const { createCloudSharingDb } = require('../server/cloud-sharing-db');
+const { createCloudFeedbackDb } = require('../server/cloud-feedback-db');
 const { createCloudRateLimiter } = require('../server/rate-limit');
-const { createSharingFeedbackService } = require('../server/sharing-feedback');
+const { createFeedbackService, dayStart } = require('../server/feedback');
 const { createRetentionService, createCloudRetentionDb, createMaintenanceHandler } = require('../server/retention');
 const DAY = 86400000;
 const at = Date.UTC(2026, 8, 27, 6);
@@ -46,45 +47,57 @@ function share(id, owner = 'owner', createdAt = at) {
 }
 function feedback(id) { return { _id: id, accountKey: 'owner', requestId: id, dedupeKey: id, createdAt: at }; }
 
-test('原子配额：多实例并发创建不超限且失败事务不占额', async () => {
+test('原子反馈配额：多实例并发提交不超限且失败事务不占额', async () => {
   const db = memoryCloudDatabase();
-  const a = createCloudSharingDb({ db, accounts: {}, now: () => at });
-  const b = createCloudSharingDb({ db, accounts: {}, now: () => at });
-  const results = await Promise.allSettled(Array.from({ length: 30 }, (_, i) => (i % 2 ? a : b).insertShare(share('s' + i))));
-  assert.equal(results.filter((r) => r.status === 'fulfilled').length, 10);
-  assert.equal(db.rows('linggan_shares').length, 10);
-  assert.equal(db.rows('linggan_usage')[0].shareCount, 10);
-  const fbs = await Promise.allSettled(Array.from({ length: 15 }, (_, i) => a.insertFeedback(feedback('f' + i))));
+  const scanned = [], collection = db.collection;
+  db.collection = function (name) { scanned.push(name); return collection.call(this, name); };
+  const a = createCloudFeedbackDb({ db, now: () => at });
+  const b = createCloudFeedbackDb({ db, now: () => at });
+  const fbs = await Promise.allSettled(Array.from({ length: 15 }, (_, i) => (i % 2 ? a : b).insertFeedback(feedback('f' + i))));
   assert.equal(fbs.filter((r) => r.status === 'fulfilled').length, 5);
   assert.equal(db.rows('linggan_feedback').length, 5);
+  assert.equal(db.rows('linggan_usage')[0].feedbackCount, 5);
+  assert.deepEqual(Object.keys(db.rows('linggan_usage')[0]).sort(), ['_id', 'accountKey', 'dayStart', 'feedbackCount', 'updatedAt']);
+  assert.equal(scanned.includes('linggan_shares'), false);
 });
 
-test('配额事务：重复请求回滚计数，撤销释放有效分享名额', async () => {
+test('反馈配额事务：重复请求回滚计数，跨日重置且保留历史字段', async () => {
   const db = memoryCloudDatabase();
-  const api = createCloudSharingDb({ db, accounts: {}, now: () => at });
-  await api.insertShare(share('one'));
-  await assert.rejects(api.insertShare(Object.assign(share('two'), { requestId: 'one' })));
-  assert.equal(db.rows('linggan_usage')[0].shareCount, 1);
-  await api.revokeShare('owner', 'one', at);
-  assert.equal(db.rows('linggan_usage')[0].activeShares.length, 0);
-  assert.equal(db.rows('linggan_usage')[0].shareCount, 1);
-  await assert.rejects(api.revokeShare('other', 'one', at));
-});
-
-test('配额事务：旧数据基线和跨日有效上限不被重置绕过', async () => {
-  const db = memoryCloudDatabase();
-  db.seed('linggan_shares', Array.from({ length: 20 }, (_, i) => share('old' + i, 'owner', at - DAY)));
+  const id = crypto.createHash('sha256').update('owner').digest('hex');
+  const legacy = { _id: id, accountKey: 'owner', dayStart: dayStart(at), feedbackCount: 0,
+    shareCount: 8, activeShares: { historical: 'unvalidated' }, updatedAt: at };
+  db.seed('linggan_usage', [legacy]);
   let clock = at;
-  const api = createCloudSharingDb({ db, accounts: {}, now: () => clock });
-  await assert.rejects(api.insertShare(share('new')), { code: 'SHARE_LIMIT' });
-  await api.revokeShare('owner', 'old0', at);
-  await api.insertShare(share('new'));
+  const api = createCloudFeedbackDb({ db, now: () => clock });
+  await api.insertFeedback(feedback('one'));
+  await assert.rejects(api.insertFeedback({ ...feedback('two'), requestId: 'one' }));
+  assert.equal(db.rows('linggan_usage')[0].feedbackCount, 1);
+  assert.equal(db.rows('linggan_feedback').length, 1);
   clock += DAY;
-  await assert.rejects(api.insertShare(share('tomorrow')), { code: 'SHARE_LIMIT' });
-  clock += 31 * DAY;
-  await api.insertShare(Object.assign(share('later'), { createdAt: clock, expiresAt: clock + DAY }));
-  assert.equal(db.rows('linggan_usage')[0].shareCount, 1);
-  assert.equal(db.rows('linggan_usage')[0].activeShares.length, 1);
+  await api.insertFeedback({ ...feedback('next'), createdAt: clock });
+  const next = db.rows('linggan_usage')[0];
+  assert.equal(next.feedbackCount, 1);
+  assert.equal(next.dayStart, dayStart(clock));
+  assert.equal(next.shareCount, legacy.shareCount);
+  assert.deepEqual(next.activeShares, legacy.activeShares);
+});
+
+test('反馈配额：从已有反馈初始化日基线并拒绝非法计数', async () => {
+  const db = memoryCloudDatabase();
+  db.seed('linggan_feedback', Array.from({ length: 5 }, (_, i) => feedback('old' + i)));
+  let clock = at;
+  const api = createCloudFeedbackDb({ db, now: () => clock });
+  await assert.rejects(api.insertFeedback(feedback('new')), { code: 'FEEDBACK_LIMIT' });
+  assert.equal(db.rows('linggan_usage')[0].feedbackCount, 5);
+  clock += DAY;
+  await api.insertFeedback({ ...feedback('tomorrow'), createdAt: clock });
+  assert.equal(db.rows('linggan_usage')[0].feedbackCount, 1);
+  const usage = db.rows('linggan_usage')[0];
+  for (const invalid of [undefined, -1, NaN, '1']) {
+    db.seed('linggan_usage', [{ ...usage, feedbackCount: invalid }]);
+    await assert.rejects(api.insertFeedback({ ...feedback('bad'), createdAt: clock }), /INVALID_QUOTA/);
+  }
+  assert.equal(db.rows('linggan_feedback').length, 6);
 });
 
 test('访问限流：跨实例固定窗口原子递增并隔离账户和动作', async () => {
@@ -92,22 +105,26 @@ test('访问限流：跨实例固定窗口原子递增并隔离账户和动作',
   let clock = at;
   const a = createCloudRateLimiter({ db, now: () => clock });
   const b = createCloudRateLimiter({ db, now: () => clock });
-  const results = await Promise.all(Array.from({ length: 20 }, (_, i) => (i % 2 ? a : b)('owner', 'share.qr')));
-  assert.equal(results.filter(Boolean).length, 5);
-  assert.equal(await a('other', 'share.qr'), true);
-  assert.equal(await a('owner', 'share.get'), true);
+  const results = await Promise.all(Array.from({ length: 20 }, (_, i) => (i % 2 ? a : b)('owner', 'feedback.create')));
+  assert.equal(results.filter(Boolean).length, 10);
+  assert.equal(await a('other', 'feedback.create'), true);
+  assert.equal(await a('owner', 'feedback.listMine'), true);
   clock += 60000;
-  assert.equal(await a('owner', 'share.qr'), true);
+  assert.equal(await a('owner', 'feedback.create'), true);
+  await assert.rejects(a('owner', 'share.get'), /INVALID_RATE_SCOPE/);
 });
 
-test('访问限流失败关闭，不读正文也不生成小程序码', async () => {
+test('反馈访问限流失败关闭，不查询或写入业务内容', async () => {
   let accessed = false;
-  const db = { findShareByHash: async () => { accessed = true; } };
-  const denied = createSharingFeedbackService({ db, rateLimit: async () => false });
-  assert.equal((await denied.getShare('owner', { token: 'A'.repeat(28) })).code, 'RATE_LIMITED');
-  assert.equal((await denied.getShareCode('owner', { token: 'A'.repeat(28) })).code, 'RATE_LIMITED');
-  const unavailable = createSharingFeedbackService({ db });
-  assert.equal((await unavailable.getShare('owner', { token: 'A'.repeat(28) })).code, 'RATE_LIMIT_UNAVAILABLE');
+  const db = new Proxy({}, { get() { accessed = true; assert.fail('限流失败前不得访问反馈'); } });
+  const denied = createFeedbackService({ db, rateLimit: async () => false });
+  const payload = { category: 'idea', body: '希望增加搜索和筛选功能' };
+  assert.equal((await denied.createFeedback('owner', payload, 'req_denied_01')).code, 'RATE_LIMITED');
+  assert.equal((await denied.listFeedback('owner', {})).code, 'RATE_LIMITED');
+  const unavailable = createFeedbackService({ db });
+  assert.equal((await unavailable.listFeedback('owner', {})).code, 'RATE_LIMIT_UNAVAILABLE');
+  const errored = createFeedbackService({ db, rateLimit: async () => { throw Error('DENIED'); } });
+  assert.equal((await errored.createFeedback('owner', payload, 'req_denied_01')).code, 'RATE_LIMIT_UNAVAILABLE');
   assert.equal(accessed, false);
 });
 

@@ -5,7 +5,7 @@ function createPhotoValidator(prefix) {
   return (accountKey, inspirationId, photo) => Boolean(photo && /^[A-Za-z0-9_]{1,64}$/.test(photo.id) &&
     photo.fileId === prefix + 'linggan/' + accountKey + '/' + inspirationId + '/' + photo.id);
 }
-function createPhotoLifecycle({ db, now, removeFiles, validatePhoto, beforeRemove }) {
+function createPhotoLifecycle({ db, now, removeFiles, validatePhoto }) {
   async function remove(accountKey, data, photoId) {
     let doc = await db.get(accountKey);
     if (!doc || data.generation !== doc.generation) return fail('STALE_GENERATION');
@@ -22,7 +22,6 @@ function createPhotoLifecycle({ db, now, removeFiles, validatePhoto, beforeRemov
       const photos = photoId ? (target.photos || []).filter((x) => x.id === photoId) : target.photos || [];
       if (!photos.length && photoId) return { ok: true, data: { version: doc.version, alreadyAbsent: true } };
       if (photos.some((x) => !validatePhoto(accountKey, target.id, x))) return fail('PHOTO_PATH_INVALID');
-      if (!photoId && typeof beforeRemove === 'function') await beforeRemove(accountKey, target.id);
       task = { id: taskId, inspirationId: target.id, photoId: photoId || null, fileIds: photos.map((x) => x.fileId), removedIds: [], requestedAt: now() };
       const next = Object.assign({}, doc, { version: doc.version + 1, updatedAt: now(), photoCleanup: (doc.photoCleanup || []).concat([task]) });
       if (!await db.compareAndSwap(accountKey, doc.version, next)) return fail('CONFLICT');

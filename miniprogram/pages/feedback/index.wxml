@@ -1,18 +1,18 @@
 <view class="page">
-  <view class="page-title">{{reporting ? '举报这份分享' : '意见反馈'}}</view>
-  <view class="page-sub">{{reporting ? '请说明你认为不合适的地方。' : '遇到问题或有建议，都可以告诉我们。'}}</view>
-  <view wx:if="{{!reporting}}" class="feedback-categories">
+  <view class="page-title">意见反馈</view>
+  <view class="page-sub">遇到问题或有建议，都可以告诉我们。</view>
+  <view class="feedback-categories">
     <button wx:for="{{categories}}" wx:key="value" data-value="{{item.value}}"
       class="feedback-category {{category === item.value ? 'feedback-category-on' : ''}}" bindtap="onCategory" disabled="{{busy}}">{{item.label}}</button>
   </view>
-  <view class="field-label feedback-label">{{reporting ? '举报原因' : '具体情况'}}</view>
+  <view class="field-label feedback-label">具体情况</view>
   <textarea class="feedback-editor" value="{{body}}" maxlength="1000" auto-height disabled="{{busy}}" cursor-spacing="24"
-    aria-label="{{reporting ? '举报原因' : '具体情况'}}" placeholder="请写下具体情况（至少 10 字）" bindinput="onInput" />
+    aria-label="具体情况" placeholder="请写下具体情况（至少 10 字）" bindinput="onInput" />
   <view class="feedback-count">{{trimmedLength >= 10 ? body.length + ' / 1000' : '还需 ' + (10 - trimmedLength) + ' 字'}}</view>
   <view class="feedback-note">请勿填写密码、身份证号等敏感信息。提交后可在下方查看处理状态。</view>
   <view wx:if="{{error}}" class="notice notice-err"><text>{{error}}</text></view>
   <view wx:if="{{notice}}" class="notice"><text>{{notice}}</text></view>
-  <button class="btn btn-block" bindtap="onSubmit" disabled="{{busy || !canSubmit}}">{{busy ? '提交中…' : (reporting ? '提交举报' : '提交反馈')}}</button>
+  <button class="btn btn-block" bindtap="onSubmit" disabled="{{busy || !canSubmit}}">{{busy ? '提交中…' : '提交反馈'}}</button>
 
   <view class="section-label">我的反馈</view>
   <view wx:if="{{loading}}" class="feedback-note">正在加载…</view>

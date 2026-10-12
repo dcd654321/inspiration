@@ -40,7 +40,7 @@ test('全量审查：明确记录入口清除旧成功卡，普通返回和未�
     page.onInput({ detail: { value: '已经确认保存的一条记录' } }); await page.onSave();
     const saved = page.data.lastSavedId; assert.ok(saved);
     page.onHide(); await page.onShow(); assert.equal(page.data.lastSavedId, saved, '普通 Tab 返回保留确认卡');
-    for (const [name, method] of [['list', 'onAdd'], ['welcome', 'onStart'], ['shared', 'onStart']]) {
+    for (const [name, method] of [['list', 'onAdd'], ['welcome', 'onStart']]) {
       page.setData({ lastSavedId: saved, draft: '' }); page.onHide();
       mount(name)[method](); await page.onShow();
       assert.equal(page.data.lastSavedId, '', name + ' 的记录入口应展开输入');
@@ -63,10 +63,6 @@ test('全量审查：入口失效不覆盖稿件，旧跳转失败不清除新�
     startCapture(); startCapture(); const latest = app.globalData.captureStartIntent;
     tabs[0].fail(); assert.equal(app.globalData.captureStartIntent, latest);
     tabs[1].fail(); assert.equal(app.globalData.captureStartIntent, undefined);
-    let finish; app.ensureReady = () => new Promise(resolve => { finish = resolve; });
-    app.globalData.sharedTemplateIntent = { epoch: 1, expiresAt: Date.now() + 10000, templateId: 'work' };
-    const showing = page.onShow(); app.globalData.sessionEpoch = 2; finish(null); await showing;
-    assert.equal(page.data.templateIntentId, '', '等待期间变化的账户不能消费旧用途');
   });
 });
 
