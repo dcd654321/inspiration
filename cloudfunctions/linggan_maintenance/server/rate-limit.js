@@ -1,9 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const RATES = Object.freeze({ 'share.create': 20, 'share.get': 60, 'share.qr': 5,
-  'share.listMine': 30, 'share.revoke': 30, 'feedback.create': 10,
-  'feedback.listMine': 30, 'feedback.reportShare': 10 });
+const RATES = Object.freeze({ 'feedback.create': 10, 'feedback.listMine': 30 });
 
 function createCloudRateLimiter({ db, now = Date.now }) {
   return async function rateLimit(accountKey, action) {

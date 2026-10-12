@@ -226,7 +226,7 @@ test('所有私人工作页禁止索引且选材入口不调用分享或模型',
   }
   const source = fs.readFileSync(path.join(root, 'pages/material-output/index.js'), 'utf8');
   assert.doesNotMatch(source, /wx\.cloud|onShareAppMessage|require\([^\n]*ai/);
-  assert.match(source, /shareConfirmedDraft/); // 只有明确的已确认结果分享，不在选材/生成时发起。
+  assert.doesNotMatch(source, /shareConfirmedDraft|onShareDraft|share-preview/);
   assert.match(fs.readFileSync(path.join(root, 'pages/list/index.wxml'), 'utf8'), /bindtap="onMaterialOutput"/);
   assert.ok(app.pages.includes('pages/material-output/index'));
 });

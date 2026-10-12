@@ -14,10 +14,12 @@ const { getCallerIdentity } = require('./server/wx-identity');
 
 const { createRepository } = require('./server/repository');
 const { createProtocol } = require('./server/protocol');
-const { createSharingFeedbackService } = require('./server/sharing-feedback');
-const { createCloudSharingDb } = require('./server/cloud-sharing-db');
+const { createFeedbackService } = require('./server/feedback');
+const { createCloudFeedbackDb } = require('./server/cloud-feedback-db');
 const { createCloudRateLimiter } = require('./server/rate-limit');
 const { createPhotoValidator } = require('./server/photo-lifecycle');
+const { createCommittedMonitor } = require('./server/operations-monitor');
+const crypto = require('node:crypto');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -87,64 +89,18 @@ function createMemoryCache() {
 }
 
 const accountDb = createDbAdapter();
-const tokenKeyHex = process.env.LINGGAN_SHARE_TOKEN_KEY || '';
-function previousTokenKeys() {
-  try {
-    const value = JSON.parse(process.env.LINGGAN_SHARE_PREVIOUS_KEYS || '{}');
-    const keys = {};
-    for (const [name, hex] of Object.entries(value)) {
-      if (/^[A-Za-z0-9_-]{1,32}$/.test(name) && typeof hex === 'string' && /^[0-9a-fA-F]{64}$/.test(hex)) {
-        keys[name] = Buffer.from(hex, 'hex');
-      }
-    }
-    return keys;
-  } catch (err) { return {}; }
-}
-// 默认开放创建流程，显式 false 可紧急暂停；无效值不作启用处理。
-// 密钥、身份、审核等实际依赖仍由服务端逐项检查，开关不代替检查。
-const shareCreateFlag = process.env.LINGGAN_SHARE_CREATE_ENABLED;
-const shareCreateEnabled = shareCreateFlag == null || shareCreateFlag === '' || shareCreateFlag === 'true';
-const sharing = createSharingFeedbackService({
-  db: createCloudSharingDb({ db, accounts: accountDb }),
+const feedback = createFeedbackService({
+  db: createCloudFeedbackDb({ db }),
   rateLimit: createCloudRateLimiter({ db }),
-  now: () => Date.now(),
-  createEnabled: shareCreateEnabled,
-  tokenKey: /^[0-9a-fA-F]{64}$/.test(tokenKeyHex) ? Buffer.from(tokenKeyHex, 'hex') : null,
-  tokenKeys: previousTokenKeys(),
-  keyId: process.env.LINGGAN_SHARE_KEY_ID || 'v1',
-  async checkPublicText(content) {
-    // 云调用未授权、审核报错或结果不明确时失败关闭，绝不直接公开文字。
-    const caller = getCallerIdentity(cloud.getWXContext());
-    if (!caller) return false;
-    const openapi = cloud.openapi({ appid: caller.appid });
-    const chars = Array.from(content);
-    for (let offset = 0; offset < chars.length; offset += 600) {
-      const result = await openapi.security.msgSecCheck({
-        content: chars.slice(offset, offset + 600).join(''), version: 2, scene: 4, openid: caller.openid
-      });
-      if (!result || (result.errCode !== 0 && result.errcode !== 0) || !result.result || result.result.suggest !== 'pass') return false;
-    }
-    return chars.length > 0;
-  },
-  async generateCode(scene, page) {
-    const caller = getCallerIdentity(cloud.getWXContext());
-    if (!caller) return null;
-    const requested = process.env.LINGGAN_SHARE_CODE_VERSION;
-    const envVersion = ['develop', 'trial', 'release'].includes(requested) ? requested : 'release';
-    const result = await cloud.openapi({ appid: caller.appid }).wxacode.getUnlimited({
-      scene, page, width: 430, checkPath: envVersion === 'release', envVersion
-    });
-    if (!result || !result.buffer) return null;
-    return Buffer.isBuffer(result.buffer) ? result.buffer :
-      typeof result.buffer === 'string' ? Buffer.from(result.buffer, 'base64') : Buffer.from(result.buffer);
-  }
+  now: () => Date.now()
 });
 
 const protocol = createProtocol({
   repository: createRepository({
     db: accountDb,
     now: () => Date.now(),
-    beforeRemove: sharing.revokeForSource,
+    onCommitted: createCommittedMonitor({ db, onFailure: (code) => console.warn(code) }),
+    onMonitorFailure: (code) => console.warn(code),
     photosEnabled: process.env.LINGGAN_PHOTOS_ENABLED === 'true' && /^cloud:\/\/[A-Za-z0-9_.-]+\/$/.test(process.env.LINGGAN_STORAGE_PREFIX || ''),
     validatePhoto: createPhotoValidator(process.env.LINGGAN_STORAGE_PREFIX),
     storagePrefix: process.env.LINGGAN_STORAGE_PREFIX,
@@ -162,7 +118,7 @@ const protocol = createProtocol({
       return { ok: failed.length === 0, removed, failed };
     }
   }),
-  sharing,
+  feedback,
   requestCache: createMemoryCache(),
   now: () => Date.now()
 });
@@ -176,16 +132,13 @@ const protocol = createProtocol({
  * （`linggan/{accountKey}/{inspirationId}/{photoId}`），裸的 openid 不该出现在路径里。
  * 哈希是稳定的——同一个账户永远得到同一个 key。
  */
-function accountKeyOf(wxContext) {
-  const caller = getCallerIdentity(wxContext);
-  return caller ? caller.accountKey : '';
-}
-
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext();
+  const caller = getCallerIdentity(wxContext);
 
   return protocol.handle(
-    { accountKey: accountKeyOf(wxContext) },
+    { accountKey: caller ? caller.accountKey : '', sourceUserId: caller
+      ? 'user_' + crypto.createHash('sha256').update(caller.appid + '|' + caller.openid).digest('hex').slice(0, 24) : '' },
     event
   );
 };

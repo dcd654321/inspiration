@@ -271,7 +271,7 @@ test('详情页：照片紧随正文动作，单行缩略图不挤进补充时�
   // 低频操作全部收进「更多」面板
   const morePanel = page.indexOf('class="sheet-title">这条灵感');
   assert.ok(morePanel >= 0, '缺少页内「更多」面板');
-  for (const item of ['onMoreEditText', 'onMoreCopy', 'onMoreShare', 'onMoreDelete']) {
+  for (const item of ['onMoreEditText', 'onMoreCopy', 'onMoreDelete']) {
     assert.ok(page.indexOf(item) > morePanel, `${item} 应在「更多」面板内`);
   }
   // 删除灵感不再有常驻页底按钮
@@ -358,34 +358,6 @@ test('整理成稿：进入即有稿件，工具行为 调整内容/选择格式
   assert.match(page, /bindtap="onOpenSaved">查看新灵感</);
 });
 
-test('分享预览：同一主按钮按状态替换，制作海报为次入口', () => {
-  const page = read('miniprogram/pages/share-preview/index.wxml');
-  assert.match(page, /确认内容并准备分享/);
-  assert.match(page, /准备中…/);
-  assert.match(page, /open-type="share"[^>]*>选择微信好友</);
-  assert.match(page, /制作海报/);
-  assert.match(page, /重新制作海报/);
-  assert.doesNotMatch(page, /一键发朋友圈/);
-  // 修改选择使已准备结果失效
-  const logic = read('miniprogram/pages/share-preview/index.js');
-  assert.match(logic, /chatPrepared: false/);
-  assert.match(logic, /canRetryPoster: false/);
-});
-
-test('分享页与我的分享：失效不推断原因，空态有入口', () => {
-  const shared = read('miniprogram/pages/shared/index.js');
-  assert.match(shared, /分享已失效，可请分享者重新发送。/);
-  assert.match(shared, /请检查网络后重试。/);
-  assert.match(shared, /请稍后重试。/);
-  const sharedPage = read('miniprogram/pages/shared/index.wxml');
-  assert.match(sharedPage, /bindtap="onRetry">重新读取</);
-  assert.strictEqual((sharedPage.match(/bindtap="onStart"/g) || []).length, 2);
-  assert.match(sharedPage, /也整理我的想法/);
-  const myShares = read('miniprogram/pages/my-shares/index.wxml');
-  assert.match(myShares, /还没有分享记录/);
-  assert.match(myShares, /bindtap="onOpenList">查看我的灵感</);
-});
-
 test('我的页：产品使用帮助可达，诊断与统计入口隐藏，回顾控制只留在列表内', () => {
   const page = read('miniprogram/pages/mine/index.wxml');
   assert.match(page, /数据与隐私/);
@@ -408,15 +380,9 @@ test('字号下限：正文与辅助类文字在窄屏不被缩到读不出', ()
   assert.match(list, /font-size:\s*max\(25rpx,\s*14px\)/);
 });
 
-test('定稿文案回归：列表区头「最近更新」与「撤销链接」弹窗', () => {
+test('定稿文案回归：列表区头「最近更新」', () => {
   // C25：列表区有对外的名字，不再只有一句计数
   const list = read('miniprogram/pages/list/index.wxml');
   assert.match(list, /<text class="k">最近更新<\/text>/);
   assert.match(list, /<text class="v">共 \{\{items\.length\}\} 条<\/text>/);
-  // C69：撤销确认说清对象、损失与不收回的边界，两个按钮都不是含糊的「撤销」
-  const myShares = read('miniprogram/pages/my-shares/index.js');
-  assert.match(myShares, /title: '撤销链接？'/);
-  assert.match(myShares, /撤销后，其他人无法再通过这个链接查看内容。已复制的文字和已保存的海报不会被收回。/);
-  assert.match(myShares, /confirmText: '撤销链接'/);
-  assert.match(myShares, /cancelText: '保留链接'/);
 });

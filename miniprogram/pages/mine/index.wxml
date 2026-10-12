@@ -13,10 +13,6 @@
       <text class="menu-label">分享小程序</text>
       <image class="menu-arrow" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
     </button>
-    <button class="menu-row" bindtap="onOpenMyShares" hover-class="menu-row-hover">
-      <text class="menu-label">我的分享</text>
-      <image class="menu-arrow" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
-    </button>
   </view>
 
   <view class="settings-card">
@@ -24,7 +20,7 @@
     <button class="menu-row" bindtap="onToggleInfo" data-section="privacy" hover-class="menu-row-hover" aria-expanded="{{expandedInfo === 'privacy'}}">
       <view class="menu-label">
         <view>数据与隐私</view>
-        <view class="menu-sub">记录与分享范围</view>
+        <view class="menu-sub">数据使用说明</view>
       </view>
       <image class="menu-arrow {{expandedInfo === 'privacy' ? 'menu-arrow-open' : ''}}" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
     </button>

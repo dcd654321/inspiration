@@ -102,7 +102,7 @@ Page({
     hidden: [],
     hiddenExpanded: false,
 
-    // 页内「更多」面板：正文编辑、复制、分享、修改记录、删除都从这里进入
+    // 页内「更多」面板：正文编辑、复制、修改记录、删除都从这里进入
     moreVisible: false,
 
     // 补充操作面板
@@ -432,11 +432,6 @@ Page({
     wx.navigateTo({ url: '/pages/output/index?id=' + encodeURIComponent(this.id) });
   },
 
-  onOpenShare() {
-    if (!this.id || this.data.pending || this.data.editing || this.data.editingSupplementId) return;
-    wx.navigateTo({ url: '/pages/share-preview/index?id=' + encodeURIComponent(this.id) });
-  },
-
   // ------------------------------------------------------------ 页内「更多」
 
   onOpenMore() {
@@ -458,11 +453,6 @@ Page({
   onMoreCopy() {
     this.setData({ moreVisible: false });
     this.onCopyContent();
-  },
-
-  onMoreShare() {
-    this.setData({ moreVisible: false });
-    this.onOpenShare();
   },
 
   onMoreHistory() {

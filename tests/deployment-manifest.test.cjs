@@ -19,19 +19,14 @@ test('product deployment manifest only targets the confirmed shared environment 
   assert.equal(manifest.consumerAppid, project.appid);
   assert.equal(manifest.clientDatabaseAccess, 'deny-all');
   assert.deepEqual(manifest.collections.map((item) => item.name), [
-    'linggan_accounts', 'linggan_shares', 'linggan_feedback',
+    'linggan_accounts', 'linggan_feedback',
     'linggan_usage', 'linggan_rate_limits'
   ]);
 });
 
-test('product index inputs contain all fourteen non-AI indexes without deletion or TTL', () => {
+test('product index inputs contain eight current indexes without deletion or TTL', () => {
   const expected = {
     linggan_accounts: [['accountKey:1', true]],
-    linggan_shares: [
-      ['tokenHash:1', true], ['ownerAccountKey:1,requestId:1', true],
-      ['ownerAccountKey:1,_id:-1', false], ['ownerAccountKey:1,sourceInspirationId:1,revokedAt:1', false],
-      ['payloadPurgedAt:1,expiresAt:1,_id:1', false], ['payloadPurgedAt:1,revokedAt:1,_id:1', false]
-    ],
     linggan_feedback: [
       ['accountKey:1,requestId:1', true], ['dedupeKey:1', true],
       ['accountKey:1,_id:-1', false], ['status:1,createdAt:-1', false],
@@ -63,7 +58,7 @@ test('product index inputs contain all fourteen non-AI indexes without deletion 
     assert.deepEqual(actual, expected[collection.name]);
     count += indexes.length;
   }
-  assert.equal(count, 14);
+  assert.equal(count, 8);
 });
 
 test('product function plan only includes non-AI functions and keeps photos and maintenance disabled', () => {
@@ -75,13 +70,14 @@ test('product function plan only includes non-AI functions and keeps photos and 
     for (const name of fn.requiredSecretNames) assert.equal(Object.hasOwn(fn.nonSecretEnvironment, name), false);
     if (fn.openapi) {
       const config = JSON.parse(fs.readFileSync(path.join(root, fn.directory, 'config.json'), 'utf8'));
-      assert.deepEqual(fn.openapi, config.permissions.openapi);
+      assert.deepEqual(fn.openapi, config.permissions && config.permissions.openapi || []);
     }
   }
   const [api, maintenance] = manifest.functions;
   assert.equal(api.nonSecretEnvironment.LINGGAN_PHOTOS_ENABLED, 'false');
-  assert.equal(api.nonSecretEnvironment.LINGGAN_SHARE_CODE_VERSION, 'release');
-  assert.deepEqual(api.requiredSecretNames, ['LINGGAN_SHARE_TOKEN_KEY']);
+  assert.deepEqual(api.openapi, []);
+  assert.deepEqual(api.requiredSecretNames, []);
+  assert.ok(Object.keys(api.nonSecretEnvironment).every((name) => !name.startsWith('LINGGAN_SHARE_')));
   assert.equal(maintenance.nonSecretEnvironment.LINGGAN_MAINTENANCE_ENABLED, 'false');
   assert.deepEqual(maintenance.triggers, []);
   assert.deepEqual(maintenance.requiredSecretNames, ['LINGGAN_MAINTENANCE_TOKEN']);

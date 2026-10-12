@@ -95,22 +95,24 @@ test('共享身份仅接受完整本项目来源，不回退资源方且保持�
 });
 
 function loadApi(cloud, repository) {
-  let sharing; const exports = {};
+  let feedback; const exports = {};
   const filename = path.resolve(__dirname, '../cloudfunctions/linggan_api/index.js');
   vm.runInNewContext(fs.readFileSync(filename, 'utf8'), { Buffer, process: { env: {} }, exports,
     require(name) {
+      if (name === 'node:crypto') return require(name);
       if (name === 'wx-server-sdk') return cloud;
       if (name === './server/wx-identity') return require('../server/wx-identity');
       if (name === './server/protocol') return require('../server/protocol');
       if (name === './server/repository') return { createRepository: () => repository };
-      if (name === './server/sharing-feedback') return { createSharingFeedbackService(options) { sharing = options; return {}; } };
-      if (name === './server/cloud-sharing-db') return { createCloudSharingDb: () => ({}) };
+      if (name === './server/feedback') return { createFeedbackService(options) { feedback = options; return {}; } };
+      if (name === './server/cloud-feedback-db') return { createCloudFeedbackDb: () => ({}) };
       if (name === './server/rate-limit') return { createCloudRateLimiter: () => async () => true };
       if (name === './server/photo-lifecycle') return { createPhotoValidator: () => () => false };
+      if (name === './server/operations-monitor') return require('../server/operations-monitor');
       throw Error('Unexpected module ' + name);
     }
   }, { filename });
-  return { main: exports.main, sharing };
+  return { main: exports.main, feedback };
 }
 
 test('共享 API 入口先拒绝其他项目和缺失来源，客户端身份不能授予访问权', async () => {
@@ -127,21 +129,28 @@ test('共享 API 入口先拒绝其他项目和缺失来源，客户端身份不
   }
 });
 
-test('共享审核和小程序码明确使用本项目 AppID，拒绝资源方身份', async () => {
-  let identity = contextFor('user_a'); const checked = [], codes = [], appids = [];
+test('运营身份：云入口只从可信 AppID/OpenID 派生看板用户键', async () => {
+  const identity = contextFor('user_a'); let captured;
+  const api = loadApi({ init() {}, database: () => ({}), getWXContext: () => identity }, {
+    async push(accountKey, payload, context) { captured = { accountKey, context }; return { ok: true }; }
+  });
+  await api.main({ action: 'snapshot.push', payload: { sourceUserId: 'forged' }, sourceUserId: 'forged' });
+  assert.equal(captured.accountKey, getCallerIdentity(identity).accountKey);
+  assert.equal(captured.context.sourceUserId, 'user_' + crypto.createHash('sha256').update(PROJECT_APPID + '|user_a').digest('hex').slice(0, 24));
+});
+
+test('共享入口拒绝已移除文字分享动作且不调用公开内容 OpenAPI', async () => {
+  let identity = contextFor('user_a'); let calls = 0;
   const api = loadApi({ init() {}, database: () => ({}), getWXContext: () => identity,
-    openapi(options) { appids.push(options.appid); return {
-      security: { async msgSecCheck(input) { checked.push(input); return { errCode: 0, result: { suggest: 'pass' } }; } },
-      wxacode: { async getUnlimited(input) { codes.push(input); return { buffer: Buffer.from('synthetic') }; } }
-    }; }
+    openapi() { calls++; assert.fail('不再使用公开分享 OpenAPI'); }
   }, {});
-  assert.equal(await api.sharing.checkPublicText('合成审核样例'), true);
-  assert.equal((await api.sharing.generateCode('synthetic', 'pages/shared/index')).toString(), 'synthetic');
-  assert.deepEqual(appids, [PROJECT_APPID, PROJECT_APPID]); assert.equal(checked[0].openid, 'user_a');
-  assert.equal(codes[0].envVersion, 'release');
+  for (const action of ['share.create', 'share.get', 'share.listMine', 'share.revoke', 'share.qr', 'feedback.reportShare']) {
+    assert.equal((await api.main({ action, payload: {} })).code, 'INVALID_ACTION');
+  }
+  assert.deepEqual(Object.keys(api.feedback).sort(), ['db', 'now', 'rateLimit']);
   identity = { APPID: owner, OPENID: 'resource_user' };
-  assert.equal(await api.sharing.checkPublicText('不会发送'), false);
-  assert.equal(await api.sharing.generateCode('not_sent', 'pages/shared/index'), null); assert.equal(appids.length, 2);
+  assert.equal((await api.main({ action: 'feedback.listMine', payload: {} })).code, 'UNAUTHENTICATED');
+  assert.equal(calls, 0);
 });
 
 test('环境缓存隔离不读取重放或删除旧队列，容量保留平台值', async () => {

@@ -1,4 +1,4 @@
-const { createShareClient } = require('../../services/sharing');
+const { createFeedbackClient } = require('../../services/feedback');
 const { formatAbsolute } = require('../../core/format');
 const { beginPage, endPage, readPageAccount } = require('../../services/page-session');
 
@@ -10,14 +10,12 @@ const CATEGORIES = [
 const STATUS = { submitted: '已提交', reviewing: '处理中', closed: '已关闭' };
 
 Page({
-  data: { reporting: false, category: 'idea', categories: CATEGORIES,
+  data: { category: 'idea', categories: CATEGORIES,
     body: '', trimmedLength: 0, canSubmit: false,
     busy: false, error: '', historyError: '', notice: '', items: [], loading: false, nextBefore: null },
-  onLoad(options) {
+  onLoad() {
     beginPage(this);
-    this.reportToken = options && typeof options.t === 'string' ? options.t : '';
-    this.client = createShareClient();
-    this.setData({ reporting: Boolean(this.reportToken) });
+    this.client = createFeedbackClient();
   },
   async onShow() {
     beginPage(this);
@@ -50,7 +48,6 @@ Page({
   async onSubmit() {
     if (this.data.busy || this.visible === false) return;
     const body = this.data.body.trim(), category = this.data.category;
-    const reporting = this.data.reporting, token = this.reportToken;
     if (body.length < 10 || body.length > 1000) {
       this.setData({ error: '请填写 10 到 1000 字的意见。' }); return;
     }
@@ -65,9 +62,7 @@ Page({
     this.submitRequestId = this.submitRequestId || this.client.newRequestId();
     let result;
     try {
-      result = reporting
-        ? await this.client.send('feedback.reportShare', { token, body }, this.submitRequestId)
-        : await this.client.send('feedback.create', { category, body }, this.submitRequestId);
+      result = await this.client.send('feedback.create', { category, body }, this.submitRequestId);
     } catch (err) { result = { ok: false, message: '网络暂时不可用，请稍后重试。' }; }
     if (!account.isCurrent()) return;
     this.setData({ busy: false });
@@ -76,7 +71,7 @@ Page({
     }
     this.submitRequestId = '';
     this.setData({ body: '', trimmedLength: 0, canSubmit: false,
-      notice: reporting ? '举报已收到。' : '反馈已收到。' });
+      notice: '反馈已收到。' });
     await this.load(true);
   },
   async load(replace) {

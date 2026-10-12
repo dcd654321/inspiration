@@ -5,7 +5,6 @@
   </view>
   <view class="capture-title">记下一闪念，<view>整理成可用稿</view></view>
   <view class="capture-intro">先写一句。需要时，把零散想法整理成能直接使用的文字。</view>
-  <view wx:if="{{templateIntentLabel}}" class="capture-intent"><text>已选择：{{templateIntentLabel}}</text><button class="btn-link" bindtap="onClearTemplateIntent" disabled="{{saving || status === 'unknown'}}">取消</button></view>
   <view wx:if="{{draftRecoveryNotice}}" class="recovery-note" aria-live="polite">{{draftRecoveryNotice}}</view>
 
   <view class="composer">

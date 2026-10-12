@@ -199,12 +199,11 @@ test('复制失败与 TXT 生成失败均保留页面内容和可复制入口', 
   }
 });
 
-test('TXT 只在主动点击后生成，再次点击才请求发送，离开页面清理临时文件', async () => {
+test('TXT 只在主动点击后生成，离开页面清理临时文件', async () => {
   const pagePath = require.resolve('../miniprogram/pages/output/index');
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;
   let written;
-  let sent;
   let removed;
   try {
     global.Page = (page) => { definition = page; };
@@ -215,8 +214,7 @@ test('TXT 只在主动点击后生成，再次点击才请求发送，离开页�
       getFileSystemManager() { return {
         writeFile(options) { written = options; options.success(); },
         unlink(options) { removed = options.filePath; }
-      }; },
-      shareFileMessage(options) { sent = options; options.success(); }
+      }; }
     };
     delete require.cache[pagePath];
     require(pagePath);
@@ -226,15 +224,11 @@ test('TXT 只在主动点击后生成，再次点击才请求发送，离开页�
     });
     await page.onLoad({ id: 'ins_sample' });
     assert.strictEqual(written, undefined);
-    assert.strictEqual(sent, undefined);
     page.onCreateTxt();
     assert.ok(written.filePath.endsWith('.txt'));
     assert.strictEqual(written.encoding, 'utf8');
     assert.strictEqual(written.data, page.data.archive);
-    assert.strictEqual(sent, undefined);
-    page.onShareTxt();
-    assert.strictEqual(sent.filePath, written.filePath);
-    assert.match(page.data.notice, /已发送/);
+    assert.match(page.data.notice, /TXT 已生成/);
     page.onUnload();
     assert.strictEqual(removed, written.filePath);
   } finally {
@@ -292,35 +286,6 @@ test('详情页可分别复制正文、正文与补充、单条补充，原记�
   }
 });
 
-test('发送 TXT 取消或失败时不报告已发送', async () => {
-  const pagePath = require.resolve('../miniprogram/pages/output/index');
-  const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
-  let definition;
-  try {
-    global.Page = (page) => { definition = page; };
-    const app = { ensureReady() { return Promise.resolve(this.globalData.store); }, globalData: { store: { getInspiration: sample } } };
-    global.getApp = () => app;
-    global.wx = { shareFileMessage({ fail }) { fail({ errMsg: 'cancel' }); } };
-    delete require.cache[pagePath];
-    require(pagePath);
-    const page = Object.assign({}, definition, {
-      data: Object.assign({}, definition.data, { txtPath: '/mock/archive.txt' }),
-      setData(next) { Object.assign(this.data, next); }
-    });
-    await page.onLoad({ id: 'ins_sample' });
-    page.setData({ txtPath: '/mock/archive.txt' });
-    page.onShareTxt();
-    assert.match(page.data.error, /未发送/);
-    assert.ok(!page.data.notice.includes('已发送'));
-    assert.strictEqual(page.data.busy, false);
-  } finally {
-    delete require.cache[pagePath];
-    for (const [key, value] of Object.entries(previous)) {
-      if (value === undefined) delete global[key]; else global[key] = value;
-    }
-  }
-});
-
 test('写 TXT 时离开页面仍会在写入完成后清理临时文件', async () => {
   const pagePath = require.resolve('../miniprogram/pages/output/index');
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
@@ -369,7 +334,7 @@ test('详情页提供三种复制路径和整理入口', () => {
   assert.match(output, /bindtap="onCopyDraft"/);
   assert.match(output, /bindtap="onCopyArchive"/);
   assert.match(output, /bindtap="onCreateTxt"/);
-  assert.match(output, /bindtap="onShareTxt"/);
+  assert.doesNotMatch(output, /bindtap="onShareTxt"/);
   assert.ok(app.pages.includes('pages/output/index'));
 });
 

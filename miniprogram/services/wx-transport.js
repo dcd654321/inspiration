@@ -45,20 +45,32 @@ function createWxTransport(options) {
      */
     async send(action, payload, meta) {
       const requestId = (meta && meta.requestId) || newRequestId();
-
-      const response = await callFunction({
-        name: functionName,
-        data: { action, payload, requestId }
-      });
+      const startedAt = Date.now();
+      let result;
+      try {
+        const response = await callFunction({
+          name: functionName,
+          data: { action, payload, requestId }
+        });
 
       // 云函数抛错时 result 里带的是 errMsg 而不是我们的信封。这种不属于业务失败，
       // 交给 store 核对实际结果；未确认时页面保留输入，不自动建立重试队列。
-      const result = response && response.result;
-      if (!result || typeof result.ok !== 'boolean') {
-        return { ok: false, code: 'INTERNAL', message: '服务返回了无法识别的内容' };
-      }
+        result = response && response.result;
+        if (!result || typeof result.ok !== 'boolean') {
+          result = { ok: false, code: 'INTERNAL', message: '服务返回了无法识别的内容' };
+          return result;
+        }
 
-      return result;
+        return result;
+      } catch (error) {
+        result = { ok: false, code: 'CLOUD_REQUEST_FAILED' };
+        throw error;
+      } finally {
+        if (functionName !== 'monitorApi' && typeof opts.onRequestFinished === 'function') {
+          try { opts.onRequestFinished(functionName, Math.max(0, Date.now() - startedAt), result && result.ok === false ? result.code || 'INTERNAL' : undefined); }
+          catch (_) { /* 运营回调不能改变请求回执。 */ }
+        }
+      }
     }
   };
 }

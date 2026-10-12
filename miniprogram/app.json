@@ -9,9 +9,6 @@
     "pages/output/index",
     "pages/material-output/index",
     "pages/photo-viewer/index",
-    "pages/share-preview/index",
-    "pages/shared/index",
-    "pages/my-shares/index",
     "pages/feedback/index",
     "pages/welcome/index"
   ],

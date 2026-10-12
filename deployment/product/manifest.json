@@ -6,7 +6,6 @@
   "clientDatabaseAccess": "deny-all",
   "collections": [
     { "name": "linggan_accounts", "indexesFile": "indexes/linggan_accounts.json" },
-    { "name": "linggan_shares", "indexesFile": "indexes/linggan_shares.json" },
     { "name": "linggan_feedback", "indexesFile": "indexes/linggan_feedback.json" },
     { "name": "linggan_usage", "indexesFile": null },
     { "name": "linggan_rate_limits", "indexesFile": "indexes/linggan_rate_limits.json" }
@@ -16,14 +15,11 @@
       "name": "linggan_api",
       "directory": "cloudfunctions/linggan_api",
       "remoteNpmInstall": true,
-      "openapi": ["security.msgSecCheck", "wxacode.getUnlimited"],
+      "openapi": [],
       "nonSecretEnvironment": {
-        "LINGGAN_SHARE_KEY_ID": "v1",
-        "LINGGAN_SHARE_CREATE_ENABLED": "true",
-        "LINGGAN_SHARE_CODE_VERSION": "release",
         "LINGGAN_PHOTOS_ENABLED": "false"
       },
-      "requiredSecretNames": ["LINGGAN_SHARE_TOKEN_KEY"]
+      "requiredSecretNames": []
     },
     {
       "name": "linggan_maintenance",

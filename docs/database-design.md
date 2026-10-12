@@ -4,8 +4,8 @@
 
 第三件最重要。云开发的数据库**不校验字段类型、不校验长度、没有外键、不管引用完整性**——把这些当成「数据库会管」是这类项目最常见的跑偏方式。
 
-> 范围（2026-10-08）：§1—9 为账户与同步设计，§10 为分享反馈，§11 为配额与限流，§14—15 为照片任务与自愿统计。当前资源输入为五个集合、十四个业务索引；§13 的 AI 额度仅保留历史说明，已由 `remove-ai-integration` 覆盖。
-> **平台证据单独记录**：历史回读曾确认六个集合和十四个非 AI 业务索引，当前五集合权限、两个函数版本与配置、云存储及真实业务调用仍待验收；本次没有远端写入或删除。`linggan_ai_usage` 不再列入当前部署输入或维护操作，已有远端资源保持原状。热度提炼暂缓，`heat` 当前不写入。
+> 范围（2026-10-12）：§1—9 为账户与同步设计，§10 为分享反馈，§11 为配额与限流，§14—15 为照片任务与自愿统计。当前资源输入为四个集合、八个业务索引；§17 覆盖文字内容分享流程；§13 的 AI 额度仅保留历史说明，已由 `remove-ai-integration` 覆盖。
+> **平台证据单独记录**：历史回读曾确认六个集合和十四个非 AI 业务索引，当前四集合权限、两个函数版本与配置、云存储及真实业务调用仍待验收；本次没有远端写入或删除。`linggan_ai_usage` 不再列入当前部署输入或维护操作，已有远端资源保持原状。热度提炼暂缓，`heat` 当前不写入。
 > 2026-09-28 新同步决策：`cloud-confirmed-saves` 不新增集合或字段。`linggan_accounts` 仍是唯一持久记录来源；设备只保留当前会话的内存视图，不再新建持久快照/离线队列。本文历史章节中对本机容量、队列和恢复副本的说明由 `docs/detailed-design.md` §17 覆盖。
 
 
@@ -19,14 +19,14 @@
 
 ## 2. 集合清单
 
-当前共五个集合，全部使用 `linggan_` 前缀。下表的历史平台记录不证明今天的配置；当前权限、函数版本与真实调用需独立核验。
+当前新建输入共四个集合，历史分享集合保留维护兼容；全部使用 `linggan_` 前缀。下表的历史平台记录不证明今天的配置；当前权限、函数版本与真实调用需独立核验。
 
 | 集合名 | 用途 | 文档粒度 | 字段与索引 | 平台状态（2026-09-28） |
 | --- | --- | --- | --- | --- |
 | `linggan_accounts` | 全部业务数据 | 一个微信账户一份 | §3、§4.1 | 已创建，`accountKey` 唯一索引创建待确认 |
-| `linggan_shares` | 用户主动创建的受控文字分享快照 | 一次分享一份 | §10.1、§10.3 | 已创建，索引与权限未配 |
-| `linggan_feedback` | 意见反馈与内容举报 | 一次提交一份 | §10.2、§10.3 | 已创建，索引与权限未配 |
-| `linggan_usage` | 分享与反馈的事务配额 | 一个账户一份 | §11 | 已创建，无需业务索引 |
+| `linggan_shares` | 历史文字分享快照，仅保留维护清理兼容 | 历史记录 | §10.1、§17 | 已存在；退出当前新建集合与索引输入，不执行远端删除 |
+| `linggan_feedback` | 意见反馈，兼容历史举报 | 一次提交一份 | §10.2、§10.3 | 已创建，索引与权限未配 |
+| `linggan_usage` | 反馈事务配额，兼容历史分享字段 | 一个账户一份 | §11 | 已创建，无需业务索引 |
 | `linggan_rate_limits` | 接口分钟级限流计数 | 一个窗口一份 | §11 | 已创建，索引与权限未配 |
 
 **账户核心仍只用一个集合。** 灵感正文、补充、图片记录内嵌同一份账户文档。分享、反馈、配额和限流具有不同授权与生命周期，分集合处理。历史 AI 额度集合已退出当前输入，不删除已有远端资源。
@@ -44,6 +44,7 @@
 | `updatedAt` | number | 服务端 | 服务端时间戳（毫秒） |
 | `inspirations` | array | 客户端提交、服务端校验 | 灵感数组，见 3.2 |
 | `photoCleanup` | array | 服务端 | 待清理任务；旧账户缺省 []，与记录同一 CAS 写入 |
+| `_monitorFence` | number | 受信运营服务端 | 可选顶层计数；缺省 0，事务增量更新以取得账户写锁；不属于业务 version 或客户端快照 |
 
 ### 3.2 `inspirations[]` 元素
 
@@ -110,7 +111,7 @@
 
 对 `linggan_accounts`，除此之外不需要别的索引：查询只有 `where({ accountKey })` 一种形态，而灵感列表是在**文档内部**排序的。§10 的新集合另有自己的索引。
 
-当前清单共 14 个业务索引（含 5 个唯一索引），逐条定义见 `deployment/product/indexes/`，与 `deployment/product/README.md` 一致。历史回读确认非 AI 十四个业务索引已完成，当前状态需在实际部署时重新核验。索引文件只含 `CreateIndexes`，不含 `DropIndexes`、TTL 或数据删除。
+当前清单共 8 个业务索引（含 3 个唯一索引），逐条定义见 `deployment/product/indexes/`，与 `deployment/product/README.md` 一致。历史回读确认非 AI 十四个业务索引已完成，当前状态需在实际部署时重新核验。索引文件只含 `CreateIndexes`，不含 `DropIndexes`、TTL 或数据删除。
 
 ### 4.2 权限规则
 
@@ -195,6 +196,8 @@
 
 本节字段及服务端代码已落在本地工程，**当前云端不一定存在集合、索引或权限规则**。清理任务已有本地实现，未部署或运行。不得仅因文档与代码落地就认为分享可用。新集合均使用 `linggan_` 前缀，不修改其他小程序集合或共用认证设置。新集合不改变 `linggan_accounts` 的字段清单；§3 的结构校验仍只针对现有账户文档。
 
+文字内容分享、举报及分享专用索引已由 §17 撤下。下列历史分享字段与生命周期用于既有数据、维护清理兼容；反馈字段清单仍使用，新提交规则以 §17 为准。
+
 ### 10.1 `linggan_shares` 字段
 
 | 字段 | 类型/约束 | 写入者 | 用途及读取边界 |
@@ -270,7 +273,9 @@
 
 朋友圈海报存入用户相册及其自行发布的朋友圈，**不属于上述云数据库清理范围**；撤销只能让海报码所指分享页失效，不能删除图片上已展示的文字。任何生成的临时图片在小程序本机缓存中按会话清理，不上传用户照片；分享封面和海报只由已确认的文字快照绘制。
 
-## 11. 原子配额与访问计数（`complete-product-workflows`）
+## 11. 原子配额与访问计数（`complete-product-workflows`，分享部分为历史）
+
+当前反馈配额与旧字段兼容以 §17.2 为准；下列分享计数、初始化与接口频率记录当时的设计。历史分享保留期清理仍沿用本节。
 
 `linggan_usage` 每账户一文档，`_id=SHA256(accountKey)`，客户端全拒绝。字段：`accountKey:string`、`dayStart:number`（UTC+8 自然日）、`shareCount:number`、`feedbackCount:number`、`activeShares:Array<{shareId:string,expiresAt:number}>`、`updatedAt:number`。配额文档与新增业务记录在同一 `runTransaction` 中写入；超限抛错回滚。每日上限为分享 10、反馈 5，有效分享最多 20；撤销与删除分享占位在同一事务处理。过期占位在下次写时剔除。当日重试与去重由原有唯一索引保证，失败事务不占额。
 
@@ -307,3 +312,27 @@ Store 队列新增 `kind:'batch'`、`inspirations:Inspiration[]`；快照和整�
 跨灵感手动选材（`add-material-output`）不新增集合、持久字段或本机键。素材选择和未保存稿件仅在页面内存；另存生成标准 user 来源记录，`summarySources` 保持空数组，不将手动组合冒充 AI 汇总。复制不会写入数据库。
 
 键 `linggan:v2:<scope>:usage`，字段 `enabled:boolean` 默认 false、`days:Record<YYYY-MM-DD,Record<event,count>>`；仅当前设备近三十个 UTC+8 自然日。事件白名单 `record_saved/supplement_saved/output_copied/output_saved/search_opened/review_opened/save_failed/backup_pending`。事件无附带属性，不存内容/id/时间点/搜索词/标签名/模型结果，不自动上传、不跨设备合计。每计数上限 100000；关闭以一次写入清空。导出只含日期和聚合计数，不含存储键/账户哈希。此数据不等于真实发表、全量留存率或全账户统计。
+
+## 16. 共享运营事件
+
+现有自愿统计仍只在会话内存中；`add-operations-monitor` 使用资源方统一的 `monitor_events`。来源映射 linggan；sourceUserId 从受信 AppID/OpenID 的 SHA256 推导，不使用客户端身份。
+
+服务端记录字段为 `_id:string`、`appId:'linggan'`、`type:'record_saved'|'supplement_saved'|'output_saved'`、`sourceUserId:string`、`eventId:string`、`occurredAt:Date`、`createdAt:Date`、`payload:{}`。`_id='evt_'+SHA256('linggan|'+sourceUserId+'|'+eventId)`；事件键基于账户代际、账户键、提交版本、事件类型与记录/补充 ID 的哈希。事件只用 add 创建，重复不覆盖时间；提交差异没有个人文字、图片或路径。写入故障不回滚已保存业务，可能造成统计缺失，真实部署后需核验。
+
+写事件的事务先重读账户 accountKey/generation，再以 `db.command.inc(1)` 递增同一账户顶层 `_monitorFence`，最后 add 事件；账户屏障和事件同次提交。只有读代际不足以阻止快照事务在账户变更后提交，实际账户写使并发变更产生写冲突和重试。业务 CAS 使用字段 update，保留该顶层字段；pull 不输出它。空初访只返回 generation=1、不创建账户，灵感当前没有账户清空/注销入口。未来引入代际变化须原地写同一账户并把关联运营清理纳入验收。[CloudBase 事务操作](https://docs.cloudbase.net/database/transaction)说明读取不取得修改锁。
+
+## 17. 移除文字内容分享（2026-10-12）
+
+`remove-text-sharing` 覆盖 §10 的分享创建、读取、撤销、本人分享管理与举报流程，以及 §11 的分享配额初始化、校验和计数。`linggan_api` 不再暴露 `share.*` 或 `feedback.reportShare`；客户端和服务端意见反馈独立，不需要分享集合、密钥、内容审核或小程序码能力。历史分享集合与记录不迁移、不改写、不删除，维护函数仍可按 §10.4 与 §11 既定保留期处理历史记录；当前本地修改不执行清理或部署。
+
+### 17.1 反馈记录兼容
+
+§10.2 字段清单保持不变。新记录 `category` 仅接受 `bug/idea/other`，`relatedShareId` 与 `reportDayKey` 均为 null，`dedupeKey` 使用独立随机键。`requestDigest` 继续对 `[category, 去首尾空白后的正文, null]` 作 SHA-256，兼容旧普通反馈的同请求重试。历史 `share_report` 类别与关联字段可留存，本人列表按原类别返回正文、状态和时间，不提供举报目标、分享内容、令牌或管理字段。现有反馈唯一索引与分页索引继续使用。
+
+### 17.2 反馈配额与权限
+
+新 `linggan_usage` 文档字段为 `_id/accountKey/dayStart/feedbackCount/updatedAt`；`_id=SHA256(accountKey)`，`dayStart` 为 UTC+8 自然日。初始化只读取当日反馈计数；事务将反馈新增与 `dayStart/feedbackCount/updatedAt` 更新同时提交，超出每日 5 条或写入失败回滚。既有文档的 `shareCount/activeShares` 保持原值，不校验或依赖，不读取分享集合。反馈提交与列表仍按受信平台上下文确认账户，分钟限流分别为 10 与 30，数据库客户端直接读写继续全部拒绝。
+
+### 17.3 当前资源输入
+
+当前新建资源不含 `linggan_shares` 与分享专用索引；反馈、账户、反馈配额和限流保留。准确集合与索引清单以 `deployment/product/manifest.json` 为准。保留维护对历史分享集合的清理兼容，不代表该集合或旧数据已在远端删除。已部署旧代码仍可能提供内容接口，停止旧内容读取须配套部署后另行核验。

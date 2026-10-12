@@ -1,5 +1,1 @@
-{
-  "permissions": {
-    "openapi": ["security.msgSecCheck", "wxacode.getUnlimited"]
-  }
-}
+{}

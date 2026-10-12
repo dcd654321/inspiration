@@ -4,11 +4,9 @@
 function startCapture() {
   const app = getApp();
   const intent = { epoch: app.globalData.sessionEpoch, expiresAt: Date.now() + 5 * 60 * 1000 };
-  const templateIntent = app.globalData.sharedTemplateIntent;
   app.globalData.captureStartIntent = intent;
   wx.switchTab({ url: '/pages/capture/index', fail: () => {
     if (app.globalData.captureStartIntent === intent) delete app.globalData.captureStartIntent;
-    if (app.globalData.sharedTemplateIntent === templateIntent) delete app.globalData.sharedTemplateIntent;
   } });
 }
 

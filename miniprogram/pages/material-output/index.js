@@ -5,7 +5,7 @@ const { createId, LIMITS } = require('../../core/limits');
 const { formatAbsolute } = require('../../core/format');
 const { setDraftLeaveAlert } = require('../../services/draft-alert');
 const { draftContext, sourceVersion } = require('../../services/session-drafts');
-const { shareConfirmedDraft } = require('../../services/result-share');
+const { monitorSafely } = require('../../services/operations-monitor');
 
 function guardDraft(data) {
   setDraftLeaveAlert(Boolean(data.draft.trim() && !(data.savedId && data.savedDraft === data.draft)));
@@ -181,6 +181,7 @@ Page({
       if (!this.current(session)) return;
       this.setData({ busy: false, error: success ? '' : '复制未完成，请重试。', notice: success ? '已复制，可粘贴到需要的地方。' : '' });
       if (success && getApp().globalData.metrics) getApp().globalData.metrics.track('output_copied');
+      if (success) monitorSafely(getApp().operationsMonitor, 'event', 'output_copied');
     };
     try { wx.setClipboardData({ data: text, success: () => finish(true), fail: () => finish(false) }); }
     catch (err) { finish(false); }
@@ -221,9 +222,5 @@ Page({
     }
   },
   onOpenSaved() { if (this.current() && this.data.savedId) wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.savedId) }); },
-  onShareDraft() {
-    const session = this.session;
-    shareConfirmedDraft(this, { isCurrent: () => this.current(session), save: () => this.onSave() });
-  },
   onBack() { wx.navigateBack(); }
 });
