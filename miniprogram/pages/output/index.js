@@ -362,7 +362,7 @@ Page({
     guardDraft(this.data);
   },
 
-  copyText(text) {
+  copyText(text, kind) {
     if (!this.current()) return;
     const app = getApp(), version = this.loadVersion;
     if (!text || !text.trim()) {
@@ -372,7 +372,7 @@ Page({
     try {
       wx.setClipboardData({
         data: text,
-        success: () => { if (!this.current(version)) return; this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。', noticeLink: false }, () => fitSheetScroll(this)); if (text === this.data.draft) { if (app.globalData.metrics) app.globalData.metrics.track('output_copied'); monitorSafely(app.operationsMonitor, 'event', 'output_copied'); } },
+        success: () => { if (!this.current(version)) return; this.setData({ error: '', notice: '已复制，可粘贴到需要的地方。', noticeLink: false }, () => fitSheetScroll(this)); if (kind === 'draft') { if (app.globalData.metrics) app.globalData.metrics.track('output_copied'); monitorSafely(app.operationsMonitor, 'event', 'output_copied'); } },
         fail: () => { if (this.current(version)) this.setData({ error: '复制未完成，请重试。', notice: '' }, () => fitSheetScroll(this)); }
       });
     } catch (err) {
@@ -380,9 +380,9 @@ Page({
     }
   },
 
-  onCopyDraft() { this.copyText(this.data.draft); },
+  onCopyDraft() { this.copyText(this.data.draft, 'draft'); },
 
-  onCopyArchive() { this.copyText(this.data.archive); },
+  onCopyArchive() { this.copyText(this.data.archive, 'archive'); },
 
   async onSaveAsNew() {
     if (this.data.busy || !this.current()) return;

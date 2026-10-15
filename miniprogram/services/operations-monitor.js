@@ -29,16 +29,21 @@ function createOperationsMonitor(options = {}) {
     return owner && owner.generation === generation && owner.scope === boundScope && owner.scope &&
       (ending && owner.closed || session === owner && !owner.closed && owner.isCurrent());
   }
-  function send(owner, data, ending = false) {
+  function send(owner, data, ending = false, onAccepted) {
     return (async () => {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         if (!valid(owner, ending)) return false;
         try {
           const client = await getClient();
           if (!valid(owner, ending)) return false;
+          const sentAt = now();
           const response = await client.callFunction({ name: 'monitorApi', data });
           const result = response && response.result;
-          if (result && (result.success === true || result.ok === true)) return true;
+          if (!valid(owner, ending)) return false;
+          if (result && (result.success === true || result.ok === true)) {
+            if (onAccepted) onAccepted(result.data, sentAt);
+            return true;
+          }
         } catch (_) { /* 单次内存重试；不记录监控请求的异常或原文。 */ }
       }
       return false;
@@ -46,17 +51,27 @@ function createOperationsMonitor(options = {}) {
   }
   function usage(owner, eventType, ending = false) {
     const reportedAt = owner.closed ? owner.endedAt : now();
-    if (eventType === 'start') {
-      owner.usageWork = send(owner, { action: 'trackUsage', eventType, sessionId: owner.id, accountGeneration: owner.accountGeneration, elapsedMs: 0 }, true)
-        .then((accepted) => { if (accepted) owner.startedAt = now(); return accepted; });
-    } else {
-      owner.usageWork = owner.usageWork.then(async (accepted) => {
-        if (!accepted || !valid(owner, ending)) return false;
-        await send(owner, { action: 'trackUsage', eventType, sessionId: owner.id, accountGeneration: owner.accountGeneration,
-          elapsedMs: Math.max(0, Math.floor(reportedAt - owner.startedAt)) }, ending);
-        return true;
-      });
-    }
+    const allowEnding = ending || eventType === 'start';
+    const dispatch = async () => {
+      if (!valid(owner, allowEnding)) return false;
+      if (!owner.startConfirmed) {
+        const accepted = await send(owner, { action: 'trackUsage', eventType: 'start', sessionId: owner.id,
+          accountGeneration: owner.accountGeneration, elapsedMs: 0 }, allowEnding, (data, sentAt) => {
+          const aligned = data && Number.isSafeInteger(data.startedAtMs) && data.startedAtMs >= 0 &&
+            Number.isSafeInteger(data.observedAtMs) && data.observedAtMs >= data.startedAtMs &&
+            data.observedAtMs - data.startedAtMs <= 36 * 3600000 &&
+            Number.isSafeInteger(data.elapsedMs) && data.elapsedMs >= 0 && data.elapsedMs <= 36 * 3600000;
+          owner.startedAt = sentAt - (aligned ? data.observedAtMs - data.startedAtMs : 0);
+          owner.startConfirmed = true;
+        });
+        if (!accepted) return false;
+      }
+      if (eventType === 'start') return true;
+      if (!valid(owner, ending)) return false;
+      return send(owner, { action: 'trackUsage', eventType, sessionId: owner.id, accountGeneration: owner.accountGeneration,
+        elapsedMs: Math.max(0, Math.floor(reportedAt - owner.startedAt)) }, ending);
+    };
+    owner.usageWork = owner.usageWork ? owner.usageWork.then(dispatch) : dispatch();
     return owner.usageWork;
   }
   function event(type, input = {}, eventId) {
@@ -78,7 +93,7 @@ function createOperationsMonitor(options = {}) {
   function start() {
     if (session && session.timer) cancel(session.timer);
     generation += 1;
-    session = { id: newId(), generation, startedAt: now(), scope: '', isCurrent: () => false, sequence: 0, closed: false, pendingEvents: [] };
+    session = { id: newId(), generation, startedAt: now(), startConfirmed: false, scope: '', isCurrent: () => false, sequence: 0, closed: false, pendingEvents: [] };
     const owner = session;
     owner.timer = schedule(() => { if (valid(owner, false)) void usage(owner, 'heartbeat'); }, 60000);
     if (owner.timer && typeof owner.timer.unref === 'function') owner.timer.unref();

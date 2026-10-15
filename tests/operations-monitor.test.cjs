@@ -221,7 +221,7 @@ test('运营提交：统计一直等待仍及时返回保存确认，迟到异�
   assert.equal((await f.repo.pull(A)).data.inspirations[0].text, '正常保存正文');
 });
 
-test('运营会话：慢启动先确认再发送心跳和结束，不超过服务端累计时间', async () => {
+test('运营会话：慢启动先确认再串行发送，保留成功请求发起时的累计起点', async () => {
   let resolveStart;
   const start = new Promise((resolve) => { resolveStart = resolve; }), calls = [];
   const f = fixture({ getClient: async () => ({ callFunction: async ({ data }) => {
@@ -234,7 +234,121 @@ test('运营会话：慢启动先确认再发送心跳和结束，不超过服�
   assert.deepEqual(calls.filter(data => data.action === 'trackUsage').map(data => data.eventType), ['start']);
   resolveStart(); await tick();
   f.time(63000); await f.monitor.end();
-  assert.deepEqual(calls.filter(data => data.action === 'trackUsage').map(data => [data.eventType, data.elapsedMs]), [['start', 0], ['heartbeat', 0], ['end', 2000]]);
+  assert.deepEqual(calls.filter(data => data.action === 'trackUsage').map(data => [data.eventType, data.elapsedMs]), [['start', 0], ['heartbeat', 60000], ['end', 62000]]);
+});
+
+test('运营会话：首报两次失败后心跳与结束可复用同会话恢复', async () => {
+  for (const recoverWith of ['heartbeat', 'end']) {
+    let startAttempts = 0; const calls = [];
+    const f = fixture({ getClient: async () => ({ callFunction: async ({ data }) => {
+      calls.push(structuredClone(data));
+      if (data.action === 'trackUsage' && data.eventType === 'start' && ++startAttempts <= 2) throw Error('NETWORK');
+      return { result: { ok: true } };
+    } }) });
+    f.monitor.start(); f.monitor.bindAccount(A, 1); await tick();
+    assert.equal(startAttempts, 2);
+    f.time(61000);
+    if (recoverWith === 'heartbeat') {
+      f.beat(); await tick();
+      f.time(121000); f.beat(); await tick();
+      f.time(122000); await f.monitor.end();
+    } else await f.monitor.end();
+    const usage = calls.filter((data) => data.action === 'trackUsage');
+    assert.equal(startAttempts, 3, recoverWith);
+    assert.equal(new Set(usage.map((data) => data.sessionId)).size, 1, recoverWith);
+    assert.ok(usage.every((data) => data.accountGeneration === 1), recoverWith);
+    assert.deepEqual(usage.slice(3).map((data) => [data.eventType, data.elapsedMs]), recoverWith === 'heartbeat'
+      ? [['heartbeat', 0], ['heartbeat', 60000], ['end', 61000]] : [['end', 0]], recoverWith);
+  }
+});
+
+test('运营会话：启动回执丢失后的重复成功使用首次服务端起点', async () => {
+  let attempts = 0, f; const calls = [];
+  f = fixture({ getClient: async () => ({ callFunction: async ({ data }) => {
+    calls.push(structuredClone(data));
+    if (data.action === 'trackUsage' && data.eventType === 'start') {
+      attempts += 1;
+      if (attempts === 1) { f.time(11000); throw Error('ACK_LOST'); }
+      return { result: { ok: true, data: { startedAtMs: 1000, observedAtMs: 11000, elapsedMs: 0 } } };
+    }
+    return { result: { ok: true } };
+  } }) });
+  f.monitor.start(); f.monitor.bindAccount(A, 1); await tick();
+  f.time(61000); f.beat(); await tick();
+  f.time(66000); await f.monitor.end();
+  const usage = calls.filter((data) => data.action === 'trackUsage');
+  assert.deepEqual(usage.map((data) => [data.eventType, data.elapsedMs]), [['start', 0], ['start', 0], ['heartbeat', 60000], ['end', 65000]]);
+  assert.equal(new Set(usage.map((data) => data.sessionId)).size, 1);
+});
+
+test('运营会话：跨午夜慢回执与本机时差保持服务端累计起点', async () => {
+  const serverStart = Date.parse('2026-10-12T23:59:50+08:00'), offset = 9 * 3600000;
+  let resolveStart; const waiting = new Promise((resolve) => { resolveStart = resolve; }), calls = [];
+  const f = fixture({ getClient: async () => ({ callFunction: async ({ data }) => {
+    calls.push(structuredClone(data));
+    if (data.action === 'trackUsage' && data.eventType === 'start') {
+      await waiting;
+      return { result: { ok: true, data: { startedAtMs: serverStart, observedAtMs: serverStart, elapsedMs: 0 } } };
+    }
+    return { result: { ok: true } };
+  } }) });
+  f.time(serverStart + offset); f.monitor.start(); f.monitor.bindAccount(A, 1); await tick();
+  f.time(serverStart + offset + 60000); f.beat(); await tick();
+  assert.deepEqual(calls.filter((data) => data.action === 'trackUsage').map((data) => data.eventType), ['start']);
+  f.time(serverStart + offset + 70000); resolveStart(); await tick();
+  await f.monitor.end();
+  const usage = calls.filter((data) => data.action === 'trackUsage');
+  assert.deepEqual(usage.map((data) => [data.eventType, data.elapsedMs]), [['start', 0], ['heartbeat', 60000], ['end', 70000]]);
+  assert.equal(new Date(serverStart + usage.at(-1).elapsedMs).toISOString(), '2026-10-12T16:01:00.000Z');
+});
+
+test('运营会话：后台才到达启动回执仅发送隐藏时冻结的累计值', async () => {
+  let resolveStart, current = true;
+  const waiting = new Promise((resolve) => { resolveStart = resolve; }), calls = [];
+  const f = fixture({ getClient: async () => ({ callFunction: async ({ data }) => {
+    calls.push(structuredClone(data));
+    if (data.action === 'trackUsage' && data.eventType === 'start') {
+      await waiting;
+      return { result: { ok: true, data: { startedAtMs: 1000, observedAtMs: 1000, elapsedMs: 0 } } };
+    }
+    return { result: { ok: true } };
+  } }) });
+  f.monitor.start(); f.monitor.bindAccount(A, 1, () => current); await tick();
+  f.time(6000); const ending = f.monitor.end(); current = false;
+  f.time(3601000); resolveStart(); await ending;
+  assert.deepEqual(calls.filter((data) => data.action === 'trackUsage').map((data) => [data.eventType, data.elapsedMs]), [['start', 0], ['end', 5000]]);
+});
+
+test('运营会话：共享客户端等待以实际发起时间起算，后台解除等待不计后台', async () => {
+  for (const hidden of [false, true]) {
+    let resolveClient;
+    const waiting = new Promise((resolve) => { resolveClient = resolve; }), calls = [];
+    const f = fixture({ getClient: () => waiting });
+    f.monitor.start(); f.monitor.bindAccount(A, 1); await tick();
+    let ending;
+    if (hidden) { f.time(6000); ending = f.monitor.end(); }
+    f.time(hidden ? 3601000 : 11000);
+    resolveClient({ callFunction: async ({ data }) => { calls.push(structuredClone(data)); return { result: { ok: true } }; } });
+    await tick();
+    if (hidden) await ending;
+    else { f.time(61000); f.beat(); await tick(); f.time(66000); await f.monitor.end(); }
+    assert.deepEqual(calls.filter((data) => data.action === 'trackUsage').map((data) => [data.eventType, data.elapsedMs]), hidden
+      ? [['start', 0], ['end', 0]] : [['start', 0], ['heartbeat', 50000], ['end', 55000]], String(hidden));
+  }
+});
+
+test('运营会话：无效服务端时间回执兼容成功请求发起时刻', async () => {
+  for (const data of [undefined, { startedAtMs: 2000, observedAtMs: 1000 },
+    { startedAtMs: 1, observedAtMs: 36 * 3600000 + 2 }, { startedAtMs: 1.5, observedAtMs: 2000 },
+    ...[undefined, -1, 0.5, '0', 36 * 3600000 + 1].map((elapsedMs) => ({ startedAtMs: 1, observedAtMs: 10001, elapsedMs }))]) {
+    const calls = [];
+    const f = fixture({ getClient: async () => ({ callFunction: async ({ data: request }) => {
+      calls.push(structuredClone(request)); return { result: { ok: true, data } };
+    } }) });
+    f.monitor.start(); f.monitor.bindAccount(A, 1); await tick();
+    f.time(61000); f.beat(); await tick(); await f.monitor.end();
+    assert.equal(calls.find((request) => request.eventType === 'heartbeat').elapsedMs, 60000, JSON.stringify(data));
+  }
 });
 
 test('运营提交：快照写冲突重试拒绝旧代际且保留业务内容', async () => {
@@ -275,12 +389,72 @@ test('运营输出：实际页面只在复制和 TXT 生成成功后记事件', 
       getFileSystemManager: () => ({ writeFile: (value) => { file = value; }, unlink() {} }) };
     delete require.cache[pagePath]; require(pagePath);
     const page = { ...definition, current: () => current, data: { ...definition.data, draft: '私人稿件', archive: '私人留档' }, setData(next, done) { Object.assign(this.data, next); if (done) done(); } };
-    page.copyText(page.data.draft); clipboard.fail(); assert.deepEqual(events, []);
-    page.copyText(page.data.draft); clipboard.success(); assert.deepEqual(events, ['output_copied']);
+    page.onCopyDraft(); clipboard.fail(); assert.deepEqual(events, []);
+    page.onCopyDraft(); clipboard.success(); assert.deepEqual(events, ['output_copied']);
     page.onCreateTxt(); file.fail(); assert.deepEqual(events, ['output_copied']);
     page.onCreateTxt(); file.success(); assert.deepEqual(events, ['output_copied', 'output_exported']);
     page.onCreateTxt(); current = false; file.success(); assert.equal(events.length, 2);
     assert.ok(!JSON.stringify(events).includes('私人'));
+  } finally { delete require.cache[pagePath]; for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete global[key]; else global[key] = value; } }
+});
+
+test('运营输出：复制稿件后继续编辑仍计成功，留档同文不计成品复制', () => {
+  const pagePath = require.resolve('../miniprogram/pages/output/index');
+  const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
+  let definition, clipboard;
+  const events = [], metrics = [], store = {};
+  const app = { globalData: { sessionEpoch: 1, store, metrics: { track: (type) => { metrics.push(type); } } },
+    operationsMonitor: { event: (type) => { events.push(type); } } };
+  try {
+    global.Page = (value) => { definition = value; };
+    global.getApp = () => app;
+    global.wx = { setClipboardData: (value) => { clipboard = value; } };
+    delete require.cache[pagePath]; require(pagePath);
+    const page = { ...definition, loadedEpoch: 1, loadedStore: store, loadVersion: 1, loading: false, disposed: false,
+      data: { ...definition.data, draft: '原稿件', archive: '原稿件' },
+      setData(next, done) { Object.assign(this.data, next); if (done) done(); } };
+    page.onCopyDraft();
+    assert.equal(page.data.busy, false, '复制不阻止继续编辑');
+    page.onDraftInput({ detail: { value: '回调前编辑的新稿件' } });
+    assert.equal(clipboard.data, '原稿件');
+    assert.equal(page.data.draft, '回调前编辑的新稿件');
+    clipboard.success();
+    assert.match(page.data.notice, /已复制/);
+    assert.deepEqual(events, ['output_copied']);
+    assert.deepEqual(metrics, ['output_copied']);
+    page.setData({ draft: '与留档相同的文字', archive: '与留档相同的文字' });
+    page.onCopyArchive(); clipboard.success();
+    assert.deepEqual(events, ['output_copied'], '留档复制依据调用类型排除，不以文字相等判断');
+    assert.deepEqual(metrics, ['output_copied']);
+  } finally { delete require.cache[pagePath]; for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete global[key]; else global[key] = value; } }
+});
+
+test('运营输出：页面版本或账户失效后的复制成功不记事件与提示', () => {
+  const pagePath = require.resolve('../miniprogram/pages/output/index');
+  const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
+  let definition, clipboard;
+  const events = [], metrics = [];
+  const app = { globalData: { sessionEpoch: 1, store: null, metrics: { track: (type) => { metrics.push(type); } } },
+    operationsMonitor: { event: (type) => { events.push(type); } } };
+  try {
+    global.Page = (value) => { definition = value; };
+    global.getApp = () => app;
+    global.wx = { setClipboardData: (value) => { clipboard = value; } };
+    delete require.cache[pagePath]; require(pagePath);
+    for (const invalidation of ['pageVersion', 'sessionEpoch', 'store', 'disposed']) {
+      const store = {}; app.globalData.store = store; app.globalData.sessionEpoch = 1;
+      const page = { ...definition, loadedEpoch: 1, loadedStore: store, loadVersion: 1, loading: false, disposed: false,
+        data: { ...definition.data, draft: '稿件', notice: '新会话提示' },
+        setData(next, done) { Object.assign(this.data, next); if (done) done(); } };
+      page.onCopyDraft();
+      if (invalidation === 'pageVersion') page.loadVersion += 1;
+      if (invalidation === 'sessionEpoch') app.globalData.sessionEpoch += 1;
+      if (invalidation === 'store') app.globalData.store = {};
+      if (invalidation === 'disposed') page.disposed = true;
+      clipboard.success();
+      assert.equal(page.data.notice, '新会话提示', invalidation);
+      assert.deepEqual(events, [], invalidation); assert.deepEqual(metrics, [], invalidation);
+    }
   } finally { delete require.cache[pagePath]; for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete global[key]; else global[key] = value; } }
 });
 
@@ -300,7 +474,7 @@ test('运营输出：统计同步抛错或异步拒绝不改变实际复制与TX
     for (asynchronous of [false, true]) {
       const page = { ...definition, current: () => true, data: { ...definition.data, draft: '可复制稿件', archive: '可留档正文' },
         setData(next, done) { Object.assign(this.data, next); if (done) done(); } };
-      page.copyText(page.data.draft); assert.doesNotThrow(() => clipboard.success());
+      page.onCopyDraft(); assert.doesNotThrow(() => clipboard.success());
       assert.equal(page.data.error, ''); assert.match(page.data.notice, /已复制/);
       page.onCreateTxt(); assert.doesNotThrow(() => file.success());
       assert.equal(page.data.error, ''); assert.match(page.data.notice, /TXT 已生成/); assert.ok(page.data.txtPath);
