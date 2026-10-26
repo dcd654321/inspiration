@@ -103,7 +103,8 @@ test('公共入口与私人页面的索引、文案和入口分开', () => {
   }
   const welcome = read('miniprogram/pages/welcome/index.js');
   assert.match(welcome, /onShareTimeline/);
-  assert.match(welcome, /pages\/welcome\/index/);
+  const presentation = require('../miniprogram/services/product-presentation');
+  assert.equal(presentation.createAppShare().path, '/pages/welcome/index');
   assert.doesNotMatch(welcome, /accountKey|openid|inspirationId/);
   const mine = read('miniprogram/pages/mine/index.wxml');
   assert.match(mine, /分享小程序/);
@@ -121,8 +122,8 @@ test('我的页直接分享公共入口，不把账户或记录放进聊天卡�
     assert.equal(chat.path, '/pages/welcome/index');
     assert.equal(timeline.query, '');
     for (const payload of [chat, timeline]) {
-      assert.equal(payload.title, '灵感拾光簿｜让想法慢慢成形');
-      assert.equal(payload.imageUrl, '/assets/brand-mark.png');
+      assert.equal(payload.title, '灵感拾光簿｜随手记录灵感，手动整理成稿');
+      assert.equal(payload.imageUrl, '/assets/product-share.png');
       assert.doesNotMatch(JSON.stringify(payload), /accountKey|openid|inspirationId|idea_1|一段想法/);
     }
   });

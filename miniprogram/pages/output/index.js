@@ -1,13 +1,22 @@
 const { LIMITS, createId } = require('../../core/limits');
-const { createInspiration } = require('../../core/inspiration');
+const { createInspiration, isArchived } = require('../../core/inspiration');
 const { formatAbsolute } = require('../../core/format');
 const { currentSupplements, buildTemplateText, buildArchiveText, USE_TEMPLATES } = require('../../services/content-output');
 const { setDraftLeaveAlert } = require('../../services/draft-alert');
-const { draftContext, sourceVersion } = require('../../services/session-drafts');
+const { draftContext, sourceVersion: recordVersion } = require('../../services/session-drafts');
+const sourceVersion = value => recordVersion(value, { ignoreTodo: true });
 const { monitorSafely } = require('../../services/operations-monitor');
 
 function guardDraft(data) {
-  setDraftLeaveAlert(Boolean(data.draftEdited && data.draft.trim() && !data.savedSame));
+  setDraftLeaveAlert(Boolean(!data.exportOnly && data.draftEdited && data.draft.trim() && !data.savedSame));
+}
+
+function sameSavedRecord(actual, expected) {
+  if (!actual || !expected) return false;
+  const canonical = (value) => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object'
+    ? Object.keys(value).sort().reduce((result, key) => { result[key] = canonical(value[key]); return result; }, {}) : value;
+  const normalized = (value) => canonical(Object.assign({}, value, { archivedAt: value.archivedAt === undefined ? null : value.archivedAt }));
+  return JSON.stringify(normalized(actual)) === JSON.stringify(normalized(expected));
 }
 
 // 原生 scroll-view 的内部视口不会随 flex 收缩自动同步，写入实际可用高度。
@@ -35,6 +44,7 @@ Page({
     missing: false,
     // 读取失败（账户/网络）与「确认不存在」分开
     readError: false,
+    exportOnly: false,
     // edit = 正在编辑稿件；content/format/more = 相应面板；archive = 文字留档
     phase: 'edit',
     sheetScrollHeight: 0,
@@ -65,12 +75,22 @@ Page({
   async onLoad(query) {
     this.pendingSave = null;
     this.id = (query && query.id) || '';
+    this.requestedExportOnly = Boolean(query && query.exportOnly === '1');
     this.requestedTemplate = query && USE_TEMPLATES.some((entry) => entry.id === query.template) ? query.template : '';
     this.disposed = false;
     return this.readAccount();
   },
 
-  async readAccount(refresh = false) {
+  onReady() {
+    this.updateNavigationTitle();
+    // 导航动画结束后再核对一次标题，隐藏页面时取消，避免改到下一页。
+    this.titleTimer = setTimeout(() => {
+      this.titleTimer = null;
+      this.updateNavigationTitle();
+    }, 500);
+  },
+
+  async readAccount(refresh = false, replaceDraft = false) {
     setDraftLeaveAlert(false);
     const version = this.loadVersion = (this.loadVersion || 0) + 1;
     this.loading = true;
@@ -97,9 +117,27 @@ Page({
       this.setData({ ready: true, missing: false, readError: true, error: app.globalData.accountError || '请稍后重试。' });
       return;
     }
-    this.draftOwner = draftContext(app, store);
-    const recovered = app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('output:' + this.id, this.draftOwner);
+    const item = store.getInspiration(this.id);
+    const exportOnly = Boolean(this.requestedExportOnly || isArchived(item));
+    this.setData({ exportOnly });
+    this.draftOwner = !exportOnly && item ? draftContext(app, store) : null;
+    if (!exportOnly && replaceDraft && app.globalData.sessionDrafts && this.draftOwner) {
+      app.globalData.sessionDrafts.remove('output:' + this.id, this.draftOwner);
+    }
+    const recovered = item && !exportOnly && app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('output:' + this.id, this.draftOwner);
     this.build(store, recovered);
+    this.updateNavigationTitle();
+  },
+
+  updateNavigationTitle() {
+    const version = this.loadVersion;
+    const apply = () => {
+      if (this.current(version) && typeof wx.setNavigationBarTitle === 'function') {
+        wx.setNavigationBarTitle({ title: this.data.exportOnly ? '文字留档' : '整理成稿' });
+      }
+    };
+    if (typeof wx.nextTick === 'function') wx.nextTick(apply);
+    else apply();
   },
 
   current(version = this.loadVersion) {
@@ -112,6 +150,18 @@ Page({
   build(store, recovered) {
     const item = store && store.getInspiration(this.id);
     this.sourceStamp = sourceVersion(item);
+    if (!item) {
+      this.setData({ ready: true, missing: true, readError: false });
+      return;
+    }
+    if (this.data.exportOnly) {
+      this.pendingSave = null;
+      this.setData({ ready: true, missing: false, readError: false, phase: 'export', draft: '', draftEdited: false,
+        canSaveAs: false, options: [], stagedOptions: [], archive: buildArchiveText(item, Date.now()),
+        error: '', notice: '', noticeLink: false, busy: false, saveUnknown: false, sourceStale: false });
+      guardDraft(this.data);
+      return;
+    }
     if (recovered) {
       this.pendingSave = recovered.pendingSave;
       const sourceStale = recovered.sourceStamp !== this.sourceStamp;
@@ -119,7 +169,7 @@ Page({
       const next = Object.assign({}, recovered.data, { ready: true, missing: false, readError: false, phase: 'edit', busy: false,
         sourceStale, draftRecoveryNotice: sourceStale ? '素材已更新，已保留当前稿件供复制。重新读取后可继续整理。' : '已接续这次稿件。',
         error: sourceStale ? '来源已变化，请先复制当前稿件，再重新读取素材。' : '' });
-      if (this.pendingSave && sourceVersion(store.getInspiration(this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
+      if (this.pendingSave && sameSavedRecord(store.getInspiration(this.pendingSave.item.id), this.pendingSave.item)) {
         next.savedId = this.pendingSave.item.id; next.savedDraft = this.pendingSave.text; next.saveUnknown = false;
         next.savedSame = next.draft === next.savedDraft; this.pendingSave = null;
       }
@@ -132,10 +182,6 @@ Page({
       next.noticeLink = Boolean(next.savedId);
       next.canSaveAs = !sourceStale && this.canSaveAs(next.draft, next.savedDraft);
       this.setData(next); guardDraft(this.data); return;
-    }
-    if (!item) {
-      this.setData({ ready: true, missing: true, readError: false });
-      return;
     }
     const templateId = this.requestedTemplate || (USE_TEMPLATES.some((entry) => entry.id === item.templateId) ? item.templateId : 'free');
     this.setData({ templateId });
@@ -169,10 +215,24 @@ Page({
     return Boolean(draft && draft.trim()) && draft.length <= LIMITS.textMaxLength && draft !== savedDraft;
   },
 
+  canEditSource() {
+    if (!this.current() || this.data.exportOnly || this.data.missing || this.data.readError) return false;
+    const item = this.loadedStore.getInspiration(this.id);
+    if (this.data.sourceStale || !item || isArchived(item) || sourceVersion(item) !== this.sourceStamp) {
+      this.setData({ sourceStale: true, canSaveAs: false, phase: 'edit',
+        error: isArchived(item) ? '来源已归档，当前稿件仍可复制。取消归档后请重新读取素材。' : '来源已变化，请先复制当前稿件，再重新读取素材。' });
+      return false;
+    }
+    return true;
+  },
+
   async onShow() {
     const app = getApp();
     if (this.loading && this.loadingEpoch === app.globalData.sessionEpoch) return;
-    if (!this.id || this.current()) { guardDraft(this.data); return; }
+    if (!this.id || this.current()) {
+      if (this.id && !this.data.exportOnly) this.canEditSource();
+      guardDraft(this.data); return;
+    }
     this.disposed = false;
     this.setData({ ready: false, draft: '', archive: '', options: [], txtPath: '', savedId: '', savedDraft: '' });
     await this.readAccount();
@@ -183,9 +243,11 @@ Page({
   onUnload() { this.suspend(); },
 
   suspend() {
+    if (this.titleTimer) clearTimeout(this.titleTimer);
+    this.titleTimer = null;
     setDraftLeaveAlert(false);
     const app = getApp();
-    if (!this.disposed && this.draftOwner && app.globalData.sessionDrafts && this.data.ready && !this.data.readError) {
+    if (!this.disposed && !this.data.exportOnly && this.draftOwner && app.globalData.sessionDrafts && this.data.ready && !this.data.readError) {
       const fields = ['draft', 'draftEdited', 'templateId', 'options', 'selectedCount', 'summary', 'savedId', 'savedDraft', 'savedSame', 'saveUnknown'];
       const data = fields.reduce((result, key) => { result[key] = this.data[key]; return result; }, {});
       if (this.data.busy && this.pendingSave) data.saveUnknown = true;
@@ -211,9 +273,12 @@ Page({
     if (this.disposed || this.loading || this.data.busy) return;
     const reload = () => {
       if (this.disposed || this.data.busy) return;
-      const app = getApp();
-      if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('output:' + this.id, this.draftOwner);
-      return this.readAccount(true);
+      if (!this.data.exportOnly) {
+        // 先保留普通稿件；回读若发现来源已归档，切换只读时不能删掉它。
+        this.suspend();
+        this.disposed = false;
+      }
+      return this.readAccount(true, true);
     };
     if (this.data.draft && (this.data.draftEdited || this.data.sourceStale || this.data.saveUnknown)) {
       const version = this.loadVersion;
@@ -224,14 +289,20 @@ Page({
 
   onBackToList() { wx.switchTab({ url: '/pages/list/index' }); },
 
+  onReturnDetail() {
+    if (!this.current() || this.data.busy) return;
+    wx.redirectTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.id) });
+  },
+
   /** 面板本体上的点击不该穿透到遮罩，否则点哪都关。 */
   noop() {},
 
   // ------------------------------------------------------------ 面板
 
   onOpenContent() {
-    if (this.data.busy) return;
+    if (this.data.busy || this.data.exportOnly || !this.current()) return;
     if (this.data.sourceStale) return this.onRetryLoad();
+    if (!this.canEditSource()) return;
     this.setData({
       phase: 'content',
       sheetScrollHeight: 0,
@@ -242,7 +313,7 @@ Page({
   },
 
   onOpenFormat() {
-    if (this.data.busy) return;
+    if (this.data.busy || !this.canEditSource()) return;
     this.setData({
       phase: 'format',
       stagedOptions: this.data.options.map((entry) => Object.assign({}, entry)),
@@ -252,12 +323,12 @@ Page({
   },
 
   onOpenMore() {
-    if (this.data.busy) return;
+    if (this.data.busy || this.data.exportOnly || !this.current()) return;
     this.setData({ phase: 'more', error: '', notice: '' });
   },
 
   onOpenArchive() {
-    if (this.data.busy) return;
+    if (this.data.busy || this.data.exportOnly || !this.current()) return;
     this.setData({ phase: 'archive', sheetScrollHeight: 0, error: '', notice: '' }, () => fitSheetScroll(this));
   },
 
@@ -266,13 +337,13 @@ Page({
   },
 
   onClosePanel() {
-    if (this.data.busy) return;
+    if (this.data.busy || this.data.exportOnly || !this.current()) return;
     // 取消面板不改动稿件的任何字节
     this.setData({ phase: 'edit', error: '', notice: '' });
   },
 
   onToggleSupplement(event) {
-    if (this.data.busy) return;
+    if (this.data.busy || !this.canEditSource()) return;
     const id = event.currentTarget.dataset.id;
     const base = this.data.stagedOptions.length ? this.data.stagedOptions : this.data.options;
     const stagedOptions = base.map((entry) => (
@@ -282,7 +353,7 @@ Page({
   },
 
   onTemplateSelect(event) {
-    if (this.data.busy) return;
+    if (this.data.busy || !this.canEditSource()) return;
     const templateId = event.currentTarget.dataset.template;
     if (USE_TEMPLATES.some((template) => template.id === templateId)) this.setData({ stagedTemplateId: templateId, error: '' });
   },
@@ -292,7 +363,7 @@ Page({
    * 取消保留当前文字、光标与选择；确认才替换。
    */
   onApply() {
-    if (this.data.busy || this.data.saveUnknown || this.data.sourceStale || !this.current()) return;
+    if (this.data.busy || this.data.saveUnknown || !this.canEditSource()) return;
     const version = this.loadVersion, draft = this.data.draft, phase = this.data.phase;
     const staged = JSON.stringify([this.data.stagedOptions, this.data.stagedTemplateId]);
     const store = getApp().globalData.store;
@@ -316,6 +387,7 @@ Page({
     const apply = () => {
       if (!this.current(version) || this.data.busy || this.data.draft !== draft || this.data.phase !== phase ||
           JSON.stringify([this.data.stagedOptions, this.data.stagedTemplateId]) !== staged) return;
+      if (!this.canEditSource()) return;
       if (JSON.stringify(store.getInspiration(this.id)) !== source) { this.setData({ error: '素材已更新，请重新读取后核对。' }); return; }
       this.pendingSave = null;
       this.sourceStamp = sourceVersion(item);
@@ -348,7 +420,7 @@ Page({
   // ------------------------------------------------------------ 编辑与出口
 
   onDraftInput(event) {
-    if (this.data.busy || this.data.saveUnknown || !this.current()) return;
+    if (this.data.busy || this.data.saveUnknown || !this.canEditSource()) return;
     const value = event.detail.value;
     if (this.pendingSave && this.pendingSave.text !== value) this.pendingSave = null;
     this.setData({
@@ -380,12 +452,46 @@ Page({
     }
   },
 
-  onCopyDraft() { this.copyText(this.data.draft, 'draft'); },
+  onCopyDraft() { if (!this.data.exportOnly) this.copyText(this.data.draft, 'draft'); },
 
   onCopyArchive() { this.copyText(this.data.archive, 'archive'); },
 
+  confirmPendingSave() {
+    if (!this.current() || this.data.exportOnly || !this.data.saveUnknown || !this.pendingSave) return false;
+    const pending = this.pendingSave, store = this.loadedStore;
+    if (!sameSavedRecord(store.getInspiration(pending.item.id), pending.item)) return false;
+    const sourceStale = this.data.sourceStale || sourceVersion(store.getInspiration(this.id)) !== this.sourceStamp;
+    this.setData({ busy: false, saveUnknown: false, savedId: pending.item.id, savedDraft: pending.text,
+      savedSame: this.data.draft === pending.text, sourceStale,
+      canSaveAs: !sourceStale && this.canSaveAs(this.data.draft, pending.text),
+      error: '', notice: '已确认另存为新灵感', noticeLink: true });
+    this.pendingSave = null;
+    const app = getApp();
+    if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('output:' + this.id, this.draftOwner);
+    guardDraft(this.data);
+    return true;
+  },
+
+  async recheckPendingSave() {
+    const version = this.loadVersion, store = this.loadedStore;
+    const generation = typeof store.getConfirmedRevision === 'function' && store.getConfirmedRevision().generation;
+    this.setData({ busy: true, error: '', notice: '' });
+    try { if (typeof store.refresh === 'function') await store.refresh(); } catch (err) { /* 保留未知结果供再次核对。 */ }
+    if (!this.current(version)) return;
+    if (generation !== (typeof store.getConfirmedRevision === 'function' && store.getConfirmedRevision().generation)) {
+      this.setData({ busy: false, sourceStale: true, error: '记录状态已变化，请重新读取后核对。' }); return;
+    }
+    if (!this.confirmPendingSave()) this.setData({ busy: false,
+      error: '尚未确认另存，来源已变化。稿件仍可复制，请稍后重试核对。' });
+  },
+
   async onSaveAsNew() {
-    if (this.data.busy || !this.current()) return;
+    if (this.data.busy || !this.current() || this.data.exportOnly) return;
+    if (this.confirmPendingSave()) return;
+    if (!this.canEditSource()) {
+      if (this.data.saveUnknown && this.pendingSave) return this.recheckPendingSave();
+      return;
+    }
     const version = this.loadVersion;
     const app = getApp(), store = app.globalData.store, epoch = app.globalData.sessionEpoch;
     if (!store || this.disposed || this.loadedEpoch !== epoch) return;
@@ -449,7 +555,7 @@ Page({
   },
 
   onOpenSaved() {
-    if (!this.data.savedId) return;
+    if (!this.current() || this.data.exportOnly || !this.data.savedId) return;
     wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(this.data.savedId) });
   },
 

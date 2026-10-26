@@ -47,6 +47,17 @@ function Save-TabIcon([string] $name, [string] $colorHex, [string] $variant) {
         $graphics.DrawEllipse($pen, 31, 17, 19, 19)
         $graphics.DrawArc($pen, 19, 43, 43, 30, 190, 160)
       }
+      'todos' {
+        $graphics.DrawRectangle($pen, 20, 18, 41, 47)
+        $graphics.DrawLines($pen, [System.Drawing.Point[]] @(
+          (New-Point 27 31), (New-Point 31 35), (New-Point 38 27)
+        ))
+        $graphics.DrawLine($pen, 45, 32, 54, 32)
+        $graphics.DrawLines($pen, [System.Drawing.Point[]] @(
+          (New-Point 27 48), (New-Point 31 52), (New-Point 38 44)
+        ))
+        $graphics.DrawLine($pen, 45, 49, 54, 49)
+      }
       default { throw "Unknown tab icon: $name" }
     }
 
@@ -61,7 +72,7 @@ function Save-TabIcon([string] $name, [string] $colorHex, [string] $variant) {
   }
 }
 
-foreach ($name in @('record', 'ideas', 'mine')) {
+foreach ($name in @('record', 'ideas', 'todos', 'mine')) {
   Save-TabIcon $name '#6f6f7b' 'idle'
   Save-TabIcon $name '#34377f' 'active'
 }

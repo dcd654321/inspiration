@@ -1,0 +1,81 @@
+<view class="page todo-page">
+  <view class="page-heading">
+    <view class="page-title">待办</view>
+    <button class="todo-add-entry" bindtap="onAdd"><view class="todo-entry-icon" aria-hidden="true"><view class="todo-entry-line"></view><view class="todo-entry-line"></view></view><text>添加待办</text></button>
+  </view>
+
+  <view class="overview" aria-label="事项概览">
+    <button wx:for="{{scopes}}" wx:key="id" class="overview-item {{scope === item.id ? 'selected' : ''}}" data-scope="{{item.id}}" bindtap="onScope" aria-pressed="{{scope === item.id}}">
+      <text class="overview-number">{{counts[item.id]}}</text>
+      <text>{{item.label}}</text>
+    </button>
+  </view>
+
+  <view wx:if="{{counts.all > 0 || query}}" class="todo-search">
+    <input value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索事项或所属灵感" aria-label="搜索当前范围的待办" confirm-type="search" />
+    <button wx:if="{{query}}" class="btn-link" bindtap="onClearQuery">清空</button>
+  </view>
+  <view wx:if="{{query && !loading && !error}}" class="result-count">找到 {{matchCount}} 项</view>
+
+  <view wx:if="{{busy || operationError}}" class="operation-status" aria-live="polite">
+    <text>{{busy ? '正在确认操作…' : operationError}}</text>
+    <button wx:if="{{blocked && !busy}}" class="btn-link" bindtap="onRetryOperation">重试确认</button>
+  </view>
+  <view wx:if="{{undoVisible}}" class="undo-status" aria-live="polite">
+    <text>已完成</text><button class="btn-link" bindtap="onUndo" disabled="{{busy || blocked}}">撤销</button>
+  </view>
+
+  <view wx:if="{{loading && groups.length === 0}}" class="loading-state" aria-live="polite">正在读取待办…</view>
+  <view wx:elif="{{error}}" class="read-error" aria-live="polite">
+    <text>{{error}}</text><button class="btn-link" bindtap="onRetry">重新读取</button>
+  </view>
+  <block wx:elif="{{groups.length === 0}}">
+    <view class="empty">
+      <view class="et">{{query ? '没有找到匹配的事项' : scope === 'done' ? '还没有已办事项' : scope === 'pending' ? '没有待办了' : '还没有待办事项'}}</view>
+      <view class="ed">{{query ? '试试其他关键词，或清空搜索。' : scope === 'done' ? '完成的事项会保留在这里。' : '写下一件要做的事，也可以把已有灵感或补充加入待办。'}}</view>
+    </view>
+    <button wx:if="{{query}}" class="btn btn-quiet btn-block" bindtap="onClearQuery">清空搜索</button>
+    <button wx:else class="btn btn-block" bindtap="onAdd">添加待办</button>
+    <button wx:if="{{!query && scope === 'pending' && counts.done > 0}}" class="btn btn-quiet btn-block" bindtap="onShowDone">查看已办</button>
+  </block>
+
+  <view wx:for="{{groups}}" wx:for-item="group" wx:key="id" class="todo-group {{group.id === 'archived' ? 'archive-group' : ''}}">
+    <view class="group-heading">
+      <text class="group-label {{group.id === 'overdue' ? 'overdue-label' : ''}}">{{group.label}}</text>
+      <text class="group-count">{{group.items.length}} 项</text>
+    </view>
+    <view wx:if="{{group.id === 'archived'}}" class="archive-note">取消归档后可处理</view>
+    <view wx:for="{{group.items}}" wx:key="key" class="todo-row {{item.completed ? 'is-done' : ''}} {{item.readOnly ? 'is-readonly' : ''}}">
+      <button class="todo-check" data-key="{{item.key}}" catchtap="onToggle" disabled="{{busy || blocked || item.readOnly}}" aria-label="{{item.readOnly ? '先恢复来源再处理' : item.completed ? '恢复为待办' : '完成这项待办'}}" aria-pressed="{{item.completed}}">
+        <view class="check-circle {{item.completed ? 'checked' : ''}}"><text wx:if="{{item.completed}}">✓</text></view>
+      </button>
+      <view class="todo-main">
+        <view class="todo-source" data-key="{{item.key}}" bindtap="onOpen" role="button">
+          <text class="type-label">{{item.typeLabel}}</text>
+          <text wx:if="{{item.archived}}" class="state-label">已归档</text>
+          <text wx:elif="{{item.merged}}" class="state-label">已合并</text>
+          <view class="todo-text {{item.longText && !item.expanded ? 'text-clamped' : ''}}">{{item.text}}</view>
+          <view wx:if="{{item.parentExcerpt}}" class="parent-source">所属灵感 · {{item.parentExcerpt}}</view>
+        </view>
+        <button wx:if="{{item.longText}}" class="btn-link expand-text" data-key="{{item.key}}" catchtap="onExpand">{{item.expanded ? '收起文字' : '展开全文'}}</button>
+        <view class="todo-foot">
+          <view class="todo-date"><text>{{item.todo.dueDate ? '计划 ' + item.dueLabel : item.dueLabel}}</text><text wx:if="{{item.completed}}" class="completion-time">完成 {{item.completedLabel}}</text></view>
+          <button wx:if="{{!item.readOnly}}" class="btn-link row-more" data-key="{{item.key}}" catchtap="onMore" disabled="{{busy || blocked}}" aria-label="{{item.typeLabel + '更多操作'}}">更多</button>
+        </view>
+        <button wx:if="{{item.archived}}" class="btn-link restore-source" data-key="{{item.key}}" catchtap="onUnarchive" disabled="{{busy || blocked}}">取消归档</button>
+        <button wx:elif="{{item.merged}}" class="btn-link restore-source" data-key="{{item.key}}" catchtap="onOpen">查看原文并恢复</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{dateVisible}}" class="mask" bindtap="onCloseDate">
+    <view class="sheet date-sheet" catchtap="noop">
+      <view class="sheet-title">计划完成日</view>
+      <button class="sheet-item" data-kind="none" bindtap="onDateQuick">不设日期</button>
+      <button class="sheet-item" data-kind="today" bindtap="onDateQuick">今天</button>
+      <button class="sheet-item" data-kind="tomorrow" bindtap="onDateQuick">明天</button>
+      <picker mode="date" value="{{dateValue}}" bindchange="onDateSelected"><view class="date-picker-choice" role="button">选择日期</view></picker>
+      <button class="sheet-cancel" bindtap="onCloseDate">取消</button>
+    </view>
+  </view>
+</view>

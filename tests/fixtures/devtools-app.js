@@ -1,7 +1,6 @@
 // 仅用于 qa/local 中的离线模拟器工程，所有数据均为合成样例，不调用云函数或持久化 API。
 const core = require('./core/inspiration');
 const { createCaptureDrafts } = require('./services/capture-drafts');
-const { createReviewService } = require('./services/discovery');
 const { createUsageMetrics } = require('./services/usage-metrics');
 const { createSessionDrafts } = require('./services/session-drafts');
 const data = new Map(), scope = 'a'.repeat(32), now = Date.now();
@@ -13,12 +12,12 @@ let items = [first, core.createInspiration({ id: 'demo_2', text: '做一个方�
 const storage = { get: (key) => data.get(key), set: (key, value) => data.set(key, value) };
 const sessionDrafts = createSessionDrafts(); sessionDrafts.bind({ cacheScope: scope, generation: 1 });
 const store = {
-  listInspirations: () => items.filter((x) => !x.mergedInto), getInspiration: (id) => items.find((x) => x.id === id),
+  listInspirations: () => items.filter((x) => !x.mergedInto && !core.isArchived(x)), getInspiration: (id) => items.find((x) => x.id === id),
   readSnapshot: () => ({ inspirations: items }), getConfirmedRevision: () => ({ baseVersion: 1, generation: 1 }),
   refresh: async () => ({ ok: true, synced: true }),
   async saveInspirations(next) { next.forEach((item) => { items = items.filter((x) => x.id !== item.id).concat([item]); }); return { ok: true, synced: true }; },
   async saveInspiration(item) { return this.saveInspirations([item]); }
 };
 App({ globalData: { store, cacheScope: scope, sessionEpoch: 1, accountError: '', drafts: createCaptureDrafts(), sessionDrafts,
-  review: createReviewService({ storage, cacheScope: scope }), metrics: createUsageMetrics({ storage, cacheScope: scope }), photos: null },
+  metrics: createUsageMetrics({ storage, cacheScope: scope }), photos: null },
   ensureReady: async () => store, refreshAccount: async () => store });

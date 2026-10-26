@@ -11,6 +11,14 @@ function guardDraft(data) {
   setDraftLeaveAlert(Boolean(data.draft.trim() && !(data.savedId && data.savedDraft === data.draft)));
 }
 
+function sameSavedRecord(actual, expected) {
+  if (!actual || !expected) return false;
+  const canonical = (value) => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object'
+    ? Object.keys(value).sort().reduce((result, key) => { result[key] = canonical(value[key]); return result; }, {}) : value;
+  const normalized = (value) => canonical(Object.assign({}, value, { archivedAt: value.archivedAt === undefined ? null : value.archivedAt }));
+  return JSON.stringify(normalized(actual)) === JSON.stringify(normalized(expected));
+}
+
 function initialData() {
   return { ready: false, phase: 'select', options: [], total: 0, query: '', selectedOnly: false,
     selectedCount: 0, sourceCount: 0, templates: USE_TEMPLATES, templateId: 'free', draft: '', draftEdited: false,
@@ -61,10 +69,10 @@ Page({
         const data = Object.assign({}, recovered.data, { ready: true, busy: false, sourceStale,
           draftRecoveryNotice: sourceStale ? '素材已更新，已保留当前稿件供复制。重新选材后可继续整理。' : '已接续这次选材和稿件。',
           error: sourceStale ? '来源已变化，请先复制当前稿件，再刷新素材。' : '' });
-        if (this.pendingSave && sourceVersion(store.listInspirations().find((entry) => entry.id === this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
+        if (this.pendingSave && sameSavedRecord(store.getInspiration(this.pendingSave.item.id), this.pendingSave.item)) {
           data.savedId = this.pendingSave.item.id; data.savedDraft = this.pendingSave.text; data.saveUnknown = false; this.pendingSave = null;
         }
-        const confirmed = data.savedId && store.listInspirations().find((entry) => entry.id === data.savedId);
+        const confirmed = data.savedId && store.getInspiration(data.savedId);
         if (data.savedId && (!confirmed || confirmed.text !== data.savedDraft || (confirmed.templateId || 'free') !== data.templateId)) {
           data.savedId = ''; data.savedDraft = '';
           data.draftRecoveryNotice = '已保留当前稿件，之前另存的记录已变化，请重新保存后分享。';
@@ -84,6 +92,16 @@ Page({
     }
     return true;
   },
+  sourcesAvailable() {
+    if (!this.current() || this.data.sourceStale) return false;
+    const latest = listMaterials(this.store.listInspirations());
+    if (this.selected.some((part) => !latest.some((entry) => entry.key === part.key))) {
+      this.setData({ sourceStale: true, showFormats: false,
+        error: '部分来源已修改、删除、收起或归档。请刷新素材后重新选择，当前稿件仍保留。' });
+      return false;
+    }
+    return true;
+  },
   renderOptions() {
     const query = this.data.query.trim().toLocaleLowerCase();
     const order = new Map(this.selected.map((entry, index) => [entry.key, index + 1]));
@@ -97,7 +115,7 @@ Page({
   onSelectedOnly() { if (this.current()) { this.setData({ selectedOnly: !this.data.selectedOnly }); this.renderOptions(); } },
   onClearSearch() { if (this.current()) { this.setData({ query: '', selectedOnly: false }); this.renderOptions(); } },
   onToggle(event) {
-    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale) return;
+    if (!this.current() || this.data.busy || this.data.saveUnknown || !this.sourcesAvailable()) return;
     const key = event.currentTarget.dataset.key;
     const found = this.materials.find((entry) => entry.key === key);
     if (!found) return;
@@ -107,13 +125,13 @@ Page({
     this.selectionVersion++; this.setData({ error: '' }); this.renderOptions();
   },
   onTemplate(event) {
-    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale || this.data.phase !== 'edit') return;
+    if (!this.current() || this.data.busy || this.data.saveUnknown || !this.sourcesAvailable() || this.data.phase !== 'edit') return;
     const templateId = event.currentTarget.dataset.template;
     if (templateId === this.data.templateId || !USE_TEMPLATES.some((entry) => entry.id === templateId)) return;
     this.onGenerate(templateId);
   },
   onToggleFormats() {
-    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale) return;
+    if (!this.current() || this.data.busy || this.data.saveUnknown || !this.sourcesAvailable()) return;
     this.setData({ showFormats: !this.data.showFormats });
   },
   onRefresh() {
@@ -136,12 +154,13 @@ Page({
     } });
   },
   onGenerate(requestedTemplate) {
-    if (!this.current() || this.data.busy || this.data.saveUnknown || this.data.sourceStale) return;
+    if (!this.current() || this.data.busy || this.data.saveUnknown || !this.sourcesAvailable()) return;
     const templateId = typeof requestedTemplate === 'string' ? requestedTemplate : this.data.templateId;
     const oldTemplate = this.data.templateId, oldPhase = this.data.phase;
     const session = this.session, revision = this.selectionVersion, oldDraft = this.data.draft;
     const apply = () => {
       if (!this.current(session) || this.data.busy || this.data.phase !== oldPhase || revision !== this.selectionVersion || oldDraft !== this.data.draft || oldTemplate !== this.data.templateId) return;
+      if (!this.sourcesAvailable()) return;
       try {
         const result = buildMaterialDraft(this.store.listInspirations(), this.selected, templateId);
         if (this.pendingSave && this.pendingSave.text !== result.text) this.pendingSave = null;
@@ -167,7 +186,7 @@ Page({
     const session = this.session; this.setData({ phase: 'edit', error: '' }, () => this.scrollTop(session));
   },
   onInput(event) {
-    if (!this.current() || this.data.busy || this.data.saveUnknown) return;
+    if (!this.current() || this.data.busy || this.data.saveUnknown || !this.sourcesAvailable()) return;
     if (this.pendingSave && this.pendingSave.text !== event.detail.value) this.pendingSave = null;
     this.setData({ draft: event.detail.value, draftEdited: true, error: '', notice: '' });
     guardDraft(this.data);
@@ -186,12 +205,42 @@ Page({
     try { wx.setClipboardData({ data: text, success: () => finish(true), fail: () => finish(false) }); }
     catch (err) { finish(false); }
   },
+  confirmPendingSave() {
+    if (!this.current() || !this.data.saveUnknown || !this.pendingSave) return false;
+    const pending = this.pendingSave;
+    if (!sameSavedRecord(this.store.getInspiration(pending.item.id), pending.item)) return false;
+    const latest = listMaterials(this.store.listInspirations());
+    const sourceStale = this.data.sourceStale || this.selected.some((part) =>
+      sourceVersion(latest.find((entry) => entry.key === part.key)) !== sourceVersion(part));
+    this.setData({ busy: false, saveUnknown: false, savedId: pending.item.id, savedDraft: pending.text,
+      sourceStale, error: '', notice: '已确认另存为新灵感' });
+    this.pendingSave = null;
+    const app = getApp();
+    if (app.globalData.sessionDrafts && this.draftOwner) app.globalData.sessionDrafts.remove('material-output', this.draftOwner);
+    guardDraft(this.data);
+    return true;
+  },
+  async recheckPendingSave() {
+    const session = this.session, store = this.store;
+    const generation = typeof store.getConfirmedRevision === 'function' && store.getConfirmedRevision().generation;
+    this.setData({ busy: true, error: '', notice: '' });
+    try { if (typeof store.refresh === 'function') await store.refresh(); } catch (err) { /* 保留未知结果供再次核对。 */ }
+    if (!this.current(session)) return;
+    if (generation !== (typeof store.getConfirmedRevision === 'function' && store.getConfirmedRevision().generation)) {
+      this.setData({ busy: false, sourceStale: true, error: '记录状态已变化，请重新读取后核对。' }); return;
+    }
+    if (!this.confirmPendingSave()) this.setData({ busy: false,
+      error: '尚未确认另存，来源已变化。稿件仍可复制，请稍后重试核对。' });
+  },
   async onSave() {
     if (!this.current() || this.data.busy) return;
+    if (this.confirmPendingSave()) return;
     const text = this.data.draft, session = this.session, store = this.store;
     const latest = listMaterials(store.listInspirations());
     if (this.data.sourceStale || this.selected.some((part) => sourceVersion(latest.find((entry) => entry.key === part.key)) !== sourceVersion(part))) {
-      this.setData({ sourceStale: true, error: '来源已变化，请先复制当前稿件，再刷新素材。' }); return;
+      this.setData({ sourceStale: true, error: '来源已变化，请先复制当前稿件，再刷新素材。' });
+      if (this.data.saveUnknown && this.pendingSave) return this.recheckPendingSave();
+      return;
     }
     if (this.data.savedId && this.data.savedDraft === text) { this.setData({ notice: '这份稿件已另存，可直接查看。' }); return; }
     if (!text.trim()) { this.setData({ error: '没有可另存的内容，可先选择素材整理成稿。' }); return; }

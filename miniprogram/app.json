@@ -3,7 +3,9 @@
     "pages/launch/index",
     "pages/capture/index",
     "pages/list/index",
+    "pages/todos/index",
     "pages/mine/index",
+    "pages/archived/index",
     "pages/detail/index",
     "pages/history/index",
     "pages/output/index",
@@ -35,6 +37,12 @@
         "text": "灵感",
         "iconPath": "assets/tabbar/ideas-idle.png",
         "selectedIconPath": "assets/tabbar/ideas-active.png"
+      },
+      {
+        "pagePath": "pages/todos/index",
+        "text": "待办",
+        "iconPath": "assets/tabbar/todos-idle.png",
+        "selectedIconPath": "assets/tabbar/todos-active.png"
       },
       {
         "pagePath": "pages/mine/index",

@@ -8,6 +8,14 @@
   </view>
 
   <view class="settings-card">
+    <view class="group-label">灵感管理</view>
+    <button class="menu-row" bindtap="onOpenArchived" hover-class="menu-row-hover">
+      <text class="menu-label">已归档</text>
+      <image class="menu-arrow" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
+    </button>
+  </view>
+
+  <view class="settings-card">
     <view class="group-label">一起进步</view>
     <button class="menu-row" open-type="share" hover-class="menu-row-hover">
       <text class="menu-label">分享小程序</text>

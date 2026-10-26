@@ -1,10 +1,8 @@
-.list-notice {
-  margin-top: 32rpx;
-}
-
 .error-empty {
   margin-top: 36rpx;
 }
+
+.todo-summary { margin-top: 10rpx; color: var(--brand); font-size: max(26rpx, 13px); line-height: 1.6; }
 
 /* 列表右上入口：小屏也不缩成两行，热区保持 88rpx */
 .add-link {
@@ -30,36 +28,6 @@
 .filter-chip::after { border: 0; }
 .filter-reset { display: flex; justify-content: flex-end; margin: -12rpx 0 4rpx; }
 .filter-reset .btn-link { margin: 0; }
-
-/* 回顾入口：轻量一行，串在第一条记录之后；展开才有内容与动作 */
-.review-row {
-  border-bottom: 2rpx solid var(--line);
-  padding: 0 32rpx;
-}
-.review-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-  min-height: 96rpx;
-}
-.review-label { font-size: max(27rpx, 14px); color: var(--brand); }
-.review-caret { flex: 0 0 auto; font-size: 25rpx; font-size: max(25rpx, 13px); color: var(--ink-3); }
-.review-text {
-  font-size: 29rpx;
-  font-size: max(29rpx, 16px);
-  line-height: 1.65;
-  color: var(--ink-2);
-  padding-bottom: 8rpx;
-  white-space: pre-wrap;
-  word-break: break-all;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.review-actions { display: flex; justify-content: space-between; align-items: center; padding-bottom: 24rpx; }
-.review-actions .btn { width: auto; margin: 0; }
 
 .match-snippet { font-size: 25rpx; font-size: max(25rpx, 14px); line-height: 1.65; color: var(--ink-2); margin-top: 12rpx; word-break: break-all; }
 .match-source { color: var(--ink-2); }

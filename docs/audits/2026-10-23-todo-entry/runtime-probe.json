@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-23T03:27:41.005Z",
+  "synthetic": true,
+  "cloudEnabled": false,
+  "state": {
+    "fixture": "todos-20261021",
+    "pages": [],
+    "system": {
+      "brand": "devtools",
+      "model": "iPhone 12/13 (Pro)",
+      "system": "iOS 10.0.1",
+      "platform": "devtools",
+      "benchmarkLevel": -1,
+      "pixelRatio": 3,
+      "screenWidth": 390,
+      "screenHeight": 844,
+      "windowWidth": 390,
+      "windowHeight": 753,
+      "statusBarHeight": 47,
+      "safeArea": {
+        "top": 47,
+        "left": 0,
+        "right": 390,
+        "bottom": 810,
+        "width": 390,
+        "height": 763
+      },
+      "language": "zh_CN",
+      "version": "8.0.5",
+      "fontSizeSetting": 16,
+      "SDKVersion": "3.16.3",
+      "host": {
+        "env": "WeChat"
+      },
+      "enableDebug": false,
+      "mode": "default",
+      "deviceOrientation": "portrait",
+      "bluetoothEnabled": true,
+      "locationEnabled": true,
+      "wifiEnabled": true,
+      "albumAuthorized": true,
+      "cameraAuthorized": true,
+      "locationAuthorized": true,
+      "microphoneAuthorized": true,
+      "notificationAuthorized": true,
+      "notificationAlertAuthorized": true,
+      "notificationBadgeAuthorized": true,
+      "notificationSoundAuthorized": true,
+      "phoneCalendarAuthorized": true,
+      "bluetoothAuthorized": true,
+      "locationReducedAccuracy": true,
+      "devicePixelRatio": 3
+    }
+  },
+  "error": "Error: timeout waiting for automator response\n    at Connection.onMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\miniprogram-automator\\out\\Connection.js:1:985)\n    at Transport.emit (node:events:514:28)\n    at WebSocket.<anonymous> (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\miniprogram-automator\\out\\Transport.js:1:220)\n    at WebSocket.onMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\event-target.js:120:16)\n    at WebSocket.emit (node:events:514:28)\n    at Receiver.receiverOnMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\websocket.js:807:20)\n    at Receiver.emit (node:events:514:28)\n    at Receiver.dataMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\receiver.js:448:14)\n    at Receiver.getData (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\receiver.js:377:17)\n    at Receiver.startLoop (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\receiver.js:158:22)"
+}

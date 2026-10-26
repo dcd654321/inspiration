@@ -15,11 +15,11 @@ function draftContext(app, store) {
 }
 
 // 文字来源版本不携带照片路径或文件权限；字段序列稳定，数组顺序有意义。
-function sourceVersion(value) {
+function sourceVersion(value, { ignoreTodo = false } = {}) {
   function canonical(entry) {
     if (Array.isArray(entry)) return entry.map(canonical);
     if (entry && typeof entry === 'object') return Object.keys(entry).sort().reduce((result, key) => {
-      if (key !== 'photos') result[key] = canonical(entry[key]);
+      if (key !== 'photos' && (!ignoreTodo || key !== 'todo')) result[key] = canonical(entry[key]);
       return result;
     }, {});
     return entry;

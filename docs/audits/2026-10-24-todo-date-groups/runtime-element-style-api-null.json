@@ -1,0 +1,212 @@
+{
+  "at": "2026-10-24T02:56:32.614Z",
+  "expectedWidth": 390,
+  "synthetic": true,
+  "cloudEnabled": false,
+  "productionWrite": false,
+  "deviceAcceptance": false,
+  "navigationMethod": "先 automator 原生 reLaunch，再核验合成 App 标记；系统信息不做 mock",
+  "steps": [
+    {
+      "name": "01-board-top",
+      "screenshot": "390-01-board-top.png",
+      "route": "pages/todos/index"
+    },
+    {
+      "name": "02-board-tomorrow-day-two",
+      "screenshot": "390-02-board-tomorrow-day-two.png",
+      "route": "pages/todos/index"
+    },
+    {
+      "name": "03-board-later-cross-year",
+      "screenshot": "390-03-board-later-cross-year.png",
+      "route": "pages/todos/index"
+    },
+    {
+      "name": "04-board-undated-archive-done",
+      "screenshot": "390-04-board-undated-archive-done.png",
+      "route": "pages/todos/index"
+    },
+    {
+      "name": "05-detail-body",
+      "screenshot": "390-05-detail-body.png",
+      "route": "pages/detail/index"
+    },
+    {
+      "name": "06-detail-visible",
+      "screenshot": "390-06-detail-visible.png",
+      "route": "pages/detail/index"
+    },
+    {
+      "name": "07-detail-hidden",
+      "screenshot": "390-07-detail-hidden.png",
+      "route": "pages/detail/index"
+    }
+  ],
+  "assertions": [
+    "全部范围按逾期、今天、明天、各具体日期、无日期、归档、已办排序；后天2项同组；未来日期分组不混合"
+  ],
+  "exceptions": [],
+  "stage": "detail-dates",
+  "fixtureDates": {
+    "today": "2026-10-24",
+    "tomorrow": "2026-10-25",
+    "dayTwo": "2026-10-26",
+    "later": "2026-10-30",
+    "crossYear": "2027-01-06"
+  },
+  "viewport": {
+    "brand": "devtools",
+    "model": "iPhone 12/13 (Pro)",
+    "system": "iOS 10.0.1",
+    "platform": "devtools",
+    "benchmarkLevel": -1,
+    "pixelRatio": 3,
+    "screenWidth": 390,
+    "screenHeight": 844,
+    "windowWidth": 390,
+    "windowHeight": 844,
+    "statusBarHeight": 47,
+    "safeArea": {
+      "top": 47,
+      "left": 0,
+      "right": 390,
+      "bottom": 810,
+      "width": 390,
+      "height": 763
+    },
+    "language": "zh_CN",
+    "version": "8.0.5",
+    "fontSizeSetting": 16,
+    "SDKVersion": "3.16.3",
+    "host": {
+      "env": "WeChat"
+    },
+    "enableDebug": false,
+    "mode": "default",
+    "deviceOrientation": "portrait",
+    "bluetoothEnabled": true,
+    "locationEnabled": true,
+    "wifiEnabled": true,
+    "albumAuthorized": true,
+    "cameraAuthorized": true,
+    "locationAuthorized": true,
+    "microphoneAuthorized": true,
+    "notificationAuthorized": true,
+    "notificationAlertAuthorized": true,
+    "notificationBadgeAuthorized": true,
+    "notificationSoundAuthorized": true,
+    "phoneCalendarAuthorized": true,
+    "bluetoothAuthorized": true,
+    "locationReducedAccuracy": true,
+    "devicePixelRatio": 3
+  },
+  "groups": [
+    {
+      "id": "overdue",
+      "label": "已逾期",
+      "dueDates": [
+        "2026-10-23"
+      ],
+      "keys": [
+        "demo_overdue_date:"
+      ],
+      "count": 1
+    },
+    {
+      "id": "today",
+      "label": "今天",
+      "dueDates": [
+        "2026-10-24"
+      ],
+      "keys": [
+        "demo_detail:demo_visible_today",
+        "demo_today_date:"
+      ],
+      "count": 2
+    },
+    {
+      "id": "tomorrow",
+      "label": "明天",
+      "dueDates": [
+        "2026-10-25"
+      ],
+      "keys": [
+        "demo_tomorrow_date:"
+      ],
+      "count": 1
+    },
+    {
+      "id": "date:2026-10-26",
+      "label": "10月26日 周一",
+      "dueDates": [
+        "2026-10-26"
+      ],
+      "keys": [
+        "demo_day_two_a:",
+        "demo_day_two_b:"
+      ],
+      "count": 2
+    },
+    {
+      "id": "date:2026-10-30",
+      "label": "10月30日 周五",
+      "dueDates": [
+        "2026-10-30"
+      ],
+      "keys": [
+        "demo_later_date:"
+      ],
+      "count": 1
+    },
+    {
+      "id": "date:2027-01-06",
+      "label": "2027年1月6日 周三",
+      "dueDates": [
+        "2027-01-06"
+      ],
+      "keys": [
+        "demo_cross_year_date:",
+        "demo_detail:",
+        "demo_detail:demo_visible_cross",
+        "demo_detail:demo_hidden_cross"
+      ],
+      "count": 4
+    },
+    {
+      "id": "undated",
+      "label": "未安排",
+      "dueDates": [
+        null
+      ],
+      "keys": [
+        "demo_undated_date:"
+      ],
+      "count": 1
+    },
+    {
+      "id": "archived",
+      "label": "已归档的待办",
+      "dueDates": [
+        "2026-10-22"
+      ],
+      "keys": [
+        "demo_archive_date:"
+      ],
+      "count": 1
+    },
+    {
+      "id": "done",
+      "label": "已办",
+      "dueDates": [
+        "2026-10-23"
+      ],
+      "keys": [
+        "demo_done_date:"
+      ],
+      "count": 1
+    }
+  ],
+  "ok": false,
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\nnull !== 'nowrap'\n\n    at D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\todo-dates-20261024\\verify.cjs:70:14\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}

@@ -4,7 +4,7 @@
   <view wx:if="{{draft && !(savedId && savedDraft === draft)}}" class="selection-note">稿件仅在本次使用中保留，关闭小程序前请复制或另存。</view>
   <view wx:if="{{draftRecoveryNotice}}" class="recovery-note" aria-live="polite">{{draftRecoveryNotice}}</view>
   <view wx:if="{{!ready}}" class="empty"><view class="ed">正在读取素材…</view></view>
-  <view wx:elif="{{error && !total}}" class="empty">
+  <view wx:elif="{{error && !total && !draft}}" class="empty">
     <view class="notice notice-err" aria-live="polite">{{error}}</view>
     <button class="btn btn-plain btn-block" bindtap="load">重新读取</button>
   </view>
@@ -27,15 +27,15 @@
     <view class="selection-note">只编排选中的文字，不自动补写。切换格式会重新整理稿件。</view>
     </block>
     <view class="field-label draft-label">这份稿件</view>
-    <textarea class="draft-editor {{saveUnknown ? 'draft-pending' : ''}}" value="{{draft}}" maxlength="-1" bindinput="onInput" disabled="{{busy || saveUnknown}}" cursor-spacing="24" aria-label="编辑稿件" />
+    <textarea class="draft-editor {{saveUnknown ? 'draft-pending' : ''}}" value="{{draft}}" maxlength="-1" bindinput="onInput" disabled="{{busy || saveUnknown || sourceStale}}" cursor-spacing="24" aria-label="编辑稿件" />
     <view class="draft-count {{draft.length > maxLength ? 'count-over' : ''}}">
       <text wx:if="{{draft.length > maxLength}}">另存最多{{maxLength}}字符，当前超出{{draft.length - maxLength}}字符。</text>
       <text wx:else>{{draft.length}}字符 · 另存最多{{maxLength}}字符</text>
     </view>
     <view wx:if="{{sourceStale}}" class="notice notice-warn"><view class="mark"></view><view class="notice-body"><view>素材已变化，当前稿件仍可复制。请重新选择素材后再保存。</view><button class="btn-link" bindtap="onBackToSelection" disabled="{{busy}}">重新选择素材</button></view></view>
-    <view wx:if="{{error && total && phase !== 'select'}}" class="notice {{saveUnknown ? 'notice-warn' : 'notice-err'}}" aria-live="polite">{{error}}</view>
+    <view wx:if="{{error && (total || draft) && phase !== 'select'}}" class="notice {{saveUnknown ? 'notice-warn' : 'notice-err'}}" aria-live="polite">{{error}}</view>
     <button class="btn btn-block main-action" bindtap="onCopy" disabled="{{busy || !draft.length}}">复制稿件</button>
-    <button class="btn btn-quiet btn-block secondary-action" bindtap="onSave" disabled="{{busy || sourceStale || !draft.length || (savedId && savedDraft === draft)}}">{{busy ? '正在另存…' : saveUnknown ? '重试确认保存' : savedId && savedDraft === draft ? '已另存' : '另存为新灵感'}}</button>
+    <button class="btn btn-quiet btn-block secondary-action" bindtap="onSave" disabled="{{busy || (!saveUnknown && (sourceStale || !draft.length || (savedId && savedDraft === draft)))}}">{{busy ? '正在另存…' : saveUnknown ? '重试确认保存' : savedId && savedDraft === draft ? '已另存' : '另存为新灵感'}}</button>
     <button wx:if="{{savedId}}" class="btn btn-plain btn-block secondary-action" bindtap="onOpenSaved" disabled="{{busy}}">查看新灵感</button>
   </block>
   <view wx:if="{{notice}}" class="notice notice-success" aria-live="polite">{{notice}}</view>

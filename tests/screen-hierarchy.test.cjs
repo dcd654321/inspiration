@@ -70,18 +70,14 @@ test('列表：搜索框清空只清搜索词，全局清空在无结果态', ()
   // 账户变化清空由 ui-interaction-repair.test.cjs 的异步行为断言覆盖。
 });
 
-test('列表：回顾行串在第一条记录之后，展开才有内容与动作', () => {
+test('列表：只展示记录列表，不再插入回顾入口与占位', () => {
   const page = read('miniprogram/pages/list/index.wxml');
-  const rowLoop = page.indexOf('class="list"');
-  assert.ok(rowLoop >= 0);
-  const review = page.indexOf('index === 0 && reviewItem');
-  assert.ok(review > rowLoop, '回顾行应在列表容器内、第一条记录之后');
-  assert.match(page, /回看一个想法/);
-  assert.match(page, /bindtap="onDismissReview">本次先不看</);
-  // 展开前不出现内容与动作
-  const expanded = page.indexOf('wx:if="{{reviewExpanded}}"');
-  assert.ok(expanded > review);
-  assert.ok(page.indexOf('继续补充') > expanded);
+  assert.match(page, /wx:for="{{items}}" wx:key="id"/);
+  assert.doesNotMatch(page, /回看一个想法|本次先不看|review|Review/);
+  assert.doesNotMatch(read('miniprogram/pages/list/index.js'), /review|Review/);
+  assert.doesNotMatch(read('miniprogram/pages/list/index.wxss'), /review/);
+  assert.doesNotMatch(read('miniprogram/app.js'), /review|Review/);
+  assert.doesNotMatch(read('miniprogram/services/discovery.js'), /createReviewService|:review/);
 });
 
 test('列表：行内不再重复「查看」按钮，阶段与标签只在非默认时出现', () => {
@@ -234,7 +230,7 @@ test('记录页：结果未知与确认被拒绝分开，成功卡带摘录与�
   assert.match(page, /bindtap="onCopyDraft"[^>]*>复制内容</);
   // 确认被拒绝：可用确定回执说明原因，不编造
   assert.match(page, /未能保存/);
-  assert.match(logic, /UNKNOWN_CODES = \['NETWORK', 'INTERNAL'\]/);
+  assert.match(logic, /UNKNOWN_CODES\.includes\(code\)/);
   assert.match(logic, /status: 'rejected'/);
   // 输入区常驻，保存后下一条入口仍是主按钮；上一条的辅助动作另行呈现。
   assert.match(page, /<view class="composer">/);
@@ -287,7 +283,7 @@ test('详情页：补充输入两档高度且不用 auto-height，长文有浮�
   assert.match(styles, /\.compose-editor\.compose-tall[\s\S]*?max\(320rpx,\s*160px\)/);
   assert.match(styles, /\.compose-editor \{[\s\S]*?max\(128rpx,\s*64px\)/);
   // 长文浮动按钮：只在长正文、滚离原文、且键盘未打开时出现
-  assert.match(page, /wx:if="\{\{floatVisible\}\}"[\s\S]*?继续补充/);
+  assert.match(page, /wx:if="\{\{floatVisible && !archived && !archiveUnknown\}\}"[\s\S]*?继续补充/);
   const logic = read('miniprogram/pages/detail/index.js');
   assert.match(logic, /measureLongText/);
   assert.match(logic, /height > 6 \* lineHeight/);
@@ -358,7 +354,7 @@ test('整理成稿：进入即有稿件，工具行为 调整内容/选择格式
   assert.match(page, /bindtap="onOpenSaved">查看新灵感</);
 });
 
-test('我的页：产品使用帮助可达，诊断与统计入口隐藏，回顾控制只留在列表内', () => {
+test('我的页：产品使用帮助可达，诊断与统计入口隐藏', () => {
   const page = read('miniprogram/pages/mine/index.wxml');
   assert.match(page, /数据与隐私/);
   assert.match(page, /使用帮助/);
@@ -367,9 +363,6 @@ test('我的页：产品使用帮助可达，诊断与统计入口隐藏，回�
   assert.doesNotMatch(page, /显示回顾入口|诊断信息|使用统计/);
   const logic = read('miniprogram/pages/mine/index.js');
   assert.doesNotMatch(logic, /onReviewSetting|onUsageSetting|onCopyUsage/);
-  // 回顾的会话内控制保留在列表里的「本次先不看」
-  const list = read('miniprogram/pages/list/index.wxml');
-  assert.match(list, /本次先不看/);
 })
 
 test('字号下限：正文与辅助类文字在窄屏不被缩到读不出', () => {

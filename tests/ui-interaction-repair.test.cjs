@@ -3,6 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const core = require('../miniprogram/core/inspiration');
 const { createCaptureDrafts } = require('../miniprogram/services/capture-drafts');
+const { createCloudOnlyStore } = require('../miniprogram/services/cloud-only-store');
 
 function deferred() {
   let resolve;
@@ -16,8 +17,8 @@ async function withPage(name, run) {
   const old = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition;
   const state = { items: [core.createInspiration({ id: 'ins_review', text: '散步路线想法', now: Date.now() })],
-    saves: [], alerts: [], disabledAlerts: 0, scrolls: [], toasts: [], copies: [], refreshes: 0 };
-  const store = {
+    saves: [], alerts: [], disabledAlerts: 0, scrolls: [], toasts: [], copies: [], refreshes: 0, version: 1 };
+  const plainStore = {
     getInspiration: (id) => state.items.find((x) => x.id === id),
     listInspirations: () => state.items,
     readSnapshot: () => ({ inspirations: state.items }),
@@ -29,6 +30,23 @@ async function withPage(name, run) {
       return result;
     }
   };
+  const cacheScope = 'a'.repeat(32);
+  const store = name === 'detail' ? createCloudOnlyStore({ cacheScope, remoteSnapshot: {
+    cacheScope, generation: 1, version: state.version, inspirations: state.items }, transport: {
+      async send(action, payload) {
+        if (action === 'snapshot.pull') {
+          state.refreshes++;
+          return { ok: true, data: { cacheScope, generation: 1, version: state.version, inspirations: state.items } };
+        }
+        assert.equal(action, 'snapshot.push');
+        const next = payload.upserts[0]; state.saves.push(next);
+        const result = state.save ? await state.save(next) : { ok: true, synced: true };
+        if (!result || !result.ok || !result.synced) return result;
+        if (payload.baseVersion !== state.version) return { ok: false, code: 'CONFLICT' };
+        state.items = state.items.filter(item => item.id !== next.id).concat([next]); state.version++;
+        return { ok: true, data: { version: state.version } };
+      }
+    } }) : plainStore;
   const app = { globalData: { store, sessionEpoch: 1, cacheScope: 'a'.repeat(32),
     drafts: createCaptureDrafts() }, ensureReady: async () => app.globalData.store,
     refreshAccount: async () => { throw Error('should not reauthenticate a confirmed session'); } };
@@ -62,8 +80,9 @@ test('时间显示：列表详情补充及修改记录均完整到秒，不改�
   item = core.appendSupplement(item, { id: 'sup_hidden', content: '已收起的补充', now: start + 43000 });
   item = { ...item, updatedAt: start + 44000, supplements: item.supplements.map(supplement =>
     supplement.id === 'sup_hidden' ? { ...supplement, foldedAt: start + 44000 } : supplement) };
-  for (const name of ['list', 'detail', 'history']) await withPage(name, async ({ page, state }) => {
+  for (const name of ['list', 'detail', 'history']) await withPage(name, async ({ page, state, store }) => {
     state.items = [structuredClone(item)];
+    if (name === 'detail') { state.version++; await store.refresh(); }
     const before = JSON.stringify(state.items);
     await page.load();
     if (name === 'list') assert.equal(page.data.items[0].time, '2026-10-10 21:47:47');
@@ -162,6 +181,7 @@ test('交互修复：补充确认期间忽略新输入并只添加提交正文',
     const pending = deferred(); state.save = () => pending.promise;
     page.onSupplementInput(input('补充 A')); const saving = page.onSubmitSupplement();
     page.onSupplementInput(input('补充 B')); await page.onSubmitSupplement();
+    await new Promise(setImmediate);
     assert.equal(page.data.supplementDraft, '补充 A');
     assert.equal(app.globalData.drafts.get('ins_review'), '补充 A');
     assert.equal(state.saves.length, 1);
@@ -196,14 +216,16 @@ test('交互修复：补充迟到响应不清空新账户输入或会话草稿',
   });
 });
 
-test('交互修复：补充重试使用最新正文而不覆盖期间其他修改', async () => {
+test('交互修复：补充重试先核对版本，冲突保留新正文及未提交输入', async () => {
   await withPage('detail', async ({ page, state }) => {
     state.save = async () => ({ ok: false, code: 'NETWORK' });
     page.onSupplementInput(input('补充 A')); await page.onSubmitSupplement();
     state.items = [Object.assign({}, state.items[0], { text: '期间修改的正文', tags: ['保留标签'] })];
+    state.version++;
     state.save = async () => ({ ok: true, synced: true }); await page.onSubmitSupplement();
     assert.equal(state.items[0].text, '期间修改的正文'); assert.deepEqual(state.items[0].tags, ['保留标签']);
-    assert.equal(state.saves[0].supplements[0].id, state.items[0].supplements[0].id);
+    assert.equal(state.saves.length, 1); assert.equal(state.items[0].supplements.length, 0);
+    assert.equal(page.data.supplementDraft, '补充 A'); assert.match(page.data.supplementError, /更新/);
   });
 });
 
@@ -212,6 +234,7 @@ test('交互修复：刷新已确认原补充后重试不追加第二条', async
     state.save = async () => ({ ok: false, code: 'NETWORK' });
     page.onSupplementInput(input('补充 A')); await page.onSubmitSupplement();
     state.items = [state.saves[0]];
+    state.version++;
     state.save = async () => ({ ok: true, synced: true }); await page.onSubmitSupplement();
     assert.equal(state.items[0].supplements.length, 1); assert.equal(page.data.supplementDraft, '');
   });

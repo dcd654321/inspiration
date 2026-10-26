@@ -1,5 +1,5 @@
 'use strict';
-const EVENTS = ['record_saved', 'supplement_saved', 'output_copied', 'output_saved', 'search_opened', 'review_opened', 'save_failed', 'backup_pending'];
+const EVENTS = ['record_saved', 'supplement_saved', 'output_copied', 'output_saved', 'search_opened', 'save_failed', 'backup_pending'];
 function createUsageMetrics({ storage, cacheScope, now = Date.now }) {
   if (!/^[a-f0-9]{32}$/.test(cacheScope)) throw Error('INVALID_USAGE_SCOPE');
   const key = 'linggan:v2:' + cacheScope + ':usage';

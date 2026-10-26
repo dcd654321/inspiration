@@ -63,9 +63,9 @@ test('界面整改：品牌图已进入小程序包', () => {
   assert.ok(fs.statSync(asset).size > 0, '品牌图为空文件');
 });
 
-test('公众首用：三个 Tab 均配置轻量的普通态和选中态图标', () => {
+test('公众首用：四个 Tab 均配置轻量的普通态和选中态图标', () => {
   const app = JSON.parse(read('miniprogram/app.json'));
-  assert.strictEqual(app.tabBar.list.length, 3);
+  assert.strictEqual(app.tabBar.list.length, 4);
   for (const tab of app.tabBar.list) {
     for (const key of ['iconPath', 'selectedIconPath']) {
       assert.ok(tab[key], `${tab.text} 缺少 ${key}`);

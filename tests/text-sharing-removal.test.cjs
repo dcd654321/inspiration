@@ -20,7 +20,7 @@ function sourceFiles(directory) {
 
 test('发布包移除文字分享页面入口与专用模块', () => {
   const app = JSON.parse(read('miniprogram/app.json'));
-  assert.equal(app.pages.length, 11);
+  assert.equal(app.pages.length, 13);
   for (const name of removedPages) {
     assert.ok(!app.pages.includes('pages/' + name + '/index'));
     assert.equal(fs.existsSync(path.join(root, 'miniprogram/pages', name)), false);
@@ -60,10 +60,10 @@ test('普通小程序转发仅使用固定欢迎页', () => {
       require(filename);
       const context = { data: { draft: '用户未保存的文字', token: 'A'.repeat(28), id: 'personal_item' } };
       assert.deepEqual(page.onShareAppMessage.call(context), {
-        title: '灵感拾光簿｜让想法慢慢成形', path: '/pages/welcome/index', imageUrl: '/assets/brand-mark.png'
+        title: '灵感拾光簿｜随手记录灵感，手动整理成稿', path: '/pages/welcome/index', imageUrl: '/assets/product-share.png'
       });
       assert.deepEqual(page.onShareTimeline.call(context), {
-        title: '灵感拾光簿｜让想法慢慢成形', query: '', imageUrl: '/assets/brand-mark.png'
+        title: '灵感拾光簿｜随手记录灵感，手动整理成稿', query: '', imageUrl: '/assets/product-share.png'
       });
       delete require.cache[filename];
     }

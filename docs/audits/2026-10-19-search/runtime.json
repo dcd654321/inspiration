@@ -1,0 +1,598 @@
+{
+  "at": "2026-10-19T13:43:42.664Z",
+  "isolated": true,
+  "realCloudCalls": false,
+  "realAccount": false,
+  "deviceAcceptance": false,
+  "exceptions": [],
+  "steps": [
+    {
+      "name": "01-welcome-cold-start",
+      "route": "pages/welcome/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 0,
+      "attemptRoutes": [],
+      "networkHandlerRegistered": true,
+      "accountRequested": false,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "",
+      "foreground": true,
+      "epoch": 0,
+      "layout": [
+        [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 963.6875,
+            "width": 390,
+            "height": 963.6875
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 18,
+            "bottom": 55,
+            "width": 350,
+            "height": 37
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 71,
+            "bottom": 140.59375,
+            "width": 350,
+            "height": 69.59375
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 149.59375,
+            "bottom": 198.59375,
+            "width": 350,
+            "height": 49
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 278.59375,
+            "bottom": 531.84375,
+            "width": 350,
+            "height": 253.25
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 313.59375,
+            "bottom": 386.34375,
+            "width": 350,
+            "height": 72.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 386.34375,
+            "bottom": 459.09375,
+            "width": 350,
+            "height": 72.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 459.09375,
+            "bottom": 531.84375,
+            "width": 350,
+            "height": 72.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 549.84375,
+            "bottom": 800.59375,
+            "width": 350,
+            "height": 250.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 583.84375,
+            "bottom": 633.59375,
+            "width": 350,
+            "height": 49.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 644.59375,
+            "bottom": 717.09375,
+            "width": 350,
+            "height": 72.5
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 728.09375,
+            "bottom": 800.59375,
+            "width": 350,
+            "height": 72.5
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 820.59375,
+            "bottom": 909.6875,
+            "width": 350,
+            "height": 89.09375
+          }
+        ],
+        {
+          "id": "",
+          "dataset": {},
+          "scrollLeft": 0,
+          "scrollTop": 0,
+          "scrollWidth": 390,
+          "scrollHeight": 964
+        }
+      ]
+    },
+    {
+      "name": "02-welcome-help-and-share",
+      "route": "pages/welcome/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 0,
+      "attemptRoutes": [],
+      "networkHandlerRegistered": true,
+      "accountRequested": false,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "",
+      "foreground": true,
+      "epoch": 1,
+      "layout": [
+        [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": -211,
+            "bottom": 752.6875,
+            "width": 390,
+            "height": 963.6875
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": -193,
+            "bottom": -156,
+            "width": 350,
+            "height": 37
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": -140,
+            "bottom": -70.40625,
+            "width": 350,
+            "height": 69.59375
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": -61.40625,
+            "bottom": -12.40625,
+            "width": 350,
+            "height": 49
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 67.59375,
+            "bottom": 320.84375,
+            "width": 350,
+            "height": 253.25
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 102.59375,
+            "bottom": 175.34375,
+            "width": 350,
+            "height": 72.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 175.34375,
+            "bottom": 248.09375,
+            "width": 350,
+            "height": 72.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 248.09375,
+            "bottom": 320.84375,
+            "width": 350,
+            "height": 72.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 338.84375,
+            "bottom": 589.59375,
+            "width": 350,
+            "height": 250.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 372.84375,
+            "bottom": 422.59375,
+            "width": 350,
+            "height": 49.75
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 433.59375,
+            "bottom": 506.09375,
+            "width": 350,
+            "height": 72.5
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 517.09375,
+            "bottom": 589.59375,
+            "width": 350,
+            "height": 72.5
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 20,
+            "right": 370,
+            "top": 609.59375,
+            "bottom": 698.6875,
+            "width": 350,
+            "height": 89.09375
+          }
+        ],
+        {
+          "id": "",
+          "dataset": {},
+          "scrollLeft": 0,
+          "scrollTop": 211,
+          "scrollWidth": 390,
+          "scrollHeight": 964
+        }
+      ]
+    },
+    {
+      "name": "03-start-recording-account-blocked",
+      "route": "pages/capture/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 1,
+      "attemptRoutes": [
+        "pages/capture/index"
+      ],
+      "networkHandlerRegistered": true,
+      "accountRequested": true,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "暂时无法确认账户，请联网后重试。",
+      "foreground": true,
+      "epoch": 1,
+      "draft": "",
+      "status": "",
+      "saving": false,
+      "errorText": "",
+      "canSave": false,
+      "lastSavedId": "",
+      "layout": [
+        [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 656.078125,
+            "width": 390,
+            "height": 656.078125
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 36,
+            "right": 354,
+            "top": 278.484375,
+            "bottom": 444.484375,
+            "width": 318,
+            "height": 166
+          }
+        ],
+        {
+          "id": "",
+          "dataset": {},
+          "scrollLeft": 0,
+          "scrollTop": 0,
+          "scrollWidth": 390,
+          "scrollHeight": 671
+        }
+      ]
+    },
+    {
+      "name": "04-account-failure-preserves-input",
+      "route": "pages/capture/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 2,
+      "attemptRoutes": [
+        "pages/capture/index",
+        "pages/capture/index"
+      ],
+      "networkHandlerRegistered": true,
+      "accountRequested": true,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "暂时无法确认账户，请联网后重试。",
+      "foreground": true,
+      "epoch": 2,
+      "draft": "隔离验证：搜索进入后先记下一句灵感，连接失败仍保留输入。",
+      "status": "rejected",
+      "saving": false,
+      "errorText": "暂时无法确认账户，请联网后重试。",
+      "canSave": true,
+      "lastSavedId": "",
+      "layout": [
+        [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 735.875,
+            "width": 390,
+            "height": 735.875
+          },
+          {
+            "id": "",
+            "dataset": {},
+            "left": 36,
+            "right": 354,
+            "top": 278.484375,
+            "bottom": 444.484375,
+            "width": 318,
+            "height": 166
+          }
+        ],
+        {
+          "id": "",
+          "dataset": {},
+          "scrollLeft": 0,
+          "scrollTop": 0,
+          "scrollWidth": 390,
+          "scrollHeight": 736
+        }
+      ]
+    }
+  ],
+  "welcome": {
+    "initial": {
+      "route": "pages/welcome/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 0,
+      "attemptRoutes": [],
+      "networkHandlerRegistered": true,
+      "accountRequested": false,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "",
+      "foreground": true,
+      "epoch": 0
+    },
+    "resumed": {
+      "route": "pages/welcome/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 0,
+      "attemptRoutes": [],
+      "networkHandlerRegistered": true,
+      "accountRequested": false,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "",
+      "foreground": true,
+      "epoch": 1
+    },
+    "networkRestored": {
+      "route": "pages/welcome/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 0,
+      "attemptRoutes": [],
+      "networkHandlerRegistered": true,
+      "accountRequested": false,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "",
+      "foreground": true,
+      "epoch": 1
+    },
+    "lifecycleMethod": "隔离进程内直接调用当前 App.onHide/onShow",
+    "networkMethod": "隔离进程内调用当前 App 注册的网络恢复回调；未切换真实网络",
+    "zeroCloudAttempts": true,
+    "ok": true
+  },
+  "lastVerifiedAt": "2026-10-19T13:46:45.910Z",
+  "share": {
+    "appMessage": {
+      "title": "灵感拾光簿｜随手记录灵感，手动整理成稿",
+      "path": "/pages/welcome/index",
+      "imageUrl": "/assets/product-share.png"
+    },
+    "timeline": {
+      "title": "灵感拾光簿｜随手记录灵感，手动整理成稿",
+      "query": "",
+      "imageUrl": "/assets/product-share.png"
+    },
+    "sentExternally": false,
+    "timelineRouteNote": "onShareTimeline只返回当前页面的title/query/image；本次未验证真实朋友圈路由或发送。"
+  },
+  "environment": {
+    "windowWidth": 390,
+    "windowHeight": 753,
+    "screenWidth": 390,
+    "screenHeight": 844,
+    "safeArea": {
+      "top": 47,
+      "left": 0,
+      "right": 390,
+      "bottom": 810,
+      "width": 390,
+      "height": 763
+    },
+    "SDKVersion": "3.16.3"
+  },
+  "buttons": [
+    [
+      {
+        "id": "",
+        "dataset": {},
+        "left": 20,
+        "right": 370,
+        "top": 212.59375,
+        "bottom": 256.59375,
+        "width": 350,
+        "height": 44
+      },
+      {
+        "id": "",
+        "dataset": {},
+        "left": 20,
+        "right": 370,
+        "top": 835.59375,
+        "bottom": 879.59375,
+        "width": 350,
+        "height": 44
+      }
+    ]
+  ],
+  "cover": {
+    "width": 1000,
+    "height": 800,
+    "centerSquareCrop": {
+      "left": 100,
+      "top": 0,
+      "right": 900,
+      "bottom": 800
+    },
+    "visualInspection": "已查看1000x800完整图；所有文字和标志位于中间800x800范围内，边界仍有留白。此为静态安全区检查，不代表微信客户端实际裁切。"
+  },
+  "capture": {
+    "entered": {
+      "route": "pages/capture/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 1,
+      "attemptRoutes": [
+        "pages/capture/index"
+      ],
+      "networkHandlerRegistered": true,
+      "accountRequested": true,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "暂时无法确认账户，请联网后重试。",
+      "foreground": true,
+      "epoch": 1,
+      "draft": "",
+      "status": "",
+      "saving": false,
+      "errorText": "",
+      "canSave": false,
+      "lastSavedId": ""
+    },
+    "failed": {
+      "route": "pages/capture/index",
+      "wxCloudAvailable": true,
+      "blockerLoaded": true,
+      "blockedAttempts": 2,
+      "attemptRoutes": [
+        "pages/capture/index",
+        "pages/capture/index"
+      ],
+      "networkHandlerRegistered": true,
+      "accountRequested": true,
+      "cloudEnabled": true,
+      "storeReady": false,
+      "accountError": "暂时无法确认账户，请联网后重试。",
+      "foreground": true,
+      "epoch": 2,
+      "draft": "隔离验证：搜索进入后先记下一句灵感，连接失败仍保留输入。",
+      "status": "rejected",
+      "saving": false,
+      "errorText": "暂时无法确认账户，请联网后重试。",
+      "canSave": true,
+      "lastSavedId": ""
+    },
+    "inputMethod": "DevTools automator textarea.tap/input，证明组件绑定与渲染；未证明真机键盘或输入法",
+    "preserveInputOnAccountFailure": true,
+    "ok": true
+  }
+}

@@ -1,3 +1,5 @@
+@import "../../styles/todo-entry.wxss";
+
 /* 顶部：时间与低频操作的入口。低频操作全部收进「更多」，正文上方保持安静 */
 .detail-head {
   display: flex;
@@ -33,6 +35,23 @@
 .detail-more::after { border: none; }
 
 .detail-more[disabled] { opacity: 0.55; }
+
+.archive-state {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 16rpx 0;
+  color: var(--ink-3);
+  font-size: max(26rpx, 13px);
+  line-height: 1.6;
+}
+
+.archive-organization {
+  padding: 16rpx 0;
+  color: var(--ink-2);
+  font-size: max(28rpx, 14px);
+  line-height: 1.7;
+}
 
 /* 轻量动作：两个主任务的入口，等宽一行 */
 .detail-actions {
@@ -379,3 +398,22 @@
 .source-trace view + view { margin-top: 24rpx; }
 .draft-hint { margin-top: 12rpx; font-size: max(24rpx, 13px); line-height: 1.6; color: var(--ink-3); }
 .origin-editor, .tl-editor { box-sizing: border-box; padding: 20rpx; border: 1px solid var(--field-line); border-radius: 16rpx; background: var(--surface); }
+
+.todo-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 4rpx 20rpx; margin-top: 8rpx; }
+.todo-inline .todo-check, .todo-inline .todo-date, .todo-inline .todo-more { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; box-sizing: border-box; min-height: max(88rpx, 44px); line-height: 1.4; font-weight: 400; }
+.todo-inline .todo-date { white-space: nowrap; word-break: keep-all; }
+.origin-todo { margin: 0 0 16rpx; }
+.todo-check { display: inline-flex; align-items: center; gap: 14rpx; margin: 0; padding: 0; background: transparent; border: none; border-radius: 0; color: var(--brand); font-size: max(26rpx, 14px); line-height: 1.4; }
+.todo-check::after { border: none; }
+.todo-check[disabled] { color: var(--ink-3); background: transparent; }
+.todo-box { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; width: 36rpx; height: 36rpx; min-width: 18px; min-height: 18px; border: 1px solid currentColor; border-radius: 6rpx; font-size: 13px; line-height: 1; }
+.todo-check.is-done { color: var(--ink-2); }
+.todo-check.is-done .todo-box { color: #fff; border-color: var(--brand); background: var(--brand); }
+.todo-date { font-size: max(24rpx, 13px); color: var(--ink-2); }
+.todo-more { margin-left: auto; }
+.todo-date-sheet .sheet-title { color: var(--ink); font-size: max(32rpx, 16px); font-weight: 500; border-bottom: 0; }
+.todo-date-sheet .btn-block { width: calc(100% - 56rpx); margin: 0 28rpx; }
+.todo-date-panel { padding: 0 28rpx 28rpx; }
+.todo-source-quote { margin-bottom: 24rpx; padding: 20rpx; border-radius: 12rpx; background: var(--paper); color: var(--ink-2); font-size: max(26rpx, 13px); font-weight: 400; line-height: 1.6; white-space: pre-wrap; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.todo-undo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; padding: 0 20rpx; background: var(--brand-soft); border-radius: 12rpx; font-size: max(26rpx, 14px); }
+.todo-highlight { background: var(--brand-soft); outline: 2px solid var(--brand-line); outline-offset: 8rpx; border-radius: 8rpx; opacity: 1; }

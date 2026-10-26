@@ -18,6 +18,7 @@
 
 const { LIMITS } = require('./limits');
 const { ERROR_CODES, ValidationError } = require('./errors');
+const { isValidTodo, normalizeTodo } = require('./todo');
 
 // 标识字符集刻意收窄：标识会参与云存储路径拼接
 // （linggan/{accountKey}/{inspirationId}/{photoId}），放行 `/`、`\`、`.` 会带来越权拼接风险。
@@ -127,6 +128,7 @@ function throwIfAny(errors) {
 function validateInspiration(input) {
   const source = isPlainObject(input) ? input : {};
   const errors = [];
+  if (!isValidTodo(source.todo)) errors.push({ field: 'todo', code: ERROR_CODES.INVALID_TYPE });
 
   const textError = checkText(
     source.text, 'text', LIMITS.textMaxLength, ERROR_CODES.EMPTY_TEXT, ERROR_CODES.TEXT_TOO_LONG
@@ -163,6 +165,8 @@ function createInspiration(input) {
     source: 'user',
     summarySources: [],
     mergedInto: null,
+    archivedAt: null,
+    todo: normalizeTodo(input.todo),
     deletedAt: null
   });
 }
@@ -216,6 +220,7 @@ function appendSupplement(inspiration, input) {
   assertInspiration(inspiration);
   const source = isPlainObject(input) ? input : {};
   const errors = [];
+  if (!isValidTodo(source.todo)) errors.push({ field: 'supplements[].todo', code: ERROR_CODES.INVALID_TYPE });
 
   const contentError = checkText(
     source.content, 'supplements[].content', source.source === 'ai' && Array.isArray(source.sourceIds) && source.sourceIds.length >= 2 ? LIMITS.summaryMaxLength : LIMITS.supplementMaxLength,
@@ -244,7 +249,8 @@ function appendSupplement(inspiration, input) {
     source: source.source === undefined ? 'user' : source.source,
     sourceIds: Array.isArray(source.sourceIds) ? source.sourceIds.slice() : [],
     mergedInto: null,     // 被 AI 汇总时指向汇总结果
-    foldedAt: null        // 被合并进灵感的时刻（界面标签「合并进灵感」）
+    foldedAt: null,       // 被合并进灵感的时刻（界面标签「合并进灵感」）
+    todo: normalizeTodo(source.todo)
   };
 
   return deepFreeze(Object.assign({}, inspiration, {
@@ -685,6 +691,30 @@ function unmerge(inspiration) {
   return deepFreeze(Object.assign({}, inspiration, { mergedInto: null }));
 }
 
+/** 归档只改变可见范围，不改变内容、历史与最后编辑时间。 */
+function markArchived(inspiration, input) {
+  assertInspiration(inspiration);
+  if (inspiration.mergedInto) {
+    throw new ValidationError([{ field: 'mergedInto', code: ERROR_CODES.ALREADY_MERGED }]);
+  }
+  if (isArchived(inspiration)) return inspiration;
+  const now = input && input.now;
+  if (!Number.isSafeInteger(now) || now < 0) {
+    throw new ValidationError([{ field: 'archivedAt', code: ERROR_CODES.INVALID_NOW }]);
+  }
+  return deepFreeze(Object.assign({}, inspiration, { archivedAt: now }));
+}
+
+function unarchive(inspiration) {
+  assertInspiration(inspiration);
+  if (!isArchived(inspiration)) return inspiration;
+  return deepFreeze(Object.assign({}, inspiration, { archivedAt: null }));
+}
+
+function isArchived(inspiration) {
+  return Boolean(inspiration && Number.isSafeInteger(inspiration.archivedAt) && inspiration.archivedAt >= 0);
+}
+
 /**
  * 标记删除。只打标记，不做清理——云端确认后才由服务层移除本机记录。
  * 不改 updatedAt：删除不是编辑，不应让条目在列表里重新排序。
@@ -744,6 +774,9 @@ module.exports = {
   appendPhoto,
   markMerged,
   unmerge,
+  markArchived,
+  unarchive,
+  isArchived,
   markDeleted,
   isDeleted,
   isMerged,

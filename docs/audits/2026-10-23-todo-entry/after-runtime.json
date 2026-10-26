@@ -1,0 +1,228 @@
+{
+  "at": "2026-10-23T03:34:08.581Z",
+  "phase": "after",
+  "synthetic": true,
+  "cloudEnabled": false,
+  "productionWrite": false,
+  "deviceAcceptance": false,
+  "steps": [
+    {
+      "name": "01-capture-default",
+      "screenshot": "after-01-capture-default.png",
+      "route": "pages/capture/index",
+      "state": {
+        "todoEnabled": false,
+        "todoDueDate": ""
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 726.078125,
+            "width": 390,
+            "height": 726.078125
+          },
+          []
+        ]
+      }
+    },
+    {
+      "name": "02-capture-todo-selected",
+      "screenshot": "after-02-capture-todo-selected.png",
+      "route": "pages/capture/index",
+      "state": {
+        "todoEnabled": true,
+        "todoDueDate": ""
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 813.578125,
+            "width": 390,
+            "height": 813.578125
+          },
+          []
+        ]
+      }
+    },
+    {
+      "name": "03-detail-default",
+      "screenshot": "after-03-detail-default.png",
+      "route": "pages/detail/index",
+      "state": {
+        "supplementTodoEnabled": false,
+        "supplementTodoDate": ""
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 1092.15625,
+            "width": 390,
+            "height": 1092.15625
+          },
+          []
+        ]
+      }
+    },
+    {
+      "name": "04-supplement-todo-selected",
+      "screenshot": "after-04-supplement-todo-selected.png",
+      "route": "pages/detail/index",
+      "state": {
+        "supplementTodoEnabled": true,
+        "supplementTodoDate": ""
+      },
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 1179.65625,
+            "width": 390,
+            "height": 1179.65625
+          },
+          []
+        ]
+      }
+    },
+    {
+      "name": "05-todos-add-entry",
+      "screenshot": "after-05-todos-add-entry.png",
+      "route": "pages/todos/index",
+      "state": {},
+      "layout": {
+        "window": {
+          "pixelRatio": 3,
+          "safeArea": {
+            "top": 47,
+            "left": 0,
+            "right": 390,
+            "bottom": 810,
+            "width": 390,
+            "height": 763
+          },
+          "screenWidth": 390,
+          "screenHeight": 844,
+          "screenTop": 0,
+          "windowWidth": 390,
+          "windowHeight": 844,
+          "statusBarHeight": 47
+        },
+        "rects": [
+          {
+            "id": "",
+            "dataset": {},
+            "left": 0,
+            "right": 390,
+            "top": 0,
+            "bottom": 1770.484375,
+            "width": 390,
+            "height": 1770.484375
+          },
+          []
+        ]
+      }
+    }
+  ],
+  "exceptions": [],
+  "initial": {
+    "fixture": "todos-20261021",
+    "routes": [
+      "pages/capture/index"
+    ],
+    "ids": [
+      "demo_walk",
+      "demo_overdue",
+      "demo_future",
+      "demo_undated",
+      "demo_archived",
+      "demo_long"
+    ]
+  },
+  "ok": true
+}

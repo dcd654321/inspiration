@@ -66,12 +66,31 @@ test('全量审查：入口失效不覆盖稿件，旧跳转失败不清除新�
   });
 });
 
-test('全量审查：回顾继续补充定位输入，普通阅读不请求聚焦', async () => {
-  await fixture(async ({ mount, routes }) => {
+test('列表移除回顾后保持全部记录顺序与普通详情导航', async () => {
+  await fixture(async ({ mount, routes, items, store, app }) => {
+    const now = Date.now();
+    items.push(core.createInspiration({ id: 'old', text: '很早的想法', now: now - 10 * 86400000 }),
+      core.createInspiration({ id: 'recent', text: '最近的想法', now }),
+      core.createInspiration({ id: 'middle', text: '前几天的想法', now: now - 3 * 86400000 }));
+    store.readSnapshot = () => ({ inspirations: items });
+    const before = JSON.stringify(items);
+    const events = [];
+    app.globalData.metrics = { track: event => events.push(event) };
     const page = mount('list');
-    page.onOpen({ currentTarget: { dataset: { id: 'a/b', review: true } } });
-    page.onOpen({ currentTarget: { dataset: { id: 'a/b' } } });
-    assert.deepEqual(routes, ['/pages/detail/index?id=a%2Fb&focus=supplement', '/pages/detail/index?id=a%2Fb']);
+    await page.onShow();
+    assert.deepEqual(page.data.items.map(item => item.id), ['recent', 'middle', 'old']);
+    assert.equal(page.data.activeCount, 3);
+    page.onOpen({ currentTarget: { dataset: { id: 'recent' } } });
+    assert.equal(page.anchorId, 'recent');
+    assert.deepEqual(events, []);
+    page.onSearch({ detail: { value: '很早' } });
+    assert.deepEqual(page.data.items.map(item => item.id), ['old']);
+    page.onOpen({ currentTarget: { dataset: { id: 'old' } } });
+    assert.deepEqual(routes, ['/pages/detail/index?id=recent', '/pages/detail/index?id=old']);
+    assert.deepEqual(events, ['search_opened']);
+    page.onClearQuery();
+    assert.deepEqual(page.data.items.map(item => item.id), ['recent', 'middle', 'old']);
+    assert.equal(JSON.stringify(items), before);
   });
 });
 

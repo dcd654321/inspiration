@@ -5,6 +5,10 @@ const { buildUseText } = require('../../services/content-output');
 const { STAGES, organize } = require('../../services/organization');
 const { loadPrivatePhotos } = require('../../services/private-photos');
 const { pageGuard, readPageAccount } = require('../../services/page-session');
+const { makeTodo, todoCounts, localDate, dateAfter, isValidDate, formatTodoDate } = require('../../core/todo');
+const { prepareTodoOperation, runTodoOperation } = require('../../services/todos');
+const { draftContext, sourceVersion } = require('../../services/session-drafts');
+const { createRequestId } = require('../../services/wx-transport');
 
 const DISPLAY_ERRORS = {
   EMPTY_TEXT: '写点内容再保存',
@@ -44,13 +48,94 @@ function guardDetailDraft(data) {
     (data.editingSupplementId && data.supplementEditDraft !== data.supplementEditOriginal)));
 }
 
+function hasDetailDraft(data) {
+  return Boolean(data.supplementDraft || data.orgDirty ||
+    (data.editing && data.editDraft !== data.text) ||
+    (data.editingSupplementId && data.supplementEditDraft !== data.supplementEditOriginal));
+}
+
+function archiveTargetConfirmed(operation, item, revision) {
+  return Boolean(operation && item && operation.revision &&
+    operation.revision.generation === revision.generation &&
+    (item.archivedAt == null ? null : item.archivedAt) ===
+      (operation.target.archivedAt == null ? null : operation.target.archivedAt));
+}
+
+// 同时核对当前记录，避免其他页面已归档但详情尚未重绘时绕过只读限制。
+function detailReadOnly(page) {
+  const app = getApp(), store = app && app.globalData && app.globalData.store;
+  const item = store && typeof store.getInspiration === 'function' ? store.getInspiration(page.id) : null;
+  return Boolean(page.data.archiveUnknown || page.data.todoUnknown || page.data.archived || (item && inspiration.isArchived(item)));
+}
+
+function todoView(todo, today) {
+  return { todo: todo || null, todoDone: Boolean(todo && todo.completedAt != null),
+    todoDate: todo && todo.dueDate || '', todoDateLabel: formatTodoDate(todo && todo.dueDate, today) };
+}
+
+function sameTodo(left, right) {
+  if (left == null || right == null) return left == null && right == null;
+  return left.createdAt === right.createdAt && left.completedAt === right.completedAt &&
+    (left.dueDate || null) === (right.dueDate || null);
+}
+
+function renderedTodo(page, supplementId) {
+  const source = supplementId ? (page.data.supplements || []).concat(page.data.hidden || []).find(item => item.id === supplementId) : page.data;
+  return source && source.todo;
+}
+
+function todoOrigin(page, supplementId, todo) {
+  const store = page.currentStore();
+  return store && { store, epoch: getApp().globalData.sessionEpoch, generation: store.getConfirmedRevision().generation,
+    inspirationId: page.id, supplementId: supplementId || '', todo: todo ? Object.assign({}, todo) : null };
+}
+
+function todoOriginIsCurrent(page, origin) {
+  const store = page.currentStore();
+  if (!origin || !store || origin.store !== store || origin.inspirationId !== page.id ||
+      origin.epoch !== getApp().globalData.sessionEpoch || origin.generation !== store.getConfirmedRevision().generation) return false;
+  const item = store.getInspiration(page.id);
+  const source = item && (origin.supplementId ? (item.supplements || []).find(entry => entry.id === origin.supplementId) : item);
+  return Boolean(item && !inspiration.isArchived(item) && !item.mergedInto && source && sameTodo(source.todo, origin.todo) &&
+    (!origin.sourceVersion || sourceVersion(source) === origin.sourceVersion));
+}
+
+function noticeTodoChanged(page) {
+  page.todoDateOrigin = null; page.sheetTodoOrigin = null;
+  page.load(); page.setData({ todoDateVisible: false, sheetVisible: false, todoError: '事项已更新，请核对后重新操作。' });
+}
+
+function saveSupplementTodoDraft(page) {
+  const app = getApp(), store = typeof page.currentStore === 'function' ? page.currentStore() : app.globalData.store;
+  const drafts = app.globalData.sessionDrafts, owner = store && draftContext(app, store);
+  if (!drafts || !owner) return;
+  const key = 'detail-todo:' + page.id;
+  if (page.data.supplementDraft || page.data.supplementTodoEnabled || page.pendingSupplement) {
+    const pending = page.pendingSupplement;
+    drafts.put(key, owner, { enabled: page.data.supplementTodoEnabled, dueDate: page.data.supplementTodoDate,
+      pendingSupplement: pending ? { text: pending.text, id: pending.id, now: pending.now, todo: pending.todo || null,
+        revision: pending.revision, requestId: pending.requestId, target: pending.target, attempted: pending.attempted } : null });
+  } else drafts.remove(key, owner);
+}
+
+function removalSummary(counts) {
+  return counts.total ? '同时移除 ' + counts.pending + ' 项待办、' + counts.done + ' 项已办。' : '';
+}
+
+function supplementConfirmed(operation, item, revision) {
+  if (!operation || !operation.revision || !item || operation.revision.generation !== revision.generation) return false;
+  const actual = (item.supplements || []).find(entry => entry.id === operation.id);
+  const expected = operation.target && (operation.target.supplements || []).find(entry => entry.id === operation.id);
+  return Boolean(actual && expected && sourceVersion(actual) === sourceVersion(expected));
+}
+
 function organizationSummary(tagsDraft, stageIndex) {
   const tags = tagsDraft.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
   return (STAGES[stageIndex] || STAGES[0]).label + (tags.length ? ' · ' + tags.join('、') : ' · 未加标签');
 }
 
-function decorateSupplement(supplement, all) {
-  return {
+function decorateSupplement(supplement, all, today) {
+  return Object.assign({
     id: supplement.id,
     content: supplement.content,
     historyCount: (supplement.contentHistory || []).length,
@@ -63,7 +148,7 @@ function decorateSupplement(supplement, all) {
     sources: (supplement.sourceIds || []).map((id) => { const item = (all || []).find((x) => x.id === id); return { id, content: item ? item.content : '来源已删除' }; }),
     // 已并入原文的与已被汇总的，措辞必须不同——只写「合并」两个字用户分不清并到哪去了
     hiddenLabel: supplement.foldedAt ? '已并入灵感' : '已合并'
-  };
+  }, todoView(supplement.todo, today));
 }
 
 Page({
@@ -89,6 +174,7 @@ Page({
     supplementMax: LIMITS.supplementMaxLength,
     supplementError: '',
     supplementUnknown: false,
+    supplementTodoEnabled: false, supplementTodoDate: '',
     canAddSupplement: false,
     // 补充输入器：空且未聚焦 64px，聚焦或已有内容 160px；不依赖 auto-height
     composeFocus: false,
@@ -129,17 +215,24 @@ Page({
     confirmQuoteTime: '',
 
     historyCount: 0,
-    isAi: false, merged: false, provenance: [],
+    isAi: false, merged: false, archived: false, archiveUnknown: false, provenance: [],
     tagsDraft: '', stageIndex: 0, stages: STAGES,
     /* 整理标记默认收起：它是整理期才关心的表单，每次都摊开会把补充时间线推得很远 */
     orgOpen: false, orgSummary: '', orgDirty: false,
     photosEnabled: false, photos: [], photoError: '', photoBusy: false, photosMax: LIMITS.photosPerInspiration,
     provenanceSupplementId: '', supplementEditMax: LIMITS.supplementMaxLength,
+    todo: null, todoDone: false, todoDate: '', todoDateLabel: '未安排日期', todoUnknown: false, todoError: '',
+    todayDate: '', tomorrowDate: '',
+    todoDateVisible: false, todoDateTargetId: '', todoDateDraft: '', todoPickerDate: '',
+    todoDateAction: 'date', todoDateSourceText: '',
+    todoUndoVisible: false, highlightSupplementId: '', sourceNotice: '',
+    sheetHasTodo: false,
     error: '', pending: ''
   },
 
   async onLoad(query) {
     this.id = (query && query.id) || '';
+    this.locateSupplementId = query && /^[A-Za-z0-9_]{1,64}$/.test(query.supplementId || '') ? query.supplementId : '';
     // 「继续补充」是从记录页成功卡跳进来的：定位并聚焦补充输入
     this.focusSupplement = Boolean(query && query.focus === 'supplement');
     this.visible = true;
@@ -147,6 +240,7 @@ Page({
     await getApp().ensureReady();
     if (!this.visible || this.viewVersion !== version) return;
     this.load({ resetDraft: true });
+    this.scheduleTodoMidnight();
   },
 
   /** 面板本体上的点击不该穿透到遮罩，否则点哪都关。 */
@@ -159,15 +253,21 @@ Page({
     this.setData({ ready: false, text: '', supplements: [], hidden: [], photos: [], photoBusy: false, photoError: '' });
     await getApp().ensureReady();
     if (!this.visible || this.viewVersion !== version) return;
-    if (this.id) this.load();
+    if (this.id) { this.load(); this.scheduleTodoMidnight(); }
   },
 
   onHide() {
+    saveSupplementTodoDraft(this);
+    this.todoDateOrigin = null; this.sheetTodoOrigin = null;
+    clearTimeout(this.todoUndoTimer); clearTimeout(this.highlightTimer);
+    clearTimeout(this.todoMidnightTimer); this.todoMidnightTimer = null;
+    this.todoUndo = null;
     this.visible = false;
     this.viewVersion = (this.viewVersion || 0) + 1;
     this.photoReadVersion = (this.photoReadVersion || 0) + 1;
     this.setData({ photos: [], composeFocus: false, composeRequestedFocus: false, pending: '',
-      moreVisible: false, sheetVisible: false, confirmVisible: false, confirmQuote: '', confirmQuoteTime: '' });
+      moreVisible: false, sheetVisible: false, confirmVisible: false, confirmQuote: '', confirmQuoteTime: '',
+      todoUndoVisible: false, todoDateVisible: false, todoDateAction: 'date', todoDateSourceText: '', highlightSupplementId: '' });
     guardDraft(false);
   },
 
@@ -183,8 +283,14 @@ Page({
     if (this.loadedStore && this.loadedStore !== store) {
       opts.resetDraft = true;
       this.pendingSupplement = null; this.pendingTextEdit = null; this.pendingSupplementEdit = null;
+      this.pendingArchive = null; this.unconfirmedWrite = false; this.archiveConflict = false;
+      this.pendingTodo = null; this.todoUndo = null;
     }
-    if (this.loadedEpoch !== app.globalData.sessionEpoch) opts.resetDraft = true;
+    if (this.loadedEpoch !== app.globalData.sessionEpoch) {
+      opts.resetDraft = true;
+      this.pendingArchive = null; this.unconfirmedWrite = false; this.archiveConflict = false;
+      this.pendingTodo = null; this.todoUndo = null;
+    }
     this.loadedEpoch = app.globalData.sessionEpoch;
     this.loadedStore = store;
 
@@ -200,7 +306,22 @@ Page({
       return;
     }
 
-    const drafts = app.globalData.drafts;
+    const drafts = app.globalData.drafts, now = Date.now(), today = localDate(now);
+    const archived = inspiration.isArchived(item);
+    let todoResolved = false;
+    if (this.pendingTodo && !this.pendingTodo.inFlight) {
+      const operation = this.pendingTodo, currentRevision = store.getConfirmedRevision();
+      const target = operation.supplementId ? (item.supplements || []).find(s => s.id === operation.supplementId) : item;
+      if (operation.revision.generation === currentRevision.generation && target &&
+          JSON.stringify(target.todo || null) === JSON.stringify(operation.targetTodo || null)) {
+        this.pendingTodo = null; todoResolved = true;
+      }
+    }
+    // 页面隐藏期间的保存只能经已确认快照恢复展示，不能使用迟到回执重绘页面。
+    if (this.pendingArchive && !this.pendingArchive.inFlight &&
+        archiveTargetConfirmed(this.pendingArchive, item, store.getConfirmedRevision())) {
+      this.pendingArchive = null; this.unconfirmedWrite = false;
+    }
     const tags = item.tags || [];
     const stageIndex = Math.max(0, STAGES.findIndex((x) => x.id === item.stage));
     const keepOrganization = !opts.resetDraft && this.data.orgOpen;
@@ -210,27 +331,42 @@ Page({
       missing: false,
       loadError: false,
       text: item.text,
-      isAi: item.source === 'ai', merged: Boolean(item.mergedInto),
+      isAi: item.source === 'ai', merged: Boolean(item.mergedInto), archived,
+      archiveUnknown: Boolean(this.pendingArchive),
       tagsDraft: keepOrganization ? this.data.tagsDraft : tags.join('，'),
       stageIndex: keepOrganization ? this.data.stageIndex : stageIndex,
       // 收起后仍要看得见当前状态，否则折叠就等于把信息藏起来
       orgSummary: keepOrganization ? organizationSummary(this.data.tagsDraft, this.data.stageIndex) : organizationSummary(tags.join('，'), stageIndex),
-      orgOpen: keepOrganization,
+      orgOpen: keepOrganization && !archived,
       orgDirty: keepOrganization && this.data.orgDirty,
       provenance: (item.summarySources || []).map((id) => { const source = store.getInspiration(id); return { id, exists: Boolean(source), label: source ? (id === item.id ? '此条灵感的旧正文（见修改记录）' : source.text) : '来源已删除' }; }),
       time: formatAbsolute(item.updatedAt),
-      supplements: inspiration.activeSupplements(item).map((s) => decorateSupplement(s, item.supplements)),
+      todayDate: today,
+      tomorrowDate: dateAfter(1, now),
+      ...todoView(item.todo, today), todoUnknown: Boolean(this.pendingTodo),
+      supplements: inspiration.activeSupplements(item).map((s) => decorateSupplement(s, item.supplements, today)),
       hidden: inspiration.mergedSupplements(item)
         .concat(inspiration.foldedSupplements(item))
-        .map((s) => decorateSupplement(s, item.supplements)),
+        .map((s) => decorateSupplement(s, item.supplements, today)),
       historyCount: (item.textHistory || []).length + (item.supplements || [])
         .reduce((count, supplement) => count + (supplement.contentHistory || []).length, 0)
     };
+    if (todoResolved || opts.resetDraft && !this.pendingTodo) next.todoError = '';
+
+    if (archived) {
+      next.editing = false; next.editingSupplementId = '';
+      next.composeFocus = false; next.composeRequestedFocus = false; next.floatVisible = false;
+    }
 
     if (opts.resetDraft) {
       this.orgOriginal = null;
       // 草稿从会话草稿区取回：切页回来时输入框里还应该有它
       next.supplementDraft = drafts ? drafts.get(this.id) : '';
+      const owner = draftContext(app, store);
+      const settings = app.globalData.sessionDrafts && owner && app.globalData.sessionDrafts.get('detail-todo:' + this.id, owner);
+      next.supplementTodoEnabled = Boolean(settings && settings.enabled);
+      next.supplementTodoDate = settings && settings.dueDate || '';
+      if (settings && settings.pendingSupplement) this.pendingSupplement = Object.assign({}, settings.pendingSupplement, { store });
       next.canAddSupplement = next.supplementDraft.trim().length > 0;
       next.editing = false;
       next.editDraft = item.text;
@@ -238,18 +374,21 @@ Page({
       next.editUnknown = false;
       next.canSaveEdit = false;
       next.supplementError = '';
-      next.supplementUnknown = false; next.supplementEditUnknown = false;
+      next.supplementUnknown = Boolean(this.pendingSupplement); next.supplementEditUnknown = false;
+      if (this.pendingSupplement) next.supplementError = '尚未确认保存，内容还在。请重试，或先复制。';
       next.editingSupplementId = ''; next.supplementEditDraft = ''; next.supplementEditOriginal = '';
       next.sheetVisible = false; next.moreVisible = false; next.confirmVisible = false; next.confirmQuote = ''; next.pending = '';
+      next.todoDateVisible = false; next.todoUndoVisible = false;
     }
 
     this.setData(next, () => {
       guardDetailDraft(this.data);
-      if (opts.resetDraft && this.focusSupplement && !next.merged) {
+      if (opts.resetDraft && this.focusSupplement && !next.merged && !archived) {
         this.focusSupplement = false;
         this.onLocateCompose();
       }
       if (opts.resetDraft) this.measureLongText();
+      this.locateTodoSupplement();
     });
     const epoch = app.globalData.sessionEpoch;
     const isCurrent = () => this.visible !== false && this.photoReadVersion === photoReadVersion && app.globalData.sessionEpoch === epoch && app.globalData.store === store;
@@ -276,7 +415,7 @@ Page({
   },
 
   onPageScroll(event) {
-    if (!this.data.longText) {
+    if (!this.data.longText || detailReadOnly(this)) {
       if (this.data.floatVisible) this.setData({ floatVisible: false });
       return;
     }
@@ -285,7 +424,7 @@ Page({
   },
 
   onLocateCompose() {
-    if (this.data.merged || this.data.pending || this.data.editing || this.data.editingSupplementId) return;
+    if (detailReadOnly(this) || this.data.merged || this.data.pending || this.data.editing || this.data.editingSupplementId) return;
     this.setData({ composeFocus: true, composeRequestedFocus: true, floatVisible: false });
     // 键盘与滚动都交给系统上推/定位；这里只负责把输入框带进视野
     if (typeof wx.pageScrollTo === 'function') {
@@ -297,8 +436,47 @@ Page({
     const version = this.viewVersion;
     this.setData({ ready: false, loadError: false, error: '' });
     return readPageAccount(this).then((account) => {
-      if (account.isCurrent() && this.viewVersion === version) this.load({ resetDraft: true });
+      if (account.isCurrent() && this.viewVersion === version) {
+        this.load({ resetDraft: true }); this.scheduleTodoMidnight();
+      }
     });
+  },
+
+  scheduleTodoMidnight() {
+    clearTimeout(this.todoMidnightTimer); this.todoMidnightTimer = null;
+    const store = this.currentStore();
+    if (!store || typeof store.getConfirmedRevision !== 'function' || !this.data.ready || this.data.missing ||
+        this.data.loadError || !store.getInspiration(this.id)) return;
+    const revision = store.getConfirmedRevision();
+    if (!revision || !Number.isSafeInteger(revision.generation)) return;
+    const id = this.id, generation = revision.generation, isCurrent = pageGuard(this);
+    const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+    const timer = setTimeout(() => {
+      if (this.todoMidnightTimer !== timer) return;
+      this.todoMidnightTimer = null;
+      if (!isCurrent() || this.id !== id || store.getConfirmedRevision().generation !== generation ||
+          !this.refreshTodoDateLabels()) return;
+      this.scheduleTodoMidnight();
+    }, Math.max(1000, next - now.getTime() + 50));
+    this.todoMidnightTimer = timer;
+    if (this.todoMidnightTimer && this.todoMidnightTimer.unref) this.todoMidnightTimer.unref();
+  },
+
+  refreshTodoDateLabels() {
+    const store = this.currentStore(), item = store && store.getInspiration(this.id);
+    if (!item || item.deletedAt != null || !this.data.ready || this.data.missing || this.data.loadError ||
+        !sameTodo(item.todo, this.data.todo)) return false;
+    const sources = item.supplements || [], visible = this.data.supplements || [], hidden = this.data.hidden || [];
+    if (visible.concat(hidden).some(row => {
+      const source = sources.find(entry => entry.id === row.id);
+      return !source || !sameTodo(source.todo, row.todo);
+    })) return false;
+    const now = Date.now(), today = localDate(now);
+    const withDateLabel = row => Object.assign({}, row, { todoDateLabel: formatTodoDate(row.todoDate || null, today) });
+    this.setData({ todayDate: today, tomorrowDate: dateAfter(1, now),
+      todoDateLabel: formatTodoDate(this.data.todoDate || null, today),
+      supplements: visible.map(withDateLabel), hidden: hidden.map(withDateLabel) });
+    return true;
   },
 
   currentStore() {
@@ -308,7 +486,7 @@ Page({
   },
 
   /** 保存并刷新。所有写操作共用这一段，避免每个动作各写一遍成功/失败处理。 */
-  async persist(next, failureMessage) {
+  async persist(next, failureMessage, options) {
     const app = getApp();
     const store = app.globalData.store;
     const version = this.viewVersion, epoch = app.globalData.sessionEpoch;
@@ -317,19 +495,22 @@ Page({
     if (!isCurrent() || !this.currentStore()) return { ok: false, stale: true, message: '账户状态已变化，请返回后重试。' };
     let result;
     try {
-      result = await store.saveInspiration(next);
+      result = await store.saveInspiration(next, options);
     } catch (err) {
+      if (isCurrent()) this.unconfirmedWrite = true;
       return { ok: false, stale: !isCurrent(), unknown: true, message: '尚未确认保存，内容还在。请重试，或先复制。' };
     }
 
     if (!isCurrent()) return { ok: false, stale: true };
     if (!result || !result.ok || result.synced !== true) {
       const unknown = !result || !result.code || ['NETWORK', 'INTERNAL'].includes(result.code);
-      return { ok: false, unknown, message: unknown ? '尚未确认保存，内容还在。请重试，或先复制。' : result.code === 'CONFLICT' || result.code === 'STALE_GENERATION' ||
-        result.code === 'REQUEST_ID_REUSED'
+      if (unknown) this.unconfirmedWrite = true;
+      const conflict = result && ['CONFLICT', 'STALE_GENERATION', 'REQUEST_ID_REUSED'].includes(result.code);
+      return { ok: false, unknown, conflict, message: unknown ? '尚未确认保存，内容还在。请重试，或先复制。' : conflict
         ? '内容已在其他设备更新，本次修改未保存。请重新打开后重试。'
         : failureMessage };
     }
+    this.unconfirmedWrite = false;
     return { ok: true, synced: true };
   },
 
@@ -337,15 +518,178 @@ Page({
     wx.switchTab({ url: '/pages/list/index' });
   },
 
+  locateTodoSupplement() {
+    const id = this.locateSupplementId;
+    if (!id) return;
+    const target = this.data.supplements.concat(this.data.hidden).find(s => s.id === id);
+    this.locateSupplementId = '';
+    if (!target) { this.setData({ sourceNotice: '这条补充已不存在，可以查看其他内容。' }); return; }
+    const isCurrent = pageGuard(this);
+    this.setData({ hiddenExpanded: this.data.hidden.some(s => s.id === id) || this.data.hiddenExpanded,
+      highlightSupplementId: id, sourceNotice: '' }, () => {
+      const scroll = () => {
+        if (!isCurrent()) return;
+        if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ selector: '#supplement-' + id, duration: 200 });
+      };
+      if (typeof wx.nextTick === 'function') wx.nextTick(scroll); else scroll();
+    });
+    clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => { if (isCurrent()) this.setData({ highlightSupplementId: '' }); }, 3000);
+    if (this.highlightTimer && this.highlightTimer.unref) this.highlightTimer.unref();
+  },
+
+  // ------------------------------------------------------------ 独立待办
+
+  async applyTodo(action, supplementId = '', extra = {}) {
+    const store = this.currentStore();
+    if (!store || this.data.pending || this.data.photoBusy || this.data.editing || this.data.editingSupplementId) return;
+    if (this.pendingTodo) { this.setData({ todoError: '请先重试确认上一次待办操作。' }); return; }
+    if (detailReadOnly(this) || this.data.merged) return;
+    let operation;
+    try { operation = prepareTodoOperation(store, Object.assign({ inspirationId: this.id, supplementId, action }, extra)); }
+    catch (err) { this.setData({ todoError: err.message || '操作未完成，请重新读取后重试。' }); return; }
+    return this.submitTodoOperation(operation);
+  },
+
+  async submitTodoOperation(operation) {
+    if (!operation || operation.store !== this.currentStore() || this.data.pending) return;
+    const isCurrent = pageGuard(this);
+    this.pendingTodo = operation;
+    this.todoDateOrigin = null;
+    this.setData({ pending: 'todo', todoError: '', todoDateVisible: false, sheetVisible: false });
+    const result = await runTodoOperation(operation);
+    if (!isCurrent()) return;
+    const unknown = !result || !result.code || ['NETWORK', 'INTERNAL', 'PULL_FAILED'].includes(result.code);
+    if (!result || !result.ok || result.synced !== true) {
+      if (!unknown) this.pendingTodo = null;
+      this.setData({ pending: '', todoUnknown: unknown, todoError: unknown ? '尚未确认待办状态，请重试确认。'
+        : ['CONFLICT', 'STALE_GENERATION'].includes(result.code) ? '事项已更新，请核对后重新操作。'
+          : result.message || '操作未完成，请稍后重试。' });
+      if (!unknown) this.load();
+      return;
+    }
+    this.pendingTodo = null;
+    this.setData({ pending: '', todoUnknown: false, todoError: '' });
+    this.load();
+    clearTimeout(this.todoUndoTimer); this.todoUndo = null;
+    if (operation.action === 'complete') {
+      this.todoUndo = { supplementId: operation.supplementId || '', todo: operation.beforeTodo,
+        completedTodo: operation.targetTodo, store: operation.store, expiresAt: Date.now() + 5000 };
+      this.setData({ todoUndoVisible: true });
+      this.todoUndoTimer = setTimeout(() => { if (isCurrent()) { this.todoUndo = null; this.setData({ todoUndoVisible: false }); } }, 5000);
+      if (this.todoUndoTimer && this.todoUndoTimer.unref) this.todoUndoTimer.unref();
+    } else {
+      this.setData({ todoUndoVisible: false });
+      wx.showToast({ title: operation.action === 'remove' ? '已移除待办，文字保留' : operation.action === 'add'
+        ? '已设为待办' : operation.action === 'date' ? '已更新计划完成日' : '已恢复待办', icon: 'none' });
+    }
+  },
+
+  onTodoAdd(event) {
+    this.openTodoDate(event.currentTarget.dataset.id || '', 'add');
+  },
+
+  onTodoToggle(event) {
+    const store = this.currentStore(), id = event.currentTarget.dataset.id || '';
+    if (!store || this.data.pending || this.data.todoUnknown) return;
+    const rendered = renderedTodo(this, id);
+    if (!rendered) return;
+    const item = store && store.getInspiration(this.id);
+    const source = item && (id ? (item.supplements || []).find(s => s.id === id) : item);
+    if (!source || !sameTodo(source.todo, rendered)) {
+      noticeTodoChanged(this); return;
+    }
+    return this.applyTodo(rendered.completedAt == null ? 'complete' : 'reopen', id);
+  },
+
+  onRetryTodo() {
+    if (this.pendingTodo && !this.data.pending) return this.submitTodoOperation(this.pendingTodo);
+  },
+
+  onUndoTodo() {
+    const undo = this.todoUndo, store = this.currentStore();
+    if (!undo || !store || store !== undo.store || this.data.pending || Date.now() > undo.expiresAt) return;
+    const item = store.getInspiration(this.id), target = item && (undo.supplementId ? (item.supplements || []).find(s => s.id === undo.supplementId) : item);
+    if (!target || JSON.stringify(target.todo) !== JSON.stringify(undo.completedTodo)) {
+      this.todoUndo = null; this.setData({ todoUndoVisible: false, todoError: '事项已更新，请核对后重新操作。' }); return;
+    }
+    return this.applyTodo('replace', undo.supplementId, { todo: undo.todo });
+  },
+
+  onTodoMore(event) {
+    if (detailReadOnly(this) || this.data.merged || this.data.pending) return;
+    const id = event.currentTarget.dataset.id || '', isCurrent = pageGuard(this);
+    const origin = todoOrigin(this, id, renderedTodo(this, id));
+    if (!origin || !origin.todo || !todoOriginIsCurrent(this, origin)) { noticeTodoChanged(this); return; }
+    wx.showActionSheet({ itemList: ['修改计划完成日', '移除待办'], success: res => {
+      if (!isCurrent()) return;
+      if (!todoOriginIsCurrent(this, origin)) { noticeTodoChanged(this); return; }
+      if (res.tapIndex === 0) this.openTodoDate(id);
+      else if (res.tapIndex === 1) this.applyTodo('remove', id);
+    } });
+  },
+
+  openTodoDate(id, action = 'date') {
+    if (detailReadOnly(this) || this.data.merged || this.data.pending || this.data.photoBusy ||
+        this.data.editing || this.data.editingSupplementId || !['add', 'date'].includes(action)) return;
+    const store = this.currentStore(), item = store && store.getInspiration(this.id);
+    const source = item && (id ? (item.supplements || []).find(s => s.id === id) : item);
+    if (!store || !source) return;
+    const origin = todoOrigin(this, id, renderedTodo(this, id));
+    if (!todoOriginIsCurrent(this, origin)) { noticeTodoChanged(this); return; }
+    if (action === 'add' ? Boolean(source.todo) : !source.todo) return;
+    this.todoDateOrigin = Object.assign(origin, { action }, action === 'add' ? { sourceVersion: sourceVersion(source) } : {});
+    const dueDate = source.todo && source.todo.dueDate || '';
+    this.setData({ todoDateVisible: true, todoDateTargetId: id || '', todoDateAction: action,
+      todoDateSourceText: id ? source.content : source.text, todoDateDraft: dueDate,
+      todoPickerDate: dueDate || localDate(), todayDate: localDate(), tomorrowDate: dateAfter(1), sheetVisible: false });
+  },
+
+  onTodoDate(event) { this.openTodoDate(event.currentTarget.dataset.id || ''); },
+  onSheetTodoDate() {
+    if (!todoOriginIsCurrent(this, this.sheetTodoOrigin)) { noticeTodoChanged(this); return; }
+    this.openTodoDate(this.data.sheetTargetId);
+  },
+  onSheetTodoRemove() {
+    if (!todoOriginIsCurrent(this, this.sheetTodoOrigin)) { noticeTodoChanged(this); return; }
+    return this.applyTodo('remove', this.data.sheetTargetId);
+  },
+  onCloseTodoDate() {
+    if (!this.data.pending) {
+      this.todoDateOrigin = null;
+      this.setData({ todoDateVisible: false, todoDateAction: 'date', todoDateSourceText: '', todoDateDraft: '', todoDateTargetId: '', todoPickerDate: '' });
+    }
+  },
+  onTodoDateChoice(event) {
+    if (!this.data.todoDateVisible || !this.currentStore() || this.data.pending) return;
+    if (!todoOriginIsCurrent(this, this.todoDateOrigin)) { noticeTodoChanged(this); return; }
+    const choice = event.currentTarget.dataset.choice;
+    if (!['none', 'today', 'tomorrow'].includes(choice)) return;
+    const dueDate = choice === 'today' ? localDate() : choice === 'tomorrow' ? dateAfter(1) : '';
+    this.setData({ todoDateDraft: dueDate, todoPickerDate: dueDate || localDate(), todayDate: localDate(), tomorrowDate: dateAfter(1) });
+  },
+  onTodoDatePick(event) {
+    if (!this.data.todoDateVisible || !this.currentStore() || this.data.pending || !isValidDate(event.detail.value)) return;
+    if (!todoOriginIsCurrent(this, this.todoDateOrigin)) { noticeTodoChanged(this); return; }
+    this.setData({ todoDateDraft: event.detail.value, todoPickerDate: event.detail.value,
+      todayDate: localDate(), tomorrowDate: dateAfter(1) });
+  },
+  onApplyTodoDate() {
+    const origin = this.todoDateOrigin, store = this.currentStore();
+    if (!this.data.todoDateVisible || !origin || !store || this.data.pending || !['add', 'date'].includes(origin.action)) return;
+    if (!todoOriginIsCurrent(this, origin)) { noticeTodoChanged(this); return; }
+    return this.applyTodo(origin.action, origin.supplementId, { dueDate: this.data.todoDateDraft || null });
+  },
+
   // ------------------------------------------------------------ 原文编辑
 
   onStartEdit() {
-    if (this.data.pending || this.data.editingSupplementId) return;
+    if (detailReadOnly(this) || this.data.pending || this.data.editingSupplementId) return;
     this.setData({ editing: true, editDraft: this.data.text, editError: '', editUnknown: false, canSaveEdit: false });
   },
 
   onEditInput(event) {
-    if (this.data.pending || this.visible === false) return;
+    if (detailReadOnly(this) || this.data.pending || this.visible === false) return;
     const value = event.detail.value;
     if (this.pendingTextEdit && this.pendingTextEdit.text !== value) this.pendingTextEdit = null;
     this.setData({
@@ -364,7 +708,7 @@ Page({
   },
 
   async onSaveEdit() {
-    if (this.data.pending || !this.data.canSaveEdit || this.visible === false) return;
+    if (detailReadOnly(this) || this.data.pending || !this.data.canSaveEdit || this.visible === false) return;
     const store = getApp().globalData.store;
     if (!store || this.loadedStore && this.loadedStore !== store) return;
     const current = store.getInspiration(this.id);
@@ -428,8 +772,14 @@ Page({
   },
 
   onOpenOutput() {
-    if (this.data.pending || this.data.editing || this.data.editingSupplementId) return;
+    if (detailReadOnly(this) || this.data.pending || this.data.editing || this.data.editingSupplementId) return;
     wx.navigateTo({ url: '/pages/output/index?id=' + encodeURIComponent(this.id) });
+  },
+
+  onOpenArchiveExport() {
+    if (this.data.pending || !this.currentStore()) return;
+    this.setData({ moreVisible: false });
+    wx.navigateTo({ url: '/pages/output/index?id=' + encodeURIComponent(this.id) + '&exportOnly=1' });
   },
 
   // ------------------------------------------------------------ 页内「更多」
@@ -445,7 +795,7 @@ Page({
   },
 
   onMoreEditText() {
-    if (this.data.pending) return;
+    if (detailReadOnly(this) || this.data.pending) return;
     this.setData({ moreVisible: false });
     this.onStartEdit();
   },
@@ -460,22 +810,113 @@ Page({
     this.onOpenHistory();
   },
 
+  async onMoreArchive(confirmation = false) {
+    const store = this.currentStore(), app = getApp();
+    if (!store) return;
+    const retry = this.pendingArchive;
+    if (this.data.pending || this.data.photoBusy || retry && retry.inFlight) {
+      this.setData({ moreVisible: false, error: '操作正在处理中，请完成后再归档或取消归档。' });
+      return;
+    }
+    if (this.archiveConflict) {
+      this.setData({ moreVisible: false, error: '内容已在其他设备更新，请重新打开这条灵感后核对。' });
+      return;
+    }
+    const item = store.getInspiration(this.id), revision = store.getConfirmedRevision();
+    if (retry) {
+      if (retry.store !== store || retry.epoch !== app.globalData.sessionEpoch) return;
+      // 回读可能已观察到其他设备完成恢复并继续编辑；此时确认当前状态，不能重放旧内容。
+      if (archiveTargetConfirmed(retry, item, revision)) {
+        this.pendingArchive = null; this.unconfirmedWrite = false;
+        this.setData({ moreVisible: false, archiveUnknown: false, error: '' });
+        this.load();
+        return;
+      }
+      if (!item || !retry.revision || retry.revision.generation !== revision.generation ||
+          retry.revision.baseVersion !== revision.baseVersion) {
+        this.pendingArchive = null; this.unconfirmedWrite = false; this.archiveConflict = true;
+        this.setData({ moreVisible: false, archiveUnknown: false });
+        this.load();
+        this.setData({ error: '内容已在其他设备更新或账户数据已变化，请重新打开这条灵感后核对。' });
+        return;
+      }
+    }
+    if (!item) return;
+    const confirmed = confirmation && confirmation.archiveConfirmation === true;
+    if (confirmed && (confirmation.store !== store || confirmation.epoch !== app.globalData.sessionEpoch ||
+        confirmation.inspirationId !== this.id || confirmation.revision.generation !== revision.generation ||
+        confirmation.revision.baseVersion !== revision.baseVersion ||
+        confirmation.archivedAt !== (item.archivedAt == null ? null : item.archivedAt))) {
+      this.load();
+      this.setData({ moreVisible: false, error: '内容已更新，请核对后重新归档。' });
+      return;
+    }
+    const restoring = retry ? !inspiration.isArchived(retry.target) : inspiration.isArchived(item);
+    if (!retry && !restoring && (hasDetailDraft(this.data) || this.unconfirmedWrite || this.data.todoUnknown || this.data.editUnknown ||
+        this.data.supplementUnknown || this.data.supplementEditUnknown)) {
+      this.setData({ moreVisible: false, error: '请先保存或清空未保存的内容，并确认保存结果后再归档。' });
+      return;
+    }
+    if (!restoring && item.mergedInto) {
+      this.setData({ moreVisible: false, error: '请先恢复为独立灵感，再归档。' });
+      return;
+    }
+    const unfinished = todoCounts(item).pending;
+    if (!retry && !restoring && unfinished && !confirmed) {
+      const isCurrent = pageGuard(this);
+      const archiveConfirmation = { archiveConfirmation: true, store, epoch: app.globalData.sessionEpoch,
+        inspirationId: this.id, revision: Object.assign({}, revision), archivedAt: item.archivedAt == null ? null : item.archivedAt };
+      this.setData({ moreVisible: false });
+      await new Promise(resolve => wx.showModal({ title: '还有 ' + unfinished + ' 项待办',
+        content: '归档后仍可在看板查看，取消归档后才能处理。', cancelText: '返回', confirmText: '继续归档',
+        success: async response => {
+          if (response.confirm && isCurrent()) await this.onMoreArchive(archiveConfirmation);
+          resolve();
+        }, fail: () => resolve() }));
+      return;
+    }
+    let operation = retry;
+    try {
+      if (!operation) operation = { store, epoch: app.globalData.sessionEpoch, revision,
+        target: restoring ? inspiration.unarchive(item) : inspiration.markArchived(item, { now: Date.now() }) };
+    } catch (err) { this.setData({ moreVisible: false, error: messageFor(err) }); return; }
+    if (operation.store !== store || operation.epoch !== app.globalData.sessionEpoch) return;
+    this.pendingArchive = operation;
+    operation.inFlight = true;
+    this.setData({ moreVisible: false, pending: 'archive', error: '' });
+    const result = await this.persist(operation.target, restoring ? '取消归档未完成，请稍后重试。' : '归档未完成，请稍后重试。');
+    operation.inFlight = false;
+    if (result.stale) return;
+    if (!result.ok) {
+      if (!result.unknown) this.pendingArchive = null;
+      if (result.conflict) this.archiveConflict = true;
+      this.setData({ pending: '', archiveUnknown: Boolean(result.unknown),
+        error: result.unknown ? '尚未确认归档状态，请重试确认。' : result.message });
+      return;
+    }
+    this.pendingArchive = null; this.archiveConflict = false;
+    this.setData({ pending: '', archiveUnknown: false, editing: false, editingSupplementId: '', error: '' });
+    this.load();
+    wx.showToast({ title: restoring ? '已取消归档' : '已归档', icon: 'none' });
+  },
+
   onMoreDelete() {
     if (this.data.pending) return;
     if (this.data.photoBusy) { this.setData({ moreVisible: false, photoError: '照片正在处理中，请稍后再删除灵感。' }); return; }
+    const store = this.currentStore(), item = store && store.getInspiration(this.id);
     this.setData({
       moreVisible: false,
       confirmVisible: true,
       confirmKind: 'inspiration',
       confirmTitle: '删除灵感',
-      confirmBody: '确定删除这条灵感吗？正文、补充和照片会一并删除。',
+      confirmBody: '确定删除这条灵感吗？正文、补充和照片会一并删除。' + (item ? removalSummary(todoCounts(item)) : ''),
       confirmQuote: this.data.text,
       confirmQuoteTime: this.data.time
     });
   },
 
   onToggleOrganization() {
-    if (this.data.pending) return;
+    if (detailReadOnly(this) || this.data.pending) return;
     if (this.data.orgOpen) { this.onCancelOrganization(); return; }
     if (!this.data.orgOpen) {
       // 取消时恢复到展开前的值；保存失败时保留输入（不重置记录）
@@ -484,7 +925,7 @@ Page({
     this.setData({ orgOpen: !this.data.orgOpen });
   },
   onTagsInput(event) {
-    if (this.data.pending || this.visible === false) return;
+    if (detailReadOnly(this) || this.data.pending || this.visible === false) return;
     const tagsDraft = event.detail.value;
     const original = this.orgOriginal || this.data;
     this.setData({ tagsDraft, orgSummary: organizationSummary(tagsDraft, this.data.stageIndex),
@@ -492,7 +933,7 @@ Page({
     guardDetailDraft(this.data);
   },
   onStageSelect(event) {
-    if (this.data.pending || this.visible === false) return;
+    if (detailReadOnly(this) || this.data.pending || this.visible === false) return;
     const stageIndex = Number(event.detail.value);
     if (!Number.isInteger(stageIndex) || !STAGES[stageIndex]) return;
     const original = this.orgOriginal || this.data;
@@ -508,7 +949,7 @@ Page({
     guardDetailDraft(this.data);
   },
   async onSaveOrganization() {
-    if (this.data.pending || !this.currentStore()) return;
+    if (detailReadOnly(this) || this.data.pending || !this.currentStore()) return;
     let next;
     try { next = organize(getApp().globalData.store.getInspiration(this.id), { tags: this.data.tagsDraft.split(/[,，]/).map((x) => x.trim()).filter(Boolean), stage: STAGES[this.data.stageIndex].id, now: Date.now() }); }
     catch (err) { this.setData({ error: err.message }); return; }
@@ -520,7 +961,7 @@ Page({
     if (result.ok) { this.orgOriginal = null; this.load(); }
   },
   async onRestoreInspiration() {
-    if (this.data.pending || !this.currentStore()) return;
+    if (detailReadOnly(this) || this.data.pending || !this.currentStore()) return;
     this.setData({ pending: 'restore' });
     const item = getApp().globalData.store.getInspiration(this.id);
     const result = await this.persist(inspiration.unmerge(item), '恢复没有完成，请稍后重试。');
@@ -536,7 +977,7 @@ Page({
   },
 
   onAddPhoto() {
-    if (this.data.photoBusy || this.data.pending || !this.currentStore() || !getApp().globalData.photos) return;
+    if (detailReadOnly(this) || this.data.photoBusy || this.data.pending || !this.currentStore() || !getApp().globalData.photos) return;
     const store = getApp().globalData.store, version = this.viewVersion;
     wx.showActionSheet({ itemList: ['拍照', '从相册选择'], success: (res) => {
       if (this.visible === false || this.viewVersion !== version || getApp().globalData.store !== store) return;
@@ -546,13 +987,14 @@ Page({
   async addPhotos(source) {
     const app = getApp(), service = app.globalData.photos, store = app.globalData.store;
     const version = this.viewVersion, epoch = app.globalData.sessionEpoch;
-    if (!service || this.data.photoBusy || this.data.pending || this.visible === false) return;
+    if (detailReadOnly(this) || !service || this.data.photoBusy || this.data.pending || this.visible === false) return;
     this.setData({ photoBusy: true, photoError: '' });
     let result;
     try { result = await service.add(this.id, source); }
-    catch (err) { result = { ok: false, message: '照片未添加成功，请重新选择后重试。' }; }
+    catch (err) { result = { ok: false, unknown: true, message: '照片未添加成功，请重新选择后重试。' }; }
     if (this.visible === false || this.viewVersion !== version || app.globalData.sessionEpoch !== epoch ||
         app.globalData.store !== store || app.globalData.photos !== service) return;
+    if (result.unknown || /无法确认/.test(result.message || '')) this.unconfirmedWrite = true;
     this.setData({ photoBusy: false, photoError: result.message || '' }); this.load();
   },
   onPreviewPhoto(event) {
@@ -568,7 +1010,7 @@ Page({
   },
   onDeletePhoto(event) {
     const store = this.currentStore();
-    if (this.data.photoBusy || this.data.pending || !store) return;
+    if (detailReadOnly(this) || this.data.photoBusy || this.data.pending || !store) return;
     const photoId = event.currentTarget.dataset.id, id = this.id, isCurrent = pageGuard(this);
     this.setData({ photoBusy: true, photoError: '' });
     wx.showModal({ title: '删除照片', content: '照片将从灵感及存储中移除，无法撤销。清理失败时可重试。', confirmText: '删除',
@@ -576,11 +1018,13 @@ Page({
       success: async (res) => {
       if (!isCurrent()) return;
       if (!res.confirm) { this.setData({ photoBusy: false }); return; }
+      if (detailReadOnly(this)) { this.setData({ photoBusy: false }); return; }
       let result;
       try {
         result = await store.deletePhoto(id, photoId);
       } catch (err) { result = {}; }
       if (!isCurrent()) return;
+      if ((!result.ok || result.synced !== true) && (!result.code || ['NETWORK', 'INTERNAL'].includes(result.code))) this.unconfirmedWrite = true;
       this.setData({ photoBusy: false, photoError: result.ok && result.synced === true ? '' : '照片清理尚未完成，记录仍保留，可稍后重试。' });
       this.load();
     } });
@@ -588,11 +1032,11 @@ Page({
 
   // ------------------------------------------------------------ 追加补充
 
-  onComposeFocus() { this.setData({ composeFocus: true, floatVisible: false }); },
+  onComposeFocus() { if (!detailReadOnly(this)) this.setData({ composeFocus: true, floatVisible: false }); },
   onComposeBlur() { this.setData({ composeFocus: false, composeRequestedFocus: false }); },
 
   onSupplementInput(event) {
-    if (this.data.pending || this.visible === false) return;
+    if (detailReadOnly(this) || this.data.pending || this.visible === false) return;
     const value = event.detail.value;
     if (this.pendingSupplement && this.pendingSupplement.text !== value) this.pendingSupplement = null;
     const canEdit = value.trim().length > 0 && value.length <= LIMITS.supplementMaxLength;
@@ -607,10 +1051,32 @@ Page({
     // 同步进会话草稿区：写到一半切走，回来时这半句话还在
     const drafts = getApp().globalData.drafts;
     if (drafts) drafts.set(this.id, value);
+    saveSupplementTodoDraft(this);
+  },
+
+  onSupplementTodoToggle() {
+    if (detailReadOnly(this) || this.data.pending || this.visible === false) return;
+    if (this.pendingSupplement) { this.setData({ supplementError: '请先重试确认这条补充，或修改文字后重新保存。' }); return; }
+    this.setData({ supplementTodoEnabled: !this.data.supplementTodoEnabled, supplementTodoDate: '',
+      todayDate: localDate(), tomorrowDate: dateAfter(1) });
+    saveSupplementTodoDraft(this);
+  },
+
+  onSupplementTodoChoice(event) {
+    if (detailReadOnly(this) || this.data.pending || this.pendingSupplement || this.visible === false) return;
+    const choice = event.currentTarget.dataset.choice;
+    this.setData({ supplementTodoDate: choice === 'today' ? localDate() : choice === 'tomorrow' ? dateAfter(1) : '',
+      todayDate: localDate(), tomorrowDate: dateAfter(1) });
+    saveSupplementTodoDraft(this);
+  },
+
+  onSupplementTodoDate(event) {
+    if (detailReadOnly(this) || this.data.pending || this.pendingSupplement || this.visible === false) return;
+    this.setData({ supplementTodoDate: event.detail.value, todayDate: localDate(), tomorrowDate: dateAfter(1) }); saveSupplementTodoDraft(this);
   },
 
   async onSubmitSupplement() {
-    if (this.data.pending || !this.data.canAddSupplement) return;
+    if (detailReadOnly(this) || this.data.pending || !this.data.canAddSupplement) return;
     const app = getApp();
     const store = app.globalData.store;
     const epoch = app.globalData.sessionEpoch, version = this.viewVersion;
@@ -618,34 +1084,54 @@ Page({
     const current = store.getInspiration(this.id);
     if (!current) return;
 
-    let next;
+    let operation;
     try {
       const retry = this.pendingSupplement && this.pendingSupplement.text === this.data.supplementDraft && this.pendingSupplement.store === store
         ? this.pendingSupplement : null;
-      const id = retry ? retry.id : createId('sup'), now = retry ? retry.now : Date.now();
-      const existing = (current.supplements || []).find((entry) => entry.id === id);
-      if (existing && existing.content !== this.data.supplementDraft) {
-        this.setData({ supplementError: '这条补充已更新，请重新打开灵感后核对。' });
-        return;
+      operation = retry;
+      if (!operation) {
+        const id = createId('sup'), now = Date.now();
+        const todo = this.data.supplementTodoEnabled ? makeTodo(now, this.data.supplementTodoDate || null) : null;
+        operation = { text: this.data.supplementDraft, store, id, now, todo, requestId: createRequestId(),
+          revision: store.getConfirmedRevision(), attempted: false,
+          target: inspiration.appendSupplement(current, { content: this.data.supplementDraft, id, now, todo }) };
       }
-      next = existing ? current : inspiration.appendSupplement(current, {
-        content: this.data.supplementDraft,
-        id,
-        now
-      });
-      this.pendingSupplement = { text: this.data.supplementDraft, store, id, now };
+      this.pendingSupplement = operation;
+      saveSupplementTodoDraft(this);
     } catch (err) {
       this.setData({ supplementError: messageFor(err) });
       return;
     }
 
     this.setData({ pending: 'supplement', supplementError: '', supplementUnknown: false, error: '' });
-    const result = await this.persist(next, '未能保存补充，内容还在。请检查后重试，或先复制。');
+    const isCurrent = () => this.visible !== false && this.viewVersion === version &&
+      epoch === app.globalData.sessionEpoch && store === app.globalData.store;
+    let result = null;
+    if (operation.attempted) {
+      let refreshed;
+      try { refreshed = await store.refresh(); } catch (err) { refreshed = { ok: false, code: 'NETWORK' }; }
+      if (!isCurrent()) return;
+      if (!refreshed || !refreshed.ok) result = { ok: false, unknown: true, message: '尚未确认保存，内容还在。请重试，或先复制。' };
+    }
+    if (!result) {
+      const revision = store.getConfirmedRevision();
+      if (supplementConfirmed(operation, store.getInspiration(this.id), revision)) result = { ok: true, synced: true };
+      else if (!operation.revision || revision.generation !== operation.revision.generation || revision.baseVersion !== operation.revision.baseVersion) {
+        result = { ok: false, conflict: true, message: '内容已在其他设备更新，本次补充未保存。请核对后重新保存。' };
+      } else {
+        operation.attempted = true; saveSupplementTodoDraft(this);
+        result = await this.persist(operation.target, '未能保存补充，内容还在。请检查后重试，或先复制。',
+          { expectedRevision: operation.revision, requestId: operation.requestId });
+      }
+    }
     if (result.stale) return;
     if (this.visible === false || this.viewVersion !== version || epoch !== app.globalData.sessionEpoch || store !== app.globalData.store) return;
     if (!result.ok) {
       // 云端未确认：保留当前输入，供用户在本次会话中重试。
+      if (!result.unknown) { this.pendingSupplement = null; this.unconfirmedWrite = false; }
       this.setData({ pending: '', supplementError: result.message, supplementUnknown: Boolean(result.unknown) });
+      saveSupplementTodoDraft(this);
+      if (result.conflict) this.load();
       return;
     }
 
@@ -653,7 +1139,10 @@ Page({
     if (drafts) drafts.clear(this.id);
 
     this.pendingSupplement = null;
-    this.setData({ pending: '', supplementDraft: '', canAddSupplement: false, composeFocus: false, composeRequestedFocus: false });
+    this.unconfirmedWrite = false;
+    this.setData({ pending: '', supplementDraft: '', canAddSupplement: false, composeFocus: false, composeRequestedFocus: false,
+      supplementTodoEnabled: false, supplementTodoDate: '' });
+    saveSupplementTodoDraft(this);
     this.load();
     wx.showToast({ title: '已添加补充', icon: 'none' });
     if (getApp().globalData.metrics) getApp().globalData.metrics.track('supplement_saved');
@@ -674,12 +1163,14 @@ Page({
     const all = this.data.supplements.concat(this.data.hidden);
     const target = all.filter((s) => s.id === id)[0];
     if (!target) return;
+    this.sheetTodoOrigin = todoOrigin(this, id, target.todo);
 
     this.setData({
       sheetVisible: true,
       sheetTargetId: id,
       sheetTargetLabel: target.label,
       sheetHistoryCount: target.historyCount,
+      sheetHasTodo: Boolean(target.todo),
       // 已收起的补充不提供「修改」：它已经不在时间线上正常显示，
       // 先恢复再改，用户才看得清自己在改什么
       sheetIsHidden: this.data.hidden.some((s) => s.id === id)
@@ -688,6 +1179,7 @@ Page({
 
   onSheetDismiss() {
     if (this.data.pending) return;
+    this.sheetTodoOrigin = null;
     this.setData({ sheetVisible: false, sheetTargetId: '', sheetTargetLabel: '', sheetIsHidden: false, sheetHistoryCount: 0 });
   },
 
@@ -704,7 +1196,7 @@ Page({
 
   /** 修改：切到行内编辑。与原文编辑同一套规则，旧内容进这条补充自己的历史。 */
   onSheetEdit() {
-    if (this.data.pending) return;
+    if (detailReadOnly(this) || this.data.pending) return;
     const id = this.data.sheetTargetId;
     const target = this.data.supplements.filter((s) => s.id === id)[0];
     this.setData({
@@ -720,7 +1212,7 @@ Page({
   },
 
   onSupplementEditInput(event) {
-    if (this.data.pending || this.visible === false) return;
+    if (detailReadOnly(this) || this.data.pending || this.visible === false) return;
     const value = event.detail.value;
     if (this.pendingSupplementEdit && this.pendingSupplementEdit.content !== value) this.pendingSupplementEdit = null;
     this.setData({
@@ -754,7 +1246,7 @@ Page({
   },
 
   async onSupplementEditSave() {
-    if (this.data.pending || !this.data.canSaveSupplementEdit || this.visible === false) return;
+    if (detailReadOnly(this) || this.data.pending || !this.data.canSaveSupplementEdit || this.visible === false) return;
     const store = getApp().globalData.store;
     if (!store || this.loadedStore && this.loadedStore !== store) return;
     const current = store.getInspiration(this.id);
@@ -802,7 +1294,7 @@ Page({
 
   /** 合并进灵感：内容追加到原文末尾，本条收起。合并前的原文进历史，一句话都不会消失。 */
   async onSheetFold() {
-    if (this.data.pending || !this.currentStore()) return;
+    if (detailReadOnly(this) || this.data.pending || !this.currentStore()) return;
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -832,7 +1324,7 @@ Page({
 
   /** 恢复：只清掉收起标记，**原文不回退**——合并进去的内容照常留在原文里。 */
   async onSheetRestore() {
-    if (this.data.pending || !this.currentStore()) return;
+    if (detailReadOnly(this) || this.data.pending || !this.currentStore()) return;
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);
     if (!current) return;
@@ -868,7 +1360,7 @@ Page({
 
   /** 点「删除补充」先落到确认弹窗，不直接删。这是整个产品里唯一不可恢复的操作。 */
   onSheetDelete() {
-    if (this.data.pending) return;
+    if (detailReadOnly(this) || this.data.pending) return;
     const id = this.data.sheetTargetId;
     const target = this.data.supplements.concat(this.data.hidden).filter((s) => s.id === id)[0];
     if (!target) return;
@@ -878,7 +1370,7 @@ Page({
       confirmVisible: true,
       confirmKind: 'supplement',
       confirmTitle: '删除补充',
-      confirmBody: '确定删除这条补充吗？',
+      confirmBody: '确定删除这条补充吗？' + removalSummary(todoCounts({ supplements: [target] })),
       confirmQuote: target.content,
       confirmQuoteTime: target.label.replace('这条补充 · ', '')
     });
@@ -892,6 +1384,7 @@ Page({
   async onConfirmDelete() {
     if (this.data.pending || !this.data.confirmVisible || !this.currentStore()) return;
     if (this.data.confirmKind === 'inspiration') return this.performDelete();
+    if (detailReadOnly(this)) return;
 
     const store = getApp().globalData.store;
     const current = store.getInspiration(this.id);

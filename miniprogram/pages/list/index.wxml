@@ -28,11 +28,6 @@
     </view>
   </block>
 
-  <view wx:if="{{reviewError}}" class="notice notice-warn list-notice">
-    <view class="mark"></view>
-    <text>{{reviewError}}</text>
-  </view>
-
   <view wx:if="{{items.length && (loading || error)}}" class="refresh-status" aria-live="polite">
     <text>{{loading ? '正在更新…' : error}}</text>
     <button wx:if="{{!loading}}" class="btn-link" bindtap="onRetry">重试</button>
@@ -53,9 +48,18 @@
     <button class="btn btn-plain btn-block" style="margin-top: 32rpx" bindtap="onRetry">重新读取</button>
   </block>
 
-  <block wx:elif="{{items.length === 0 && (query || recentOn || stage || mergedOn || filter !== 'all')}}">
+  <block wx:elif="{{items.length === 0 && !(activeCount === 0 && archivedCount > 0) && (query || recentOn || stage || mergedOn || filter !== 'all')}}">
     <view class="empty"><view class="et">没有找到匹配的灵感</view><view class="ed">试试其他关键词，或清空搜索和筛选。</view></view>
     <button class="btn btn-quiet btn-block" bindtap="onClearAll">清空搜索和筛选</button>
+  </block>
+
+  <block wx:elif="{{items.length === 0 && activeCount === 0 && archivedCount > 0}}">
+    <view class="empty">
+      <view class="et">暂无未归档灵感</view>
+      <view class="ed">已归档的内容仍完整保留，可以随时查看或取消归档。</view>
+    </view>
+    <button class="btn btn-quiet btn-block" bindtap="onShowArchived">查看已归档</button>
+    <button wx:if="{{mergedCount > 0}}" class="btn btn-quiet btn-block" bindtap="onShowMerged">查看已合并内容</button>
   </block>
 
   <!-- 有效记录为 0 但有已合并内容：不显示真空态，也不能让已合并的入口消失 -->
@@ -100,6 +104,7 @@
         >
           <view class="row-main">
             <view class="body">{{item.excerpt}}</view>
+            <view wx:if="{{item.todoSummary}}" class="todo-summary">{{item.todoSummary}}</view>
             <view wx:if="{{item.stageLabel || item.tags.length}}" class="item-tags">
               <text wx:if="{{item.stageLabel}}">{{item.stageLabel}}</text>
               <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
@@ -118,21 +123,6 @@
               </block>
             </view>
           </view>
-        </view>
-
-        <!-- 回顾入口：串在第一条记录之后，轻量一行；展开才显示内容 -->
-        <view wx:if="{{index === 0 && reviewItem}}" class="review-row">
-          <view class="review-head" bindtap="onToggleReview">
-            <text class="review-label">回看一个想法</text>
-            <text class="review-caret">{{reviewExpanded ? '收起' : '展开'}}</text>
-          </view>
-          <block wx:if="{{reviewExpanded}}">
-            <view class="review-text">{{reviewItem.excerpt}}</view>
-            <view class="review-actions">
-              <button class="btn btn-sm" data-id="{{reviewItem.id}}" data-review="true" bindtap="onOpen">继续补充</button>
-              <button class="btn-link" bindtap="onDismissReview">本次先不看</button>
-            </view>
-          </block>
         </view>
       </block>
     </view>

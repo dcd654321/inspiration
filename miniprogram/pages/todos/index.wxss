@@ -1,0 +1,46 @@
+@import "../../styles/todo-entry.wxss";
+
+.todo-page { padding-top: 32rpx; }
+.overview { display: flex; gap: 12rpx; margin: 24rpx 0; }
+.overview .overview-item { display: flex; flex: 1; flex-direction: column; gap: 4rpx; align-items: center; justify-content: center; min-height: max(132rpx, 66px); padding: 16rpx 8rpx; background: var(--surface); border: 1px solid var(--line); border-radius: 18rpx; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.5; }
+.overview-item::after { border: 0; }
+.overview .overview-item.selected { background: var(--brand-soft); border-color: var(--brand-line); color: var(--brand); }
+.overview-number { font-size: max(40rpx, 20px); font-weight: 600; }
+.todo-search { display: flex; align-items: center; gap: 12rpx; background: var(--surface); border: 1px solid var(--field-line); border-radius: 16rpx; padding: 4rpx 20rpx; }
+.todo-search input { flex: 1; min-width: 0; height: max(88rpx, 44px); font-size: max(28rpx, 14px); }
+.result-count { margin: 16rpx 0; font-size: max(26rpx, 13px); color: var(--ink-2); }
+.operation-status, .undo-status, .read-error { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; margin: 16rpx 0; padding: 8rpx 16rpx; border-radius: 12rpx; background: var(--warn-soft); color: var(--warn-ink); font-size: max(26rpx, 13px); line-height: 1.6; }
+.operation-status text, .read-error text { flex: 1; }
+.undo-status { background: var(--brand-soft); color: var(--brand); }
+.read-error { background: var(--danger-soft); color: var(--danger); }
+.loading-state { padding: 48rpx 0; color: var(--ink-2); }
+.todo-group { margin-top: 32rpx; }
+.group-heading { display: flex; align-items: baseline; gap: 12rpx; margin-bottom: 12rpx; }
+.group-label { color: var(--ink-2); font-weight: 500; font-size: max(28rpx, 14px); }
+.overdue-label { color: var(--danger); }
+.group-count, .archive-note { font-size: max(26rpx, 13px); color: var(--ink-3); }
+.archive-note { margin: -4rpx 0 12rpx; }
+.todo-row { display: flex; align-items: flex-start; gap: 6rpx; padding: 16rpx 16rpx 12rpx 6rpx; background: var(--surface); border-bottom: 1px solid var(--line); }
+.todo-row:first-of-type { border-top-left-radius: 16rpx; border-top-right-radius: 16rpx; }
+.todo-row:last-child { border-bottom: 0; border-bottom-left-radius: 16rpx; border-bottom-right-radius: 16rpx; }
+.todo-row .todo-check { display: flex; align-items: center; justify-content: center; flex: 0 0 max(88rpx, 44px); min-width: max(88rpx, 44px); min-height: max(88rpx, 44px); padding: 0; margin: 0; background: transparent; }
+.todo-check::after { border: 0; }
+.check-circle { display: flex; align-items: center; justify-content: center; width: 38rpx; height: 38rpx; min-width: 19px; min-height: 19px; border: 1.5px solid var(--field-line); border-radius: 50%; box-sizing: border-box; color: white; font-size: max(26rpx, 13px); line-height: 1; }
+.check-circle.checked { background: var(--brand); border-color: var(--brand); }
+.is-readonly .check-circle { border-color: var(--line-strong); }
+.is-readonly .checked { background: var(--ink-3); border-color: var(--ink-3); }
+.todo-main { flex: 1; min-width: 0; }
+.todo-source { min-height: max(88rpx, 44px); padding-top: 8rpx; }
+.type-label { font-size: max(26rpx, 13px); color: var(--ink-2); }
+.state-label { margin-left: 12rpx; padding: 2rpx 10rpx; background: #edede7; border-radius: 6rpx; font-size: max(26rpx, 13px); color: var(--ink-2); }
+.todo-text { margin-top: 6rpx; color: var(--ink); font-size: max(30rpx, 15px); line-height: 1.65; white-space: pre-wrap; word-break: break-all; }
+.text-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.is-done .todo-text { color: var(--ink-2); }
+.parent-source { margin-top: 8rpx; color: var(--ink-3); font-size: max(25rpx, 13px); line-height: 1.6; word-break: break-all; }
+.todo-foot { display: flex; align-items: center; gap: 12rpx; justify-content: space-between; }
+.todo-date { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: max(26rpx, 13px); line-height: 1.6; color: var(--ink-3); padding: 12rpx 0; }
+.completion-time { font-size: max(26rpx, 13px); }
+.todo-main .expand-text, .todo-main .row-more, .todo-main .restore-source { font-size: max(26rpx, 13px); min-height: max(88rpx, 44px); padding: 0 8rpx; }
+.todo-main .expand-text, .todo-main .restore-source { margin-left: -8rpx; }
+.todo-main .row-more { flex: 0 0 auto; margin-right: -8rpx; }
+.date-sheet .date-picker-choice { display: flex; align-items: center; justify-content: center; min-height: max(100rpx, 50px); padding: 16rpx; color: var(--ink); font-size: max(30rpx, 15px); box-sizing: border-box; border-bottom: 1px solid var(--line); }

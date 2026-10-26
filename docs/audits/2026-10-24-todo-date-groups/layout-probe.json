@@ -1,0 +1,48 @@
+[
+  [
+    {
+      "left": 111,
+      "right": 237.59375,
+      "top": -316.5625,
+      "bottom": -271.5625,
+      "width": 126.59375,
+      "height": 45,
+      "white-space": "nowrap",
+      "word-break": "keep-all",
+      "line-height": "18.2px"
+    },
+    {
+      "left": 103,
+      "right": 208.328125,
+      "top": 160.734375,
+      "bottom": 205.734375,
+      "width": 105.328125,
+      "height": 45,
+      "white-space": "nowrap",
+      "word-break": "keep-all",
+      "line-height": "18.2px"
+    },
+    {
+      "left": 103,
+      "right": 229.59375,
+      "top": 295.25,
+      "bottom": 340.25,
+      "width": 126.59375,
+      "height": 45,
+      "white-space": "nowrap",
+      "word-break": "keep-all",
+      "line-height": "18.2px"
+    },
+    {
+      "left": 103,
+      "right": 229.59375,
+      "top": 480.765625,
+      "bottom": 525.765625,
+      "width": 126.59375,
+      "height": 45,
+      "white-space": "nowrap",
+      "word-break": "keep-all",
+      "line-height": "18.2px"
+    }
+  ]
+]

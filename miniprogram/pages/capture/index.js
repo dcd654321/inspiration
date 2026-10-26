@@ -2,6 +2,8 @@ const { LIMITS, createId } = require('../../core/limits');
 const { createInspiration } = require('../../core/inspiration');
 const { pageGuard } = require('../../services/page-session');
 const { draftContext, sourceVersion } = require('../../services/session-drafts');
+const { makeTodo, localDate, dateAfter, isValidDate } = require('../../core/todo');
+const { createRequestId } = require('../../services/wx-transport');
 
 const DISPLAY_ERRORS = {
   EMPTY_TEXT: '写点内容再保存',
@@ -9,7 +11,27 @@ const DISPLAY_ERRORS = {
 };
 
 /** 网络类失败不能推断服务端有没有写入——这类码是「结果未知」，不是「确定没保存」。 */
-const UNKNOWN_CODES = ['NETWORK', 'INTERNAL'];
+const UNKNOWN_CODES = ['NETWORK', 'INTERNAL', 'PULL_FAILED'];
+
+async function saveCapture(store, operation) {
+  if (operation.attempted) {
+    if (typeof store.refresh === 'function') {
+      const refreshed = await store.refresh();
+      if (!refreshed || !refreshed.ok) return refreshed || { ok: false, code: 'NETWORK' };
+    }
+    const revision = typeof store.getConfirmedRevision === 'function' ? store.getConfirmedRevision() : null;
+    if (operation.revision && revision && operation.revision.generation !== revision.generation) {
+      return { ok: false, code: 'STALE_GENERATION', message: '账户状态已变化，请重新核对后保存。' };
+    }
+    const actual = typeof store.getInspiration === 'function' ? store.getInspiration(operation.item.id) : null;
+    if (actual && sourceVersion(actual) === sourceVersion(operation.item)) return { ok: true, synced: true };
+    if (operation.revision && revision && operation.revision.baseVersion !== revision.baseVersion) {
+      return { ok: false, code: 'CONFLICT', message: '内容已更新，请到灵感列表核对后再保存。' };
+    }
+  }
+  operation.attempted = true;
+  return store.saveInspiration(operation.item, { expectedRevision: operation.revision, requestId: operation.requestId });
+}
 
 /** 校验失败时把错误码翻成人话。域层已经在 errors.js 里备好了面向用户的文案。 */
 function messageFor(err) {
@@ -49,42 +71,66 @@ Page({
     copyNotice: '',
     lastSavedId: '',
     lastSavedExcerpt: '',
-    draftRecoveryNotice: ''
+    draftRecoveryNotice: '',
+    todoEnabled: false,
+    todoDueDate: '',
+    todayDate: '',
+    tomorrowDate: ''
   },
 
   async onShow() {
     this.visible = true;
+    this.setData({ todayDate: localDate(), tomorrowDate: dateAfter(1) });
     const version = this.viewVersion = (this.viewVersion || 0) + 1;
     const app = getApp(), revision = this.inputRevision || 0;
     const startIntent = app.globalData.captureStartIntent;
+    const entryEpoch = app.globalData.sessionEpoch;
+    const validEntryIntent = startIntent && startIntent.epoch === entryEpoch &&
+      Number.isFinite(startIntent.expiresAt) && startIntent.expiresAt > Date.now();
     delete app.globalData.captureStartIntent;
-    let store;
-    try { store = await app.ensureReady(); } catch (err) { store = null; }
-    if (this.visible === false || this.viewVersion !== version) return;
-    const validIntent = (value) => value && value.epoch === app.globalData.sessionEpoch &&
-      Number.isFinite(value.expiresAt) && value.expiresAt > Date.now();
+    const entryOwner = draftContext(app, app.globalData.store);
+    const entrySaved = entryOwner && app.globalData.sessionDrafts && app.globalData.sessionDrafts.get('capture', entryOwner);
+    const hadEntryInput = Boolean(this.data.draft || this.pendingSave ||
+      entrySaved && (entrySaved.data && entrySaved.data.draft || entrySaved.pendingSave));
+    // 入口模式不等待账户读取，避免用户已开始输入后才被当成一份旧稿。
+    if (validEntryIntent && !hadEntryInput) {
+      this.setData({ lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '',
+        todoEnabled: startIntent.todo === true, todoDueDate: '' });
+    }
+    let store, readyEpoch = entryEpoch;
+    try {
+      const pending = app.ensureReady();
+      readyEpoch = app.globalData.sessionEpoch;
+      store = await pending;
+    } catch (err) { store = null; }
+    if (this.visible === false || this.viewVersion !== version ||
+        app.globalData.sessionEpoch !== readyEpoch || (store && app.globalData.store !== store)) return;
     const scope = app.globalData.cacheScope;
     if (this.scope && scope && scope !== this.scope) {
       this.pendingSave = null;
       guardDraft(false);
-      this.setData({ draft: '', canSave: false, overBy: 0, nearLimit: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '' });
+      this.setData({ draft: '', canSave: false, overBy: 0, nearLimit: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', todoEnabled: false, todoDueDate: '' });
     }
     if (scope) this.scope = scope;
     this.draftOwner = draftContext(app, store);
     const saved = app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('capture', this.draftOwner);
     if (saved && revision === (this.inputRevision || 0) && !this.data.draft) {
       this.pendingSave = saved.pendingSave;
-      this.setData(Object.assign({}, saved.data, { saving: false,
+      this.setData(Object.assign({}, saved.data, { saving: false, todayDate: localDate(), tomorrowDate: dateAfter(1),
         draftRecoveryNotice: saved.data.lastSavedId ? '已接续这次已记下的想法。' : '已接续这次未完成的记录。' }));
       if (this.pendingSave && store.getInspiration && sourceVersion(store.getInspiration(this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
         this.setData({ draft: '', canSave: false, status: '', lastSavedId: this.pendingSave.item.id,
-          lastSavedExcerpt: this.pendingSave.text });
+          lastSavedExcerpt: this.pendingSave.text, todoEnabled: false, todoDueDate: '' });
         this.pendingSave = null;
         app.globalData.sessionDrafts.remove('capture', this.draftOwner);
       }
     }
-    if (validIntent(startIntent) && !this.data.draft && !this.pendingSave) {
-      this.setData({ lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '' });
+    if (validEntryIntent && startIntent.expiresAt > Date.now() && revision === (this.inputRevision || 0) &&
+        !this.data.draft && !this.pendingSave) {
+      this.setData({ lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '',
+        todoEnabled: startIntent.todo === true, todoDueDate: '' });
+    } else if (validEntryIntent && startIntent.todo === true && hadEntryInput && (this.data.draft || this.pendingSave)) {
+      this.setData({ draftRecoveryNotice: '请先保存或清空当前输入，再记待办。' });
     }
     guardDraft(Boolean(this.data.draft));
   },
@@ -97,7 +143,7 @@ Page({
       if (this.data.draft || this.pendingSave || this.data.lastSavedId) {
         app.globalData.sessionDrafts.put('capture', this.draftOwner, { data, pendingSave: this.pendingSave });
       } else app.globalData.sessionDrafts.remove('capture', this.draftOwner);
-      this.setData({ draft: '', canSave: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '' });
+      this.setData({ draft: '', canSave: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '', todoEnabled: false, todoDueDate: '' });
       this.pendingSave = null; this.scope = ''; this.draftOwner = null;
     }
     this.visible = false;
@@ -141,6 +187,33 @@ Page({
 
   onBlur() { this.setData({ inputFocus: false }); },
 
+  onToggleTodo() {
+    if (this.data.saving || this.data.status === 'unknown' || this.visible === false) return;
+    this.inputRevision = (this.inputRevision || 0) + 1;
+    this.pendingSave = null;
+    this.setData({ todoEnabled: !this.data.todoEnabled, todoDueDate: '', draftRecoveryNotice: '',
+      todayDate: localDate(), tomorrowDate: dateAfter(1) });
+  },
+
+  onTodoDate(event) {
+    if (!this.data.todoEnabled || this.data.saving || this.data.status === 'unknown' || this.visible === false) return;
+    const kind = event.currentTarget.dataset.kind;
+    if (!['none', 'today', 'tomorrow'].includes(kind)) return;
+    this.inputRevision = (this.inputRevision || 0) + 1;
+    this.pendingSave = null;
+    this.setData({ todoDueDate: kind === 'none' ? '' : kind === 'today' ? localDate() : dateAfter(1),
+      todayDate: localDate(), tomorrowDate: dateAfter(1) });
+  },
+
+  onTodoDateChange(event) {
+    if (!this.data.todoEnabled || this.data.saving || this.data.status === 'unknown' || this.visible === false) return;
+    const value = event.detail.value;
+    if (isValidDate(value)) {
+      this.inputRevision = (this.inputRevision || 0) + 1;
+      this.pendingSave = null; this.setData({ todoDueDate: value, todayDate: localDate(), tomorrowDate: dateAfter(1) });
+    }
+  },
+
   async onSave() {
     if (this.data.saving || this.visible === false) return;
 
@@ -176,9 +249,14 @@ Page({
     // 当前会话内重试同一内容时复用记录标识；不会把待写内容持久化到设备。
     let inspiration;
     try {
-      inspiration = this.pendingSave && this.pendingSave.text === text && this.pendingSave.scope === app.globalData.cacheScope
-        ? this.pendingSave.item : createInspiration({ text, id: createId('insp'), now: Date.now() });
-      this.pendingSave = { text, scope: app.globalData.cacheScope, generation: owner && owner.generation, item: inspiration };
+      const now = Date.now();
+      const previous = this.pendingSave && this.pendingSave.text === text && this.pendingSave.scope === app.globalData.cacheScope
+        ? this.pendingSave : null;
+      inspiration = previous ? previous.item : createInspiration({ text, id: createId('insp'), now,
+        todo: this.data.todoEnabled ? makeTodo(now, this.data.todoDueDate || null) : null });
+      this.pendingSave = previous || { text, scope: app.globalData.cacheScope, generation: owner && owner.generation,
+        item: inspiration, revision: typeof store.getConfirmedRevision === 'function' ? store.getConfirmedRevision() : null,
+        requestId: createRequestId(), attempted: false };
     } catch (err) {
       this.setData({ saving: false, status: 'rejected', errorText: messageFor(err), copyNotice: '' });
       return;
@@ -190,7 +268,7 @@ Page({
     let result;
     let threw = false;
     try {
-      result = await store.saveInspiration(inspiration);
+      result = await saveCapture(store, this.pendingSave);
     } catch (err) {
       threw = true;
     }
@@ -205,7 +283,7 @@ Page({
       guardDraft(false);
       this.setData({
         draft: '', canSave: false, overBy: 0, nearLimit: false, inputFocus: false, status: '', errorText: '', copyNotice: '',
-        lastSavedId: inspiration.id, lastSavedExcerpt: text
+        lastSavedId: inspiration.id, lastSavedExcerpt: text, todoEnabled: false, todoDueDate: ''
       });
       return;
     }

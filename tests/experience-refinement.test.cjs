@@ -12,12 +12,15 @@ const template = (value) => ({ currentTarget: { dataset: { template: value } } }
 async function withPage(name, run) {
   const file = require.resolve('../miniprogram/pages/' + name + '/index');
   const old = { Page: global.Page, getApp: global.getApp, wx: global.wx };
-  const state = { items: [core.appendSupplement(core.createInspiration({ id: 'ins_refine', text: '最初的正文', now: 1000 }), { id: 'sup_refine', content: '最初的补充', now: 2000 })], saves: [], modals: [], alerts: [], copies: [], routes: [] };
+  const state = { items: [core.appendSupplement(core.createInspiration({ id: 'ins_refine', text: '最初的正文', now: 1000 }), { id: 'sup_refine', content: '最初的补充', now: 2000 })], version: 1, saves: [], modals: [], alerts: [], copies: [], routes: [] };
   const store = { getInspiration: (id) => state.items.find((x) => x.id === id), listInspirations: () => state.items,
+    getConfirmedRevision: () => ({ generation: 1, baseVersion: state.version }),
     async saveInspiration(next) {
       state.saves.push(next);
       const result = state.save ? await state.save(next) : { ok: true, synced: true };
-      if (result && result.ok && result.synced) state.items = state.items.filter((x) => x.id !== next.id).concat([next]);
+      if (result && result.ok && result.synced) {
+        state.items = state.items.filter((x) => x.id !== next.id).concat([next]); state.version++;
+      }
       return result;
     } };
   const app = { globalData: { store, sessionEpoch: 1, cacheScope: 'a'.repeat(32), drafts: createCaptureDrafts() }, ensureReady: async () => app.globalData.store };

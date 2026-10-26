@@ -3,6 +3,7 @@
   "rules": [
     { "action": "disallow", "page": "pages/launch/index" },
     { "action": "disallow", "page": "pages/list/index" },
+    { "action": "disallow", "page": "pages/archived/index" },
     { "action": "disallow", "page": "pages/detail/index" },
     { "action": "disallow", "page": "pages/history/index" },
     { "action": "disallow", "page": "pages/output/index" },

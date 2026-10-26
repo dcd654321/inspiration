@@ -27,6 +27,7 @@ async function withPage(run) {
   const state = { items: sample(), saves: [], metrics: [], copies: [], modals: [], scrolls: [], savedResult: { ok: true, synced: true } };
   const store = {
     listInspirations() { return state.items; },
+    getInspiration(id) { return state.items.find((item) => item.id === id); },
     async saveInspiration(item) { state.saves.push(item); return state.savedResult; }
   };
   const app = { globalData: { store, sessionEpoch: 1, metrics: { track(name) { state.metrics.push(name); } } },
@@ -233,7 +234,7 @@ test('所有私人工作页禁止索引且选材入口不调用分享或模型',
 
 test('选材读取失败独立显示重试，选材错误在固定操作区可见', () => {
   const wxml = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/material-output/index.wxml'), 'utf8');
-  assert.match(wxml, /wx:elif="\{\{error && !total\}\}"/);
+  assert.match(wxml, /wx:elif="\{\{error && !total && !draft\}\}"/);
   assert.ok(wxml.indexOf('error && !total') < wxml.indexOf('没有找到匹配的素材'));
   assert.match(wxml, /class="material-footer"><view wx:if="\{\{error\}\}"/);
 });

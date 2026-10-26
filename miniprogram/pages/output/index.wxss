@@ -129,3 +129,5 @@
 .archive-acts { padding: 0 40rpx; }
 .archive-acts .btn-block { margin-top: 16rpx; }
 .archive-acts .main-action { margin-top: 24rpx; }
+.export-scroll { height: 42vh; min-height: 200px; margin-top: 24rpx; }
+.export-preview { min-height: 100%; box-sizing: border-box; }

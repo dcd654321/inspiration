@@ -402,7 +402,8 @@ test('运营输出：复制稿件后继续编辑仍计成功，留档同文不�
   const pagePath = require.resolve('../miniprogram/pages/output/index');
   const previous = { Page: global.Page, getApp: global.getApp, wx: global.wx };
   let definition, clipboard;
-  const events = [], metrics = [], store = {};
+  const source = { id: 'ins_output', text: '原始灵感', archivedAt: null };
+  const events = [], metrics = [], store = { getInspiration: (id) => id === source.id ? source : null };
   const app = { globalData: { sessionEpoch: 1, store, metrics: { track: (type) => { metrics.push(type); } } },
     operationsMonitor: { event: (type) => { events.push(type); } } };
   try {
@@ -410,7 +411,8 @@ test('运营输出：复制稿件后继续编辑仍计成功，留档同文不�
     global.getApp = () => app;
     global.wx = { setClipboardData: (value) => { clipboard = value; } };
     delete require.cache[pagePath]; require(pagePath);
-    const page = { ...definition, loadedEpoch: 1, loadedStore: store, loadVersion: 1, loading: false, disposed: false,
+    const page = { ...definition, id: source.id, sourceStamp: require('../miniprogram/services/session-drafts').sourceVersion(source),
+      loadedEpoch: 1, loadedStore: store, loadVersion: 1, loading: false, disposed: false,
       data: { ...definition.data, draft: '原稿件', archive: '原稿件' },
       setData(next, done) { Object.assign(this.data, next); if (done) done(); } };
     page.onCopyDraft();

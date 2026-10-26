@@ -40,12 +40,11 @@ test('应用回到前台先锁住旧账户，可信拉取后才打开新账户�
     require(appPath);
     const app = Object.assign({}, definition, { globalData: Object.assign({}, definition.globalData) });
     app.onLaunch();
+    app.onShow();
     await app.ensureReady();
     assert.equal(app.globalData.store.listInspirations()[0].text, 'A 的内容');
     assert.equal(localReads, 0, '新会话不扫描或读取旧测试缓存');
 
-    app.onShow();
-    await app.ensureReady();
     const activeStore = app.globalData.store;
     app.globalData.drafts.set('a', 'A 尚未提交的补充');
     activeStore.refresh = async () => { retryCount += 1; };

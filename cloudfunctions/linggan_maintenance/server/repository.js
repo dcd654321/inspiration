@@ -17,6 +17,7 @@ const CODE = {
   invalidPayload: 'INVALID_PAYLOAD',
   immutableViolation: 'HISTORY_TRUNCATED',
   mergeTargetInvalid: 'MERGE_TARGET_INVALID',
+  inspirationArchived: 'INSPIRATION_ARCHIVED',
   photoDeleteUnavailable: 'PHOTO_DELETE_UNAVAILABLE',
   internal: 'INTERNAL'
 };
@@ -72,6 +73,27 @@ function sameContent(a, b) {
     return value;
   }
   return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+}
+
+function normalizeArchive(item, existing) {
+  function todo(value, previous) {
+    if (value === undefined) return previous === undefined ? null : todo(previous);
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return value;
+    return Object.assign({}, value, { dueDate: value.dueDate !== undefined ? value.dueDate
+      : previous && previous.dueDate !== undefined ? previous.dueDate : null });
+  }
+  return Object.assign({}, item, { archivedAt: item.archivedAt !== undefined
+    ? item.archivedAt : existing && existing.archivedAt !== undefined ? existing.archivedAt : null,
+  todo: todo(item.todo, existing && existing.todo),
+  supplements: Array.isArray(item.supplements) ? item.supplements.map((entry) => {
+    if (!entry || typeof entry !== 'object') return entry;
+    const previous = existing && (existing.supplements || []).find((old) => old.id === entry.id);
+    return Object.assign({}, entry, { todo: todo(entry.todo, previous && previous.todo) });
+  }) : item.supplements });
+}
+
+function sameUnarchivedContent(a, b) {
+  return sameContent(Object.assign({}, a, { archivedAt: null }), Object.assign({}, b, { archivedAt: null }));
 }
 
 function createRepository(options) {
@@ -130,11 +152,16 @@ function createRepository(options) {
     if (data.generation !== doc.generation) {
       return err(CODE.staleGeneration);
     }
+    // 过期提交先返回冲突，让客户端回读最新状态，不能按旧内容触发其他校验。
+    if (data.baseVersion !== doc.version) return err(CODE.conflict);
 
     const byId = new Map(doc.inspirations.map((item) => [item.id, item]));
     const applied = [];
 
-    for (const incoming of data.upserts) {
+    const effectiveUpserts = [];
+    for (const submitted of data.upserts) {
+      const existing = submitted && byId.get(submitted.id);
+      const incoming = submitted && normalizeArchive(submitted, existing);
       if (!incoming || typeof incoming.id !== 'string' || !SAFE_SEGMENT.test(incoming.id)) {
         return err(CODE.invalidPayload, '灵感标识不合法');
       }
@@ -143,7 +170,15 @@ function createRepository(options) {
       }
       if (!validRecord(incoming)) return err(CODE.invalidPayload);
 
-      const existing = byId.get(incoming.id);
+      if (!existing && incoming.archivedAt !== null) return err(CODE.invalidPayload);
+      if (existing) {
+        const previous = normalizeArchive(existing);
+        const changingArchive = previous.archivedAt !== incoming.archivedAt;
+        if ((previous.archivedAt !== null || changingArchive) &&
+            (!sameUnarchivedContent(previous, incoming) || previous.archivedAt !== null && incoming.archivedAt !== null && changingArchive)) {
+          return err(CODE.inspirationArchived, '请先取消归档，再修改这条灵感');
+        }
+      }
       if ((doc.photoCleanup || []).some((task) => task.inspirationId === incoming.id)) return err('PHOTO_CLEANUP_PENDING');
       const photos = incoming.photos || [];
       const oldPhotos = existing && existing.photos || [];
@@ -166,11 +201,15 @@ function createRepository(options) {
       }
 
       byId.set(incoming.id, incoming);
+      effectiveUpserts.push(incoming);
       applied.push(incoming.id);
     }
 
     // 所有改动先组装再核对引用，一次 CAS 不留下半合并；旧非法引用只能被修复。
     for (const item of byId.values()) {
+      const previous = doc.inspirations.find((old) => old.id === item.id);
+      if (item.mergedInto && (!previous || previous.mergedInto !== item.mergedInto) &&
+          byId.get(item.mergedInto) && byId.get(item.mergedInto).archivedAt != null) return err(CODE.mergeTargetInvalid);
       const seen = new Set([item.id]);
       let target = item.mergedInto;
       while (target) {
@@ -182,7 +221,10 @@ function createRepository(options) {
     // 旧版本的相同内容请求须由客户端完整回读确认，不能只抬高旧快照版本。
     if (data.baseVersion !== doc.version) return err(CODE.conflict);
     // 同版本相同内容重试按已完成处理，不再增加版本。
-    if (data.upserts.length === 0 || data.upserts.every((item) => sameContent(doc.inspirations.find((old) => old.id === item.id), item))) {
+    if (effectiveUpserts.length === 0 || effectiveUpserts.every((item) => {
+      const existing = doc.inspirations.find((old) => old.id === item.id);
+      return existing && sameContent(normalizeArchive(existing), item);
+    })) {
       return ok({ version: doc.version, applied });
     }
 

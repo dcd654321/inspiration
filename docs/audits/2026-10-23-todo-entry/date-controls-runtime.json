@@ -1,0 +1,491 @@
+{
+  "at": "2026-10-23T03:34:26.966Z",
+  "synthetic": true,
+  "cloudEnabled": false,
+  "productionWrite": false,
+  "customDateMethod": "通过真实 picker 的 change 事件注入测试日期；未操作平台原生日期滚轮",
+  "steps": [
+    {
+      "name": "after-06-capture-today",
+      "screenshot": "after-06-capture-today.png",
+      "route": "pages/capture/index",
+      "controls": [
+        {
+          "label": "加入待办开关",
+          "size": {
+            "width": 316,
+            "height": 60
+          },
+          "offset": {
+            "left": 37,
+            "top": 346.078125
+          },
+          "class": "todo-setting-toggle",
+          "fontSize": null
+        },
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 47,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 121,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip chosen",
+          "fontSize": null
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 170,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "选择日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 219,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        }
+      ],
+      "chosen": [
+        "今天"
+      ],
+      "saveLabel": "添加待办",
+      "state": {
+        "todoEnabled": true,
+        "todoDueDate": "2026-10-23"
+      }
+    },
+    {
+      "name": "after-07-capture-tomorrow",
+      "screenshot": "after-07-capture-tomorrow.png",
+      "route": "pages/capture/index",
+      "controls": [
+        {
+          "label": "加入待办开关",
+          "size": {
+            "width": 316,
+            "height": 60
+          },
+          "offset": {
+            "left": 37,
+            "top": 346.078125
+          },
+          "class": "todo-setting-toggle",
+          "fontSize": null
+        },
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 47,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 121,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 170,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip chosen",
+          "fontSize": null
+        },
+        {
+          "label": "选择日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 219,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        }
+      ],
+      "chosen": [
+        "明天"
+      ],
+      "saveLabel": "添加待办",
+      "state": {
+        "todoEnabled": true,
+        "todoDueDate": "2026-10-24"
+      }
+    },
+    {
+      "name": "after-08-capture-custom-date",
+      "screenshot": "after-08-capture-custom-date.png",
+      "route": "pages/capture/index",
+      "controls": [
+        {
+          "label": "加入待办开关",
+          "size": {
+            "width": 316,
+            "height": 60
+          },
+          "offset": {
+            "left": 37,
+            "top": 346.078125
+          },
+          "class": "todo-setting-toggle",
+          "fontSize": null
+        },
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 47,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 121,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 170,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "2026-11-05",
+          "size": {
+            "width": 90.25,
+            "height": 45
+          },
+          "offset": {
+            "left": 219,
+            "top": 440.578125
+          },
+          "class": "todo-date-chip chosen",
+          "fontSize": null
+        }
+      ],
+      "chosen": [
+        "2026-11-05"
+      ],
+      "saveLabel": "添加待办",
+      "state": {
+        "todoEnabled": true,
+        "todoDueDate": "2026-11-05"
+      }
+    },
+    {
+      "name": "after-09-supplement-today",
+      "screenshot": "after-09-supplement-today.png",
+      "route": "pages/detail/index",
+      "controls": [
+        {
+          "label": "加入待办开关",
+          "size": {
+            "width": 320,
+            "height": 60
+          },
+          "offset": {
+            "left": 35,
+            "top": 126.828125
+          },
+          "class": "todo-setting-toggle",
+          "fontSize": null
+        },
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 45,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 119,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip chosen",
+          "fontSize": null
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 168,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "选择日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 217,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        }
+      ],
+      "chosen": [
+        "今天"
+      ],
+      "saveLabel": "添加待办",
+      "state": {
+        "supplementTodoEnabled": true,
+        "supplementTodoDate": "2026-10-23"
+      }
+    },
+    {
+      "name": "after-10-supplement-tomorrow",
+      "screenshot": "after-10-supplement-tomorrow.png",
+      "route": "pages/detail/index",
+      "controls": [
+        {
+          "label": "加入待办开关",
+          "size": {
+            "width": 320,
+            "height": 60
+          },
+          "offset": {
+            "left": 35,
+            "top": 126.828125
+          },
+          "class": "todo-setting-toggle",
+          "fontSize": null
+        },
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 45,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 119,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 168,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip chosen",
+          "fontSize": null
+        },
+        {
+          "label": "选择日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 217,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        }
+      ],
+      "chosen": [
+        "明天"
+      ],
+      "saveLabel": "添加待办",
+      "state": {
+        "supplementTodoEnabled": true,
+        "supplementTodoDate": "2026-10-24"
+      }
+    },
+    {
+      "name": "after-11-supplement-custom-date",
+      "screenshot": "after-11-supplement-custom-date.png",
+      "route": "pages/detail/index",
+      "controls": [
+        {
+          "label": "加入待办开关",
+          "size": {
+            "width": 320,
+            "height": 60
+          },
+          "offset": {
+            "left": 35,
+            "top": 126.828125
+          },
+          "class": "todo-setting-toggle",
+          "fontSize": null
+        },
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 45,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 119,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 168,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip",
+          "fontSize": null
+        },
+        {
+          "label": "2026-11-05",
+          "size": {
+            "width": 90.25,
+            "height": 45
+          },
+          "offset": {
+            "left": 217,
+            "top": 221.328125
+          },
+          "class": "todo-date-chip chosen",
+          "fontSize": null
+        }
+      ],
+      "chosen": [
+        "2026-11-05"
+      ],
+      "saveLabel": "添加待办",
+      "state": {
+        "supplementTodoEnabled": true,
+        "supplementTodoDate": "2026-11-05"
+      }
+    }
+  ],
+  "exceptions": [],
+  "ok": true
+}
