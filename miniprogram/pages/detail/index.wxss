@@ -9,8 +9,7 @@
 }
 
 .detail-head .stamp {
-  font-size: 24rpx;
-  font-size: max(24rpx, 13px);
+  font-size: 12px;
   color: var(--ink-3);
   padding-bottom: 0;
 }
@@ -19,13 +18,12 @@
   flex: 0 0 auto;
   min-width: 88rpx;
   min-height: 88rpx;
-  margin: -16rpx -16rpx -16rpx 0;
-  padding: 0 20rpx;
+  margin: -8px -10px -8px 0;
+  padding: 0 10px;
   border: none;
   background: transparent;
   color: var(--brand);
-  font-size: 27rpx;
-  font-size: max(27rpx, 14px);
+  font-size: 14px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -56,8 +54,8 @@
 /* 轻量动作：两个主任务的入口，等宽一行 */
 .detail-actions {
   display: flex;
-  gap: 16rpx;
-  margin: 24rpx 0 8rpx;
+  gap: 8px;
+  margin: 18px 0 8px;
 }
 
 .compose .field-label { margin-bottom: 12rpx; }
@@ -76,20 +74,15 @@
   padding-bottom: 8rpx;
 }
 
-/* 原文用系统衬线。它是「用户自己写下的那句话」，字号已经最大，再用字族和界面其余部分
-   拉开一层——补充、按钮、说明都留在无衬线里，层级因此不靠加粗或颜色。
-
-   平台差异要知道：Android 多数机型没有中文衬线字体，会回落到无衬线。这是降级，不是损坏，
-   但两端观感不同，真机上要分别看过再决定留不留。编辑器用同一字族，进入编辑时不会突然跳字体。 */
+/* A 清晰轻页：正文与编辑器共用系统无衬线，以行距和分隔建立层级。 */
 .origin-text,
 .origin-editor {
   width: 100%;
-  font-size: 38rpx;
-  font-size: max(38rpx, 19px);
-  line-height: 1.78;
-  letter-spacing: 0.012em;
+  font-size: 17px;
+  line-height: 1.9;
+  letter-spacing: 0;
   color: var(--ink);
-  font-family: "Songti SC", "STSong", "SimSun", Georgia, serif;
+  font-family: inherit;
 }
 
 .origin-acts {
@@ -102,10 +95,9 @@
 /* ---------------------------------------------------------------- 补充时间线 */
 
 .hint-line {
-  font-size: 28rpx;
-  font-size: max(28rpx, 14px);
+  font-size: 13px;
   color: var(--ink-3);
-  padding: 20rpx 0;
+  padding: 10px 0;
 }
 
 .timeline {
@@ -114,36 +106,8 @@
 
 .tl-item {
   position: relative;
-  padding: 28rpx 0 28rpx 40rpx;
-}
-
-/* 圆点。用 box-shadow 在外圈垫一圈底色，让竖线看起来是从圆点后面穿过的 */
-.tl-item::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 42rpx;
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: 50%;
-  background: #cdcdd8;
-  box-shadow: 0 0 0 6rpx var(--paper);
-  z-index: 1;
-}
-
-.tl-ai::before {
-  background: var(--brand);
-}
-
-/* 竖线。最后一条不画，避免尾巴拖出半截 */
-.tl-item:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  left: 6rpx;
-  top: 52rpx;
-  bottom: -4rpx;
-  width: 2rpx;
-  background: var(--line);
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .tl-when {
@@ -151,8 +115,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20rpx;
-  font-size: 25rpx;
-  font-size: max(25rpx, 13px);
+  font-size: 12px;
   color: var(--ink-3);
   margin-bottom: 10rpx;
 }
@@ -212,37 +175,38 @@
 .tl-more::after { border: none; }
 
 .tl-what {
-  font-size: 29rpx;
-  font-size: max(29rpx, 16px);
-  line-height: 1.72;
-  letter-spacing: 0.01em;
+  font-size: 16px;
+  line-height: 1.8;
+  letter-spacing: 0;
 }
 
 /* ---------------------------------------------------------------- 追加补充 */
 
 .compose {
   background: var(--surface);
-  border-radius: 20rpx;
-  padding: 24rpx 26rpx 22rpx;
-  border: 1px solid var(--field-line);
+  border-radius: 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
-/* 补充输入器固定两档：空且未聚焦 64px，聚焦或已有内容 160px。
+/* 补充输入器固定两档：空且未聚焦 80px，聚焦或已有内容 160px。
    **关闭 auto-height**——固定高度与自动增高同时存在会互相打架。
    多余文字在输入框内部滚动；px 兜底避免 320 宽时缩得过小。 */
 .compose-editor {
+  box-sizing: border-box;
   width: 100%;
-  height: 128rpx;
-  height: max(128rpx, 64px);
-  font-size: 28rpx;
-  font-size: max(28rpx, 16px);
-  line-height: 1.7;
+  height: 160px;
+  padding: 12px;
+  border: 1px solid var(--field-line);
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1.8;
   color: var(--ink);
 }
 
 .compose-editor.compose-tall {
-  height: 320rpx;
-  height: max(320rpx, 160px);
+  height: 160px;
 }
 
 .count-over {
@@ -328,7 +292,7 @@
 
 /* ---------------------------------------------------------------- 整理标记 */
 
-.organization { margin: 28rpx 0; padding: 24rpx; border: 1rpx solid var(--line); border-radius: 20rpx; }
+.organization { margin: 16px 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 /* 收起行：左边是当前状态摘要，右边是动作词。表单只在真要改时摊开 */
 .org-summary {
   display: flex;
@@ -384,9 +348,9 @@
 .float-supplement::after { border: none; }
 .source-link { text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; padding: 20rpx 0; }
 .photo-strip { width: 100%; white-space: nowrap; margin-top: 16rpx; }
-.photo-cell { display: inline-block; width: 168rpx; margin-right: 16rpx; vertical-align: top; white-space: normal; }
+.photo-cell { display: inline-block; width: 84px; margin-right: 8px; vertical-align: top; white-space: normal; }
 .photo-cell:last-child { margin-right: 0; }
-.photo-preview { box-sizing: border-box; width: 168rpx; height: 168rpx; border-radius: 16rpx; background: var(--surface); }
+.photo-preview { box-sizing: border-box; width: 84px; height: 84px; border-radius: 8px; background: var(--brand-soft); }
 .photo-retry, .photo-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12rpx; margin: 0; border: 1px solid var(--field-line); font-size: max(24rpx, 13px); line-height: 1.5; color: var(--ink-2); }
 .photo-retry text { margin-top: 8rpx; color: var(--brand); }
 .photo-retry::after { border: none; }
@@ -394,7 +358,7 @@
 .photo-add { margin: 0 0 0 auto; }
 .photos-section { margin: 28rpx 0; }
 .photos-section .section-head { margin-bottom: 0; gap: 16rpx; align-items: center; }
-.source-trace { padding: 20rpx; border-left: 3rpx solid var(--line-strong); white-space: pre-wrap; font-size: max(27rpx, 16px); line-height: 1.8; }
+.source-trace { padding: 12px 0; border-top: 1px solid var(--line); white-space: pre-wrap; font-size: 16px; line-height: 1.8; }
 .source-trace view + view { margin-top: 24rpx; }
 .draft-hint { margin-top: 12rpx; font-size: max(24rpx, 13px); line-height: 1.6; color: var(--ink-3); }
 .origin-editor, .tl-editor { box-sizing: border-box; padding: 20rpx; border: 1px solid var(--field-line); border-radius: 16rpx; background: var(--surface); }
@@ -417,3 +381,22 @@
 .todo-source-quote { margin-bottom: 24rpx; padding: 20rpx; border-radius: 12rpx; background: var(--paper); color: var(--ink-2); font-size: max(26rpx, 13px); font-weight: 400; line-height: 1.6; white-space: pre-wrap; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .todo-undo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; padding: 0 20rpx; background: var(--brand-soft); border-radius: 12rpx; font-size: max(26rpx, 14px); }
 .todo-highlight { background: var(--brand-soft); outline: 2px solid var(--brand-line); outline-offset: 8rpx; border-radius: 8rpx; opacity: 1; }
+
+@media (max-width: 350px) {
+  .origin-text, .origin-editor { font-size: 16px; }
+  .tl-what { font-size: 15px; }
+}
+
+.detail-page { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+.detail-page .detail-head { margin-top: 5px; margin-bottom: 12px; min-height: 20px; }
+.detail-page .origin-text { font-size: 17px; line-height: 1.95; }
+.detail-page .detail-actions { margin: 0; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
+.detail-page .detail-actions .btn { min-height: 48px; margin: 0; }
+.detail-page .detail-actions .a-supplement-action { flex: 1; }
+.detail-page .detail-actions .btn-quiet { flex: 0 0 auto; }
+.detail-page .compose-foot .btn { display: none; }
+.detail-page .detail-next[hidden] { display: none; }
+.detail-page .compose-editor { height: 160px; min-height: 160px; padding: 6px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; font-size: 16px; line-height: 1.8; }
+.detail-page .detail-next { padding: 18px 0; }
+.detail-page .detail-next .todo-setting-hint { display: none; }
+.detail-page .detail-next .todo-setting-toggle { min-height: 56px; }

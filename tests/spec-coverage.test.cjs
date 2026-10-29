@@ -40,7 +40,8 @@ const IN_SCOPE = [
   ['remove-idea-review', 'find-and-use'],
   ['add-inspiration-archive', 'inspiration-archive'],
   ['optimize-search-discovery', 'search-discovery'],
-  ['add-inspiration-todos', 'inspiration-todos']
+  ['add-inspiration-todos', 'inspiration-todos'],
+  ['apply-clear-page-ui', 'clear-page-ui']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */

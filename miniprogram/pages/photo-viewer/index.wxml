@@ -1,6 +1,21 @@
 <view class="viewer">
-  <swiper wx:if="{{photos.length}}" current="{{current}}" bindchange="onChange"><swiper-item wx:for="{{photos}}" wx:key="id"><image wx:if="{{item.src}}" src="{{item.src}}" mode="aspectFit" show-menu-by-longpress="{{false}}" binderror="onImageError" /></swiper-item></swiper>
-  <view class="caption" wx:if="{{photos.length}}">{{current + 1}} / {{photos.length}}{{photos.length > 1 ? ' · 左右滑动查看' : ''}}</view>
-  <view class="error" wx:if="{{error}}">{{error}}</view>
-  <button wx:if="{{error && error !== '没有可查看的照片。' && !loading}}" class="error-retry" bindtap="onReload">重新加载照片</button>
+  <swiper wx:if="{{photos.length}}" current="{{current}}" bindchange="onChange">
+    <swiper-item wx:for="{{photos}}" wx:key="id">
+      <image wx:if="{{item.src}}" src="{{item.src}}" data-id="{{item.id}}" data-src="{{item.src}}" mode="aspectFit" show-menu-by-longpress="{{false}}" binderror="onImageError" />
+      <view wx:elif="{{item.failed}}" class="photo-placeholder">
+        <view class="photo-placeholder-title">照片未加载</view>
+        <view class="photo-placeholder-copy">请使用下方按钮重新加载。</view>
+      </view>
+      <view wx:else class="photo-placeholder"><view class="photo-placeholder-copy">正在读取照片…</view></view>
+    </swiper-item>
+  </swiper>
+  <view wx:else class="viewer-empty">
+    <view wx:if="{{loading}}" class="photo-placeholder-copy">正在读取照片…</view>
+    <view wx:elif="{{error}}" class="photo-placeholder-title">{{error === '没有可查看的照片。' ? '没有可查看的照片' : '暂时无法查看照片'}}</view>
+  </view>
+  <view wx:if="{{photos.length || error}}" class="viewer-status">
+    <view class="caption" wx:if="{{photos.length}}">{{current + 1}} / {{photos.length}}{{photos.length > 1 ? ' · 左右滑动查看' : ''}}</view>
+    <view class="error" wx:if="{{error}}">{{error}}</view>
+    <button wx:if="{{error && error !== '没有可查看的照片。' && !loading}}" class="error-retry" bindtap="onReload">重新加载照片</button>
+  </view>
 </view>

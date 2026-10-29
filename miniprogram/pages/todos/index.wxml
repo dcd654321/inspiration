@@ -1,17 +1,19 @@
-<view class="page todo-page">
-  <view class="page-heading">
+<view class="page todo-page a-screen">
+  <view class="a-brandline"><image src="/assets/brand-mark.png" mode="aspectFit" />灵感拾光簿</view>
+  <view class="page-heading a-heading">
     <view class="page-title">待办</view>
     <button class="todo-add-entry" bindtap="onAdd"><view class="todo-entry-icon" aria-hidden="true"><view class="todo-entry-line"></view><view class="todo-entry-line"></view></view><text>添加待办</text></button>
   </view>
 
   <view class="overview" aria-label="事项概览">
     <button wx:for="{{scopes}}" wx:key="id" class="overview-item {{scope === item.id ? 'selected' : ''}}" data-scope="{{item.id}}" bindtap="onScope" aria-pressed="{{scope === item.id}}">
-      <text class="overview-number">{{counts[item.id]}}</text>
       <text>{{item.label}}</text>
+      <text class="overview-number">{{counts[item.id]}}</text>
     </button>
   </view>
 
   <view wx:if="{{counts.all > 0 || query}}" class="todo-search">
+    <view class="a-search-icon" aria-hidden="true"></view>
     <input value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索事项或所属灵感" aria-label="搜索当前范围的待办" confirm-type="search" />
     <button wx:if="{{query}}" class="btn-link" bindtap="onClearQuery">清空</button>
   </view>
@@ -47,14 +49,16 @@
     <view wx:if="{{group.id === 'archived'}}" class="archive-note">取消归档后可处理</view>
     <view wx:for="{{group.items}}" wx:key="key" class="todo-row {{item.completed ? 'is-done' : ''}} {{item.readOnly ? 'is-readonly' : ''}}">
       <button class="todo-check" data-key="{{item.key}}" catchtap="onToggle" disabled="{{busy || blocked || item.readOnly}}" aria-label="{{item.readOnly ? '先恢复来源再处理' : item.completed ? '恢复为待办' : '完成这项待办'}}" aria-pressed="{{item.completed}}">
-        <view class="check-circle {{item.completed ? 'checked' : ''}}"><text wx:if="{{item.completed}}">✓</text></view>
+        <view class="check-circle {{item.completed ? 'checked' : ''}}"><view wx:if="{{item.completed}}" class="check-mark"></view></view>
       </button>
       <view class="todo-main">
         <view class="todo-source" data-key="{{item.key}}" bindtap="onOpen" role="button">
-          <text class="type-label">{{item.typeLabel}}</text>
-          <text wx:if="{{item.archived}}" class="state-label">已归档</text>
-          <text wx:elif="{{item.merged}}" class="state-label">已合并</text>
           <view class="todo-text {{item.longText && !item.expanded ? 'text-clamped' : ''}}">{{item.text}}</view>
+          <view class="todo-origin">
+            <text class="type-label">{{item.typeLabel}}</text>
+            <text wx:if="{{item.archived}}" class="state-label">已归档</text>
+            <text wx:elif="{{item.merged}}" class="state-label">已合并</text>
+          </view>
           <view wx:if="{{item.parentExcerpt}}" class="parent-source">所属灵感 · {{item.parentExcerpt}}</view>
         </view>
         <button wx:if="{{item.longText}}" class="btn-link expand-text" data-key="{{item.key}}" catchtap="onExpand">{{item.expanded ? '收起文字' : '展开全文'}}</button>

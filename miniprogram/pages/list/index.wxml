@@ -1,7 +1,8 @@
-<view class="page">
-  <view class="page-heading">
-    <view class="page-title">我的灵感</view>
-    <button class="btn-link add-link" bindtap="onAdd">记一条灵感</button>
+<view class="page ideas-page a-screen">
+  <view class="a-brandline"><image src="/assets/brand-mark.png" mode="aspectFit" />灵感拾光簿</view>
+  <view class="page-heading a-heading">
+    <view class="page-title">灵感</view>
+    <button class="btn-link add-link a-icon-button" bindtap="onAdd" hover-class="a-control-pressed" aria-label="记一条灵感"><view class="a-plus-icon"></view></button>
   </view>
 
   <!--
@@ -11,10 +12,11 @@
   -->
   <block wx:if="{{activeCount + mergedCount > 0}}">
     <view class="search-box">
-      <input value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索正文、补充或标签" aria-label="搜索正文、补充或标签" confirm-type="search" />
+      <view class="a-search-icon" aria-hidden="true"></view>
+      <input value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索正文、补充或标签" placeholder-class="search-ph" aria-label="搜索正文、补充或标签" confirm-type="search" />
       <button wx:if="{{query}}" class="btn-link" bindtap="onClearQuery">清空搜索</button>
     </view>
-    <view class="list-filters">
+    <view class="list-filters" aria-label="按记录类型和时间筛选">
       <button size="mini" class="filter-chip {{filter === 'all' && !mergedOn ? 'selected' : ''}}" aria-pressed="{{filter === 'all' && !mergedOn}}" data-filter="all" bindtap="onFilter">全部</button>
       <button size="mini" class="filter-chip {{filter === 'supplemented' && !mergedOn ? 'selected' : ''}}" aria-pressed="{{filter === 'supplemented' && !mergedOn}}" data-filter="supplemented" bindtap="onFilter">有补充</button>
       <button size="mini" class="filter-chip {{recentOn ? 'selected' : ''}}" aria-pressed="{{recentOn}}" bindtap="onToggleRecent">七天内</button>
@@ -104,11 +106,12 @@
         >
           <view class="row-main">
             <view class="body">{{item.excerpt}}</view>
-            <view wx:if="{{item.todoSummary}}" class="todo-summary">{{item.todoSummary}}</view>
             <view wx:if="{{item.stageLabel || item.tags.length}}" class="item-tags">
-              <text wx:if="{{item.stageLabel}}">{{item.stageLabel}}</text>
+              <view class="plain-tags">
               <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
               <text wx:if="{{item.tagMore}}">+{{item.tagMore}}</text>
+              </view>
+              <text wx:if="{{item.stageLabel}}" class="item-stage">{{item.stageLabel}}</text>
             </view>
             <view wx:if="{{item.matchText}}" class="match-snippet"><text class="match-source">{{item.matchSource}} · </text><text>{{item.matchText}}</text></view>
             <view class="meta">
@@ -121,6 +124,7 @@
                 <view class="sep"></view>
                 <text>{{item.photos}} 张照片</text>
               </block>
+              <text wx:if="{{item.todoSummary}}" class="todo-summary">{{item.todoSummary}}</text>
             </view>
           </view>
         </view>

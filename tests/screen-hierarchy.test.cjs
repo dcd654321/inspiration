@@ -144,7 +144,7 @@ test('写了一半被打断：输入非空时离开页面给出提示，但不�
   assert.match(capture, /disableAlertBeforeUnload/);
   // 未提交及结果未知仍可能丢失；超长输入也需提醒。
   assert.match(capture, /canEdit = value\.trim\(\)\.length > 0 && overBy === 0/);
-  assert.match(capture, /guardDraft\(Boolean\(value\)\)/);
+  assert.match(capture, /guardDraft\(Boolean\(value \|\| this\.data\.tagsDraft\)\)/);
   assert.match(capture, /guardDraft\(false\)/);
   const detail = read('miniprogram/pages/detail/index.js');
   assert.match(detail, /guardDetailDraft\(this\.data\)/);
@@ -208,9 +208,9 @@ test('详情页：补充与整理等宽，保留手动整理入口', () => {
 
 test('记录页与我的页文案：不列功能清单，不写辩解句', () => {
   const capture = read('miniprogram/pages/capture/index.wxml');
-  assert.match(capture, /记下一闪念/);
-  assert.match(capture, /整理成可用稿/);
-  assert.match(capture, /先写一句。需要时，把零散想法整理成能直接使用的文字。/);
+  assert.match(capture, /class="[^"]*\bpage-title\b[^"]*">记录</);
+  assert.ok(capture.indexOf('<textarea') < capture.indexOf('class="todo-setting'), '先提供正文输入，再设置待办');
+  assert.doesNotMatch(capture, /记下一闪念|capture-process/);
   assert.doesNotMatch(capture, /点子、计划和问题/);
   const mine = read('miniprogram/pages/mine/index.wxml');
   assert.doesNotMatch(mine, /不代表已发送给谁|不展示任何人的私人记录/);
@@ -235,11 +235,11 @@ test('记录页：结果未知与确认被拒绝分开，成功卡带摘录与�
   // 输入区常驻，保存后下一条入口仍是主按钮；上一条的辅助动作另行呈现。
   assert.match(page, /<view class="composer">/);
   assert.doesNotMatch(page, /wx:if="\{\{!lastSavedId\}\}"/);
-  assert.match(page, /class="btn btn-block save-btn record-another" bindtap="onRecordAnother"/);
+  assert.match(page, /class="a-action-footer">[\s\S]*?class="btn btn-block save-btn record-another"[^>]*bindtap="onRecordAnother"/);
   assert.match(page, /已记下/);
   assert.match(page, /class="saved-quote">\{\{lastSavedExcerpt\}\}/);
   assert.match(page, /bindtap="onContinueSupplement">继续补充</);
-  assert.match(page, /bindtap="onRecordAnother">再记一条</);
+  assert.match(page, /bindtap="onRecordAnother"[^>]*>再记一条</);
   // 上一条摘录一行封顶，避免挤占新记录输入。
   const styles = read('miniprogram/pages/capture/index.wxss');
   assert.match(styles, /\.saved-quote[\s\S]*?-webkit-line-clamp:\s*1/);
@@ -253,7 +253,7 @@ test('详情页：照片紧随正文动作，单行缩略图不挤进补充时�
   const page = read('miniprogram/pages/detail/index.wxml');
   const head = page.indexOf('class="detail-head"');
   const origin = page.indexOf('class="origin"');
-  const actions = page.indexOf('class="detail-actions"');
+  const actions = page.indexOf('class="detail-actions a-action-footer"');
   const compose = page.indexOf('class="compose"');
   const timeline = page.indexOf('class="timeline"');
   const org = page.indexOf('class="organization"');
@@ -274,16 +274,19 @@ test('详情页：照片紧随正文动作，单行缩略图不挤进补充时�
   assert.doesNotMatch(page, /btn-danger btn-block" bindtap="onDelete"/);
 });
 
-test('详情页：补充输入两档高度且不用 auto-height，长文有浮动定位入口', () => {
+test('详情页：底栏常驻补充入口，展开输入保留草稿且不使用 auto-height', () => {
   const page = read('miniprogram/pages/detail/index.wxml');
   const styles = read('miniprogram/pages/detail/index.wxss');
   const compose = page.slice(page.indexOf('class="compose-editor'), page.indexOf('class="compose-editor') + 480);
   assert.doesNotMatch(compose, /auto-height/, '固定高度与自动增高不能同时依赖');
   assert.match(page, /composeFocus \|\| supplementDraft/);
-  assert.match(styles, /\.compose-editor\.compose-tall[\s\S]*?max\(320rpx,\s*160px\)/);
-  assert.match(styles, /\.compose-editor \{[\s\S]*?max\(128rpx,\s*64px\)/);
-  // 长文浮动按钮：只在长正文、滚离原文、且键盘未打开时出现
-  assert.match(page, /wx:if="\{\{floatVisible && !archived && !archiveUnknown\}\}"[\s\S]*?继续补充/);
+  assert.match(styles, /\.compose-editor\.compose-tall\s*\{[^}]*height:\s*160px;/);
+  assert.match(styles, /\.compose-editor\s*\{[^}]*height:\s*160px;/);
+  // 入口固定底栏，不再叠加浮动按钮；失焦时已有输入与未知结果仍显示。
+  assert.match(page, /class="detail-actions a-action-footer"/);
+  assert.match(page, /hidden="\{\{!\(composeFocus \|\| composeRequestedFocus \|\| supplementDraft \|\| supplementUnknown\)\}\}"/);
+  assert.match(page, /class="btn a-supplement-action"[^>]*bindtap="onLocateCompose"/);
+  assert.doesNotMatch(page, /class="float-supplement"/);
   const logic = read('miniprogram/pages/detail/index.js');
   assert.match(logic, /measureLongText/);
   assert.match(logic, /height > 6 \* lineHeight/);

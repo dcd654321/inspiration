@@ -1,0 +1,20 @@
+'use strict';
+// 仅生成包外隔离工程；不连接真实云环境，不选取或上传个人照片。
+const fs = require('node:fs'), path = require('node:path');
+const root = path.resolve(__dirname, '..'), target = path.join(root, 'qa/local/clear-page-20261028/project');
+if (!target.startsWith(root + path.sep + 'qa' + path.sep + 'local' + path.sep)) throw Error('INVALID_FIXTURE_TARGET');
+fs.mkdirSync(target, { recursive: true });
+fs.cpSync(path.join(root, 'miniprogram'), path.join(target, 'miniprogram'), { recursive: true });
+let app = fs.readFileSync(path.join(root, 'tests/fixtures/todo-devtools-app.js'), 'utf8');
+const anchor = "let archived = make('demo_archived'";
+if (!app.includes(anchor)) throw Error('FIXTURE_ANCHOR_CHANGED');
+app = app.replace(anchor, "first = Object.assign({}, first, { photos: ['demo_photo', 'demo_broken'].map(id => ({ id, fileId: 'cloud://qa.bucket/linggan/' + scope + '/demo_walk/' + id, createdAt: now })) });\n" + anchor);
+app = app.replace("photos: null, metrics: null", "photos: { add: async () => ({ ok: false, message: '此验证工程不上传照片。' }) }, metrics: null");
+app = app.replace("qaFixture: 'todos-20261021'", "qaFixture: 'clear-page-20261028'");
+fs.writeFileSync(path.join(target, 'miniprogram/app.js'), app);
+fs.writeFileSync(path.join(target, 'miniprogram/config/cloud.js'), "module.exports = { enabled: false, envId: 'qa', resourceAppid: 'wx0000000000000000', apiFunction: 'DISABLED_QA' };\n");
+fs.writeFileSync(path.join(target, 'miniprogram/services/cloud-client.js'), "'use strict';\nmodule.exports = { getCloudConnectionGeneration: () => 1, getCloudClient: async () => ({ async downloadFile({ fileID }) { if (fileID.endsWith('/demo_broken')) throw Error('SYNTHETIC_DOWNLOAD_FAILURE'); return { tempFilePath: '/assets/brand-mark.png' }; } }) };\n");
+const project = JSON.parse(fs.readFileSync(path.join(root, 'project.config.json'), 'utf8'));
+project.projectname = '灵感拾光簿-A改版-隔离验证'; project.libVersion = '3.16.3'; delete project.cloudfunctionRoot;
+fs.writeFileSync(path.join(target, 'project.config.json'), JSON.stringify(project, null, 2) + '\n');
+console.log(target);

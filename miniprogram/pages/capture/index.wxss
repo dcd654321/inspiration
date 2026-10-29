@@ -3,42 +3,34 @@
 .capture-head {
   display: flex;
   align-items: center;
-  gap: 24rpx;
+  min-height: 44px;
 }
 
-.capture-mark {
-  flex: 0 0 auto;
-  width: 104rpx;
-  height: 104rpx;
-  border-radius: 26rpx;
-}
+.capture-title { margin: 0; }
+.capture-intro { margin-top: 4px; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.7; }
 
-.capture-brand { color: var(--ink-2); font-size: max(28rpx, 14px); font-weight: 500; }
-.capture-title { margin-top: 28rpx; font-size: 52rpx; font-size: max(52rpx, 24px); font-weight: 600; line-height: 1.38; letter-spacing: -0.02em; }
-.capture-intro { margin-top: 16rpx; color: var(--ink-2); font-size: max(28rpx, 14px); line-height: 1.7; }
-
+/* 输入与设置沿同一条内容轴排列，确认结果仍属于常驻输入区。 */
 .composer {
   background: var(--surface);
-  border-radius: 24rpx;
-  padding: 32rpx 32rpx 28rpx;
-  margin-top: 28rpx;
+  margin-top: 24px;
 }
+
+.composer .field-label { font-size: max(26rpx, 13px); font-weight: 400; }
 
 .editor {
   width: 100%;
-  height: 320rpx;
-  height: max(320rpx, 160px);
-  min-height: 160px;
-  font-size: 33rpx;
-  font-size: max(33rpx, 16px);
-  line-height: 1.75;
-  letter-spacing: 0.01em;
+  height: 194px;
+  min-height: 194px;
+  font-size: 34rpx;
+  font-size: 17px;
+  line-height: 1.9;
   color: var(--ink);
-  margin-top: 16rpx;
+  margin-top: 8px;
   box-sizing: border-box;
-  padding: 20rpx;
-  border: 1px solid var(--field-line);
-  border-radius: 16rpx;
+  padding: 6px 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--field-line);
+  border-radius: 0;
 }
 
 .editor-ph {
@@ -49,8 +41,9 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16rpx;
-  margin-top: 28rpx;
+  gap: 12px;
+  min-height: 24px;
+  margin-top: 10px;
 }
 
 .foot-hints {
@@ -60,43 +53,63 @@
 
 .hint-draft {
   font-size: 24rpx;
-  font-size: max(24rpx, 13px);
+  font-size: max(24rpx, 12px);
   color: var(--ink-3);
 }
 
 /* 超限时说清差多少，并保持全文可见——不静默截断粘贴内容 */
 .hint-over {
   font-size: 24rpx;
-  font-size: max(24rpx, 13px);
+  font-size: max(24rpx, 12px);
   color: var(--danger);
 }
 
 .count {
   flex: 0 0 auto;
   font-size: 24rpx;
-  font-size: max(24rpx, 13px);
+  font-size: max(24rpx, 12px);
   color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
 }
 
 .count-near {
   color: var(--warn-ink);
 }
 
-.count-over {
+.count.count-over {
   color: var(--danger);
 }
 
-.save-btn {
-  margin-top: 24rpx;
+.capture-page .todo-setting {
+  margin-top: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--surface);
 }
+.capture-page .todo-setting-toggle { min-height: 62px; padding: 10px 0; gap: 12px; }
+.capture-page .todo-entry-icon { flex-basis: 19px; width: 19px; height: 19px; color: var(--ink-2); }
+.capture-page .todo-setting-title { font-size: max(30rpx, 15px); }
+.capture-page .todo-setting-hint { font-size: max(24rpx, 12px); }
+.capture-page .todo-setting-switch { flex-basis: 42px; width: 42px; height: 25px; padding: 3px; background: #a2adbf; }
+.capture-page .todo-setting-knob { width: 19px; height: 19px; }
+.capture-page .is-active .todo-setting-switch { background: var(--brand); }
+.capture-page .is-active .todo-entry-icon { color: var(--brand); }
+.capture-page .todo-setting-dates { margin: 0; padding: 12px 0; border-top: 1px solid var(--line); }
+.capture-page .todo-date-label { font-size: max(26rpx, 13px); }
+.capture-page .todo-date-actions { gap: 6px; margin-top: 8px; }
+.capture-page .todo-date-chip { padding: 0 10px; border-color: var(--line); border-radius: 6px; font-size: max(24rpx, 12px); }
+.capture-page .todo-date-chip.chosen { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
+
+.capture-page .save-btn { margin-top: 24px; border-radius: 8px; font-size: max(30rpx, 15px); }
 
 /* 上一条确认内容的一行摘录，不占用下一条输入位置。 */
 .saved-quote {
-  font-size: 27rpx;
-  font-size: max(27rpx, 16px);
+  font-size: 28rpx;
+  font-size: max(28rpx, 14px);
   line-height: 1.6;
   color: var(--ink-2);
-  margin-top: 8rpx;
+  margin-top: 4px;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -107,14 +120,55 @@
 
 .hint-copy {
   font-size: 24rpx;
-  font-size: max(24rpx, 13px);
+  font-size: max(24rpx, 12px);
   color: var(--ink-3);
-  margin-top: 16rpx;
+  margin-top: 8px;
 }
 
-.capture-result { margin-top: 24rpx; padding: 16rpx 20rpx 4rpx; }
+.capture-result { margin-top: 16px; padding: 12px 14px 2px; border-radius: 8px; }
 .capture-result .notice-title { font-size: max(28rpx, 14px); }
-.capture-result .notice-acts { flex-wrap: wrap; gap: 16rpx; margin-top: 0; }
+.capture-result .notice-acts { flex-wrap: wrap; gap: 16px; margin-top: 0; }
 .capture-result .notice-acts .btn-link { width: auto; margin: 0; padding-left: 0; padding-right: 0; }
-.capture-process { display: flex; align-items: center; justify-content: center; gap: 16rpx; margin-top: 28rpx; font-size: max(26rpx, 13px); color: var(--ink-2); }
-.capture-process text { color: var(--brand); }
+
+@media (max-width: 350px) {
+  .composer { margin-top: 20px; }
+  .capture-page .todo-date-chip { padding-left: 8px; padding-right: 8px; }
+}
+
+/* 与已选A的输入及底栏布局对齐。 */
+.capture-page { padding-bottom: 110px; }
+.capture-page .capture-intro { margin-top: -4px; font-size: 12px; line-height: 1.7; }
+.capture-page .composer { margin-top: 24px; }
+.capture-page .editor { border-color: var(--line); padding: 6px 0; }
+.capture-page .composer .field-label { font-size: 13px; }
+.capture-page .todo-setting-title { font-size: 15px; font-weight: 400; }
+.capture-page .todo-setting-hint { display: none; }
+.capture-page .todo-setting-switch { background: #c6ccd8; box-sizing: border-box; flex-basis: 42px; width: 42px; height: 25px; padding: 3px; justify-content: flex-start; }
+.capture-page .todo-setting-knob { transition: transform .18s ease-out; transform: translateX(0); }
+.capture-page .is-active .todo-setting-switch { justify-content: flex-start; }
+.capture-page .is-active .todo-setting-knob { transform: translateX(17px); }
+.capture-page .a-action-footer .save-btn { margin: 0; }
+.capture-page .foot { margin-top: 0; min-height: 44px; align-items: center; }
+@media (prefers-reduced-motion: reduce) { .capture-page .todo-setting-knob { transition: none; } }
+
+/* 已选A的照片元信息行与标签设置行。 */
+.capture-page .foot { flex-wrap: wrap; gap: 0 12px; }
+.capture-page .foot-hints { flex: 1 1 100%; order: 3; }
+.capture-page .foot-hints:empty { display: none; }
+.capture-page .capture-photo-add { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0; margin: 0 auto 0 0; font-size: 13px; font-weight: 400; }
+.capture-camera-icon { position: relative; box-sizing: border-box; width: 18px; height: 13px; border: 1.5px solid currentColor; border-radius: 3px; }
+.capture-camera-icon::before { content: ''; position: absolute; left: 4px; top: 2px; width: 6px; height: 6px; box-sizing: border-box; border: 1.5px solid currentColor; border-radius: 50%; }
+.capture-camera-icon::after { content: ''; position: absolute; top: -4px; left: 4px; width: 7px; height: 3px; border: 1.5px solid currentColor; border-bottom: 0; border-radius: 2px 2px 0 0; }
+.capture-tags-row { display: flex; align-items: center; gap: 12px; min-height: 62px; border-bottom: 1px solid var(--line); }
+.capture-tags-label { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.capture-tag-icon { width: 16px; height: 13px; border: 1.5px solid var(--ink-2); border-radius: 2px 5px 5px 2px; transform: rotate(-35deg); box-sizing: border-box; }
+.capture-tags-input { flex: 1; min-width: 0; height: 44px; font-size: 13px; text-align: right; color: var(--ink); }
+.capture-photo-hint { margin-top: 0; color: var(--ink-2); font-size: 12px; line-height: 1.6; }
+.capture-photo-error { margin-top: 4px; color: var(--danger); font-size: 13px; line-height: 1.6; }
+.capture-photos { margin: 4px 0 12px; }
+.capture-photo-strip { width: 100%; height: 84px; white-space: nowrap; }
+.capture-photo-cell { display: inline-block; vertical-align: top; margin-right: 8px; white-space: normal; }
+.capture-photo-preview { display: flex; box-sizing: border-box; align-items: center; justify-content: center; flex-direction: column; width: 84px; height: 84px; padding: 0; border-radius: 8px; background: var(--brand-soft); }
+.capture-photo-retry, .capture-photo-loading { color: var(--ink-2); font-size: 12px; line-height: 1.6; }
+.capture-photo-retry text { color: var(--brand); }
+.capture-photo-retry::after { border: 0; }

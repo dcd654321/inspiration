@@ -67,11 +67,14 @@ function createUploader(options) {
     try {
       const result = await uploadFile({ filePath: tempFilePath, cloudPath });
       if (!result || typeof result.fileID !== 'string' || result.fileID.length === 0) {
-        return { ok: false, code: CODE.uploadFailed };
+        return { ok: false, code: CODE.uploadFailed, errorCode: 'INVALID_UPLOAD_RESPONSE' };
       }
       return { ok: true, fileId: result.fileID };
     } catch (err) {
-      return { ok: false, code: CODE.uploadFailed };
+      const value = err && (err.errCode !== undefined ? err.errCode : err.code);
+      const errorCode = Number.isFinite(value) || (typeof value === 'string' && /^[A-Z0-9_-]{1,80}$/.test(value))
+        ? value : 'UPLOAD_EXCEPTION';
+      return { ok: false, code: CODE.uploadFailed, errorCode };
     }
   }
 

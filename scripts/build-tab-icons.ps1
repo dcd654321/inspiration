@@ -73,6 +73,6 @@ function Save-TabIcon([string] $name, [string] $colorHex, [string] $variant) {
 }
 
 foreach ($name in @('record', 'ideas', 'todos', 'mine')) {
-  Save-TabIcon $name '#6f6f7b' 'idle'
-  Save-TabIcon $name '#34377f' 'active'
+  Save-TabIcon $name '#5e697f' 'idle'
+  Save-TabIcon $name '#2d438c' 'active'
 }

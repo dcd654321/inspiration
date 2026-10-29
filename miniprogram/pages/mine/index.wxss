@@ -1,43 +1,41 @@
-page {
-  --paper: #f5f7f2;
-  --ink: #3f5049;
-  --ink-2: #65756c;
-  --line: #dfe6dc;
-  background: var(--paper);
-}
-
-.mine-page {
-  padding: 40rpx 36rpx calc(64rpx + env(safe-area-inset-bottom));
-}
-
 .profile-head {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-  margin-bottom: 48rpx;
+  gap: 28rpx;
+  margin-top: 32rpx;
+  padding-bottom: 36rpx;
+  border-bottom: 1px solid var(--line);
 }
 
 .profile-mark {
   flex: 0 0 auto;
-  width: 104rpx;
-  height: 104rpx;
-  border-radius: 26rpx;
+  width: max(88rpx, 44px);
+  height: max(88rpx, 44px);
+  border-radius: 18rpx;
+}
+
+.profile-name {
+  color: var(--ink);
+  font-size: max(32rpx, 16px);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.profile-head .page-sub {
+  margin-top: 6rpx;
+  font-size: max(24rpx, 12px);
+  line-height: 1.7;
 }
 
 .settings-card {
-  padding: 2rpx 30rpx;
-  margin-top: 40rpx;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 28rpx;
+  margin-top: 34rpx;
 }
 
 .group-label {
-  margin-top: 28rpx;
+  margin-bottom: 8rpx;
   color: var(--ink-2);
-  font-size: 28rpx;
-  font-size: max(28rpx, 14px);
-  line-height: 1.5;
+  font-size: max(24rpx, 12px);
+  line-height: 1.6;
 }
 
 .mine-page .menu-row {
@@ -46,18 +44,16 @@ page {
   justify-content: space-between;
   gap: 24rpx;
   width: 100%;
-  min-height: 108rpx;
-  min-height: max(108rpx, 52px);
+  min-height: max(104rpx, 52px);
   margin: 0;
-  padding: 26rpx 0;
+  padding: 24rpx 0;
   box-sizing: border-box;
   border: none;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 30rpx;
-  font-size: max(30rpx, 16px);
+  font-size: max(32rpx, 16px);
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
@@ -67,12 +63,8 @@ page {
   border: none;
 }
 
-.settings-card .menu-row:last-child {
-  border-bottom: none;
-}
-
 .mine-page .menu-row-hover {
-  background: var(--paper);
+  background: var(--brand-soft);
 }
 
 .menu-label {
@@ -83,11 +75,10 @@ page {
 }
 
 .menu-sub {
-  margin-top: 2rpx;
+  margin-top: 4rpx;
   color: var(--ink-2);
-  font-size: 26rpx;
-  font-size: max(26rpx, 13px);
-  line-height: 1.5;
+  font-size: max(24rpx, 12px);
+  line-height: 1.6;
 }
 
 .menu-arrow {
@@ -102,14 +93,18 @@ page {
 }
 
 .info-content {
-  padding: 20rpx 0 26rpx;
+  padding: 20rpx 0 28rpx;
   border-bottom: 1px solid var(--line);
   color: var(--ink-2);
-  font-size: 28rpx;
   font-size: max(28rpx, 14px);
-  line-height: 1.75;
+  line-height: 1.85;
 }
 
 .info-note + .info-note {
   margin-top: 16rpx;
 }
+
+.mine-page .profile-head { margin-top: 0; gap: 14px; padding: 12px 0 24px; }
+.mine-page .profile-mark { width: 44px; height: 44px; border-radius: 9px; }
+.mine-page .menu-row { min-height: 58px; padding: 12px 0; font-size: 15px; }
+.mine-page .menu-arrow { width: 18px; height: 18px; }

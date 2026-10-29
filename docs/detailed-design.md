@@ -8,6 +8,10 @@
 
 ## 0. 文档地图
 
+2026-10-28 清晰轻页：用户已选 A，变更见 `openspec/changes/apply-clear-page-ui/`，界面约定见 `ui-design.md` §21，确认与原型见 `design-demos/2026-10-28/`。本次保持已有数据、保存、独立待办与归档约束，照片链路的实际修复与验证将在对应章节和 `VERIFICATION.md` 分别记录。
+
+2026-10-28 首页入口补齐：`capture.onTagsInput(event)` 接受空格/中英文逗号分隔的标签，保存前去重并通过现有 `organize(item,{tags,stage,now})` 校验；标签与正文和待办一次保存，pendingSave同时绑定tagsText。`onAddPhoto()` 选择来源后调用 `addPhotos(source)`，先由onSave确认当前记录，再调用现有照片服务。`loadCapturePhotos()` 只读取当前已保存记录的私有照片，`onPreviewCapturePhoto(event)` 打开原查看页，`onCapturePhotoError(event)` 校验ID/src。上传与读取分别守卫页面版本、账户、store及目标ID；新输入清空上一条照片视图，退出只保留标签文字，不将照片地址或选择路径写入sessionDrafts。没有照片草稿或云协议变更。
+
 2026-10-21 灵感待办：`openspec/changes/add-inspiration-todos/` 定义正文与补充独立待办、可选日期、统一看板及归档只读联动。接口见 §34，字段见 database-design.md §19，页面见 ui-design.md §20。用户已确认方案，云部署与真机另验。
 
 2026-10-19 搜索承接：`openspec/changes/optimize-search-discovery/` 定义公开欢迎页、固定产品转发及账户按需准备。接口与生命周期见 §33，界面见 `ui-design.md` §19；平台配置、收录与真机单独验收。
@@ -837,6 +841,14 @@ prepare({ source, existingCount }) → Promise<PrepareResult>
 
 无论成败都返回 `limit`（`{ maxBytes, maxCount }`）——界面要能说出「上限是多少」，不能只说「超了」。
 
+2026-10-28：`prepare` 只有选择器明确取消才返回 `CANCELLED`；权限拒绝返回 `PERMISSION_DENIED` 与对应指引，其他原生错误或残缺选择结果返回 `FAILED` 与重新选择说明，不向用户转交原始错误。准备阶段可分别返回合格和被拒图片；整批无合格图片由云确认照片编排明确报告未添加。
+
+`createWxPhotos` 优先使用可用的 `wx.chooseMedia`，缺失时使用 `wx.chooseImage`；旧接口的 `tempFiles[].path` 转为统一的 `tempFilePath`，保留 `size`、选择顺序、剩余数量和原生权限边界。两个接口均不可用时返回明确失败，不静默视为取消，不连接默认云实例。
+
+照片编排在选择返回、每次上传前后和关联回执之后重新核对会话与来源：归档、合并、删除或已达九张时不继续追加；上传期间变为只读且已确认尚未关联的文件只在原会话有效时清理。会话失效后不再发起上传或清理；关联未知时先核对，不盲删可能已关联文件。
+
+私有读取除环境、账户与路径字符校验外，还要求记录照片 ID 与文件尾段一致；无有效候选不初始化云连接。下载错误码或空临时路径保持单张失败占位。查看页图片错误绑定照片 ID 与当次 src，只使匹配图片失效，旧页面/账户/旧路径事件不覆盖新结果；重试保留当前照片位置。
+
 ### 7.11 `services/upload.js`
 
 照片上传与云存储清理。
@@ -854,6 +866,8 @@ removePhotos(fileIds) → Promise<{ ok, removed, failed }>
 ```
 
 **幂等靠对象名，不靠去重逻辑。** 对象名固定为 `linggan/{accountKey}/{inspirationId}/{photoId}`，重传覆盖同一对象——这就是规范「同一次上传被重复提交，云端只保留一个对象」的实现方式，不需要「先查再传」。
+
+上传失败返回 `code: UPLOAD_FAILED`，可附带脱敏 `errorCode`（有限数字或固定大写错误标识）；残缺回执使用 `INVALID_UPLOAD_RESPONSE`。照片编排区分 `UPLOAD_FAILED`、`PHOTO_FILE_ID_MISMATCH` 和 `PHOTO_ASSOCIATION_FAILED`，后者可保留已知保存错误码；本地关联异常仅转为 `PHOTO_VALIDATION_FAILED`、`PHOTO_LOCAL_TYPE_ERROR` 或 `PHOTO_LOCAL_ERROR`，继续先回读再判断清理，不返回原始错误、用户文件路径或凭证。
 
 **路径拼接的每一段都重新校验字符集**（`SAFE_SEGMENT`），**故意不再 import `core/inspiration.js` 的 `ID_PATTERN`**：这条校验守的是跨系统边界，不该因为上游哪天放宽了字符集就跟着放宽。
 

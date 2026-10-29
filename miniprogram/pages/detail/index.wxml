@@ -1,4 +1,4 @@
-<view class="page" wx:if="{{ready}}">
+<view class="page detail-page a-screen" wx:if="{{ready}}">
   <!-- 读取失败与「确认不存在」分开：网络问题不能说成灵感已被删除 -->
   <block wx:if="{{loadError}}">
     <view class="empty">
@@ -18,9 +18,10 @@
   </block>
 
   <block wx:else>
+    <view class="a-brandline"><image src="/assets/brand-mark.png" mode="aspectFit" />灵感拾光簿</view>
+    <view class="a-heading"><view class="page-title">灵感详情</view><button class="detail-more" bindtap="onOpenMore" disabled="{{pending !== '' || editing || editingSupplementId}}" aria-label="更多操作">更多</button></view>
     <view class="detail-head">
       <view class="stamp">{{time}}</view>
-      <button class="detail-more" bindtap="onOpenMore" disabled="{{pending !== '' || editing || editingSupplementId}}" aria-label="更多操作">更多</button>
     </view>
     <view wx:if="{{archived}}" class="archive-state"><text class="tag">已归档</text><text>取消归档后可继续整理。</text></view>
     <view wx:if="{{archiveUnknown}}" class="notice notice-warn"><view class="notice-body"><text>尚未确认归档状态，请重试确认。</text><button class="btn-link" bindtap="onMoreArchive" disabled="{{pending !== ''}}">重试确认</button></view></view>
@@ -70,10 +71,11 @@
     </view>
 
     <!-- 轻量动作：低频操作都收进了「更多」，这里只留两个主任务 -->
-    <view class="detail-actions">
+    <view wx:if="{{!editing && !editingSupplementId}}" class="detail-actions a-action-footer">
       <button wx:if="{{archived}}" class="btn btn-quiet btn-sm" bindtap="onOpenArchiveExport" disabled="{{pending !== ''}}">文字留档</button>
       <button wx:else class="btn btn-quiet btn-sm" bindtap="onOpenOutput" disabled="{{pending !== '' || editing || editingSupplementId || archiveUnknown}}">整理成稿</button>
-      <button wx:if="{{!merged && !archived}}" class="btn btn-plain btn-sm" bindtap="onLocateCompose" disabled="{{pending !== '' || editing || editingSupplementId || archiveUnknown}}">继续补充</button>
+      <button wx:if="{{!merged && !archived && !(composeFocus || composeRequestedFocus || supplementDraft || supplementUnknown)}}" class="btn a-supplement-action" hover-class="a-primary-pressed" bindtap="onLocateCompose" disabled="{{pending !== '' || archiveUnknown}}">继续补充</button>
+      <button wx:elif="{{!merged && !archived}}" class="btn a-supplement-action" hover-class="a-primary-pressed" bindtap="onSubmitSupplement" disabled="{{!canAddSupplement || pending !== '' || archiveUnknown}}">{{pending === 'supplement' ? '保存中…' : supplementUnknown ? '重试保存' : '保存补充'}}</button>
     </view>
 
     <!-- 已关联照片紧随正文，以单行缩略图展示，点击可查看大图 -->
@@ -95,7 +97,7 @@
     </view>
 
     <!-- 补充是详情页的主动作：输入框紧随原文，已有补充在输入框下方 -->
-    <view wx:if="{{!editing && !editingSupplementId && !merged && !archived}}" class="detail-next">
+    <view wx:if="{{!editing && !editingSupplementId && !merged && !archived}}" hidden="{{!(composeFocus || composeRequestedFocus || supplementDraft || supplementUnknown)}}" class="detail-next">
       <view class="compose">
         <view class="field-label">继续补充</view>
         <textarea
@@ -273,7 +275,6 @@
   </block>
 
   <!-- 长正文滚离原文后出现的定位入口；键盘打开时隐藏 -->
-  <button wx:if="{{floatVisible && !archived && !archiveUnknown}}" class="float-supplement" bindtap="onLocateCompose" aria-label="继续补充">继续补充</button>
 
   <!-- 页内「更多」：修改正文、复制灵感、修改记录、删除灵感 -->
   <view wx:if="{{moreVisible}}" class="mask" bindtap="onCloseMore">

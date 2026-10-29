@@ -4,6 +4,8 @@ const { pageGuard } = require('../../services/page-session');
 const { draftContext, sourceVersion } = require('../../services/session-drafts');
 const { makeTodo, localDate, dateAfter, isValidDate } = require('../../core/todo');
 const { createRequestId } = require('../../services/wx-transport');
+const { organize } = require('../../services/organization');
+const { loadPrivatePhotos } = require('../../services/private-photos');
 
 const DISPLAY_ERRORS = {
   EMPTY_TEXT: '写点内容再保存',
@@ -75,7 +77,8 @@ Page({
     todoEnabled: false,
     todoDueDate: '',
     todayDate: '',
-    tomorrowDate: ''
+    tomorrowDate: '',
+    tagsDraft: '', photoBusy: false, photoError: '', photos: []
   },
 
   async onShow() {
@@ -90,8 +93,8 @@ Page({
     delete app.globalData.captureStartIntent;
     const entryOwner = draftContext(app, app.globalData.store);
     const entrySaved = entryOwner && app.globalData.sessionDrafts && app.globalData.sessionDrafts.get('capture', entryOwner);
-    const hadEntryInput = Boolean(this.data.draft || this.pendingSave ||
-      entrySaved && (entrySaved.data && entrySaved.data.draft || entrySaved.pendingSave));
+    const hadEntryInput = Boolean(this.data.draft || this.data.tagsDraft || this.pendingSave ||
+      entrySaved && (entrySaved.data && (entrySaved.data.draft || entrySaved.data.tagsDraft) || entrySaved.pendingSave));
     // 入口模式不等待账户读取，避免用户已开始输入后才被当成一份旧稿。
     if (validEntryIntent && !hadEntryInput) {
       this.setData({ lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '',
@@ -109,46 +112,48 @@ Page({
     if (this.scope && scope && scope !== this.scope) {
       this.pendingSave = null;
       guardDraft(false);
-      this.setData({ draft: '', canSave: false, overBy: 0, nearLimit: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', todoEnabled: false, todoDueDate: '' });
+      this.setData({ draft: '', tagsDraft: '', photos: [], photoBusy: false, photoError: '', canSave: false, overBy: 0, nearLimit: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', todoEnabled: false, todoDueDate: '' });
     }
     if (scope) this.scope = scope;
     this.draftOwner = draftContext(app, store);
     const saved = app.globalData.sessionDrafts && this.draftOwner && app.globalData.sessionDrafts.get('capture', this.draftOwner);
-    if (saved && revision === (this.inputRevision || 0) && !this.data.draft) {
+    if (saved && revision === (this.inputRevision || 0) && !this.data.draft && !this.data.tagsDraft) {
       this.pendingSave = saved.pendingSave;
-      this.setData(Object.assign({}, saved.data, { saving: false, todayDate: localDate(), tomorrowDate: dateAfter(1),
+      this.setData(Object.assign({}, saved.data, { saving: false, photoBusy: false, photos: [], photoError: '', todayDate: localDate(), tomorrowDate: dateAfter(1),
         draftRecoveryNotice: saved.data.lastSavedId ? '已接续这次已记下的想法。' : '已接续这次未完成的记录。' }));
       if (this.pendingSave && store.getInspiration && sourceVersion(store.getInspiration(this.pendingSave.item.id)) === sourceVersion(this.pendingSave.item)) {
         this.setData({ draft: '', canSave: false, status: '', lastSavedId: this.pendingSave.item.id,
-          lastSavedExcerpt: this.pendingSave.text, todoEnabled: false, todoDueDate: '' });
+          lastSavedExcerpt: this.pendingSave.text, tagsDraft: '', todoEnabled: false, todoDueDate: '' });
         this.pendingSave = null;
         app.globalData.sessionDrafts.remove('capture', this.draftOwner);
       }
     }
     if (validEntryIntent && startIntent.expiresAt > Date.now() && revision === (this.inputRevision || 0) &&
-        !this.data.draft && !this.pendingSave) {
+        !this.data.draft && !this.data.tagsDraft && !this.pendingSave) {
       this.setData({ lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '',
         todoEnabled: startIntent.todo === true, todoDueDate: '' });
     } else if (validEntryIntent && startIntent.todo === true && hadEntryInput && (this.data.draft || this.pendingSave)) {
       this.setData({ draftRecoveryNotice: '请先保存或清空当前输入，再记待办。' });
     }
-    guardDraft(Boolean(this.data.draft));
+    guardDraft(Boolean(this.data.draft || this.data.tagsDraft));
+    if (this.data.lastSavedId && typeof this.loadCapturePhotos === 'function') this.loadCapturePhotos();
   },
 
   onHide() {
     const app = getApp();
     if (this.visible !== false && this.draftOwner && app.globalData.sessionDrafts) {
-      const data = Object.assign({}, this.data, { saving: false, inputFocus: false });
+      const data = Object.assign({}, this.data, { saving: false, inputFocus: false, photos: [], photoBusy: false, photoError: '' });
       if (this.data.saving && this.pendingSave) data.status = 'unknown';
-      if (this.data.draft || this.pendingSave || this.data.lastSavedId) {
+      if (this.data.draft || this.data.tagsDraft || this.pendingSave || this.data.lastSavedId) {
         app.globalData.sessionDrafts.put('capture', this.draftOwner, { data, pendingSave: this.pendingSave });
       } else app.globalData.sessionDrafts.remove('capture', this.draftOwner);
-      this.setData({ draft: '', canSave: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '', todoEnabled: false, todoDueDate: '' });
+      this.setData({ draft: '', tagsDraft: '', photos: [], photoBusy: false, photoError: '', canSave: false, saving: false, status: '', errorText: '', copyNotice: '', lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '', todoEnabled: false, todoDueDate: '' });
       this.pendingSave = null; this.scope = ''; this.draftOwner = null;
     }
     this.visible = false;
+    this.photoReadVersion = (this.photoReadVersion || 0) + 1;
     this.viewVersion = (this.viewVersion || 0) + 1;
-    this.setData({ inputFocus: false });
+    this.setData({ inputFocus: false, photoBusy: false, photos: [], photoError: '' });
     if (this.data.saving) this.setData({ saving: false, status: 'unknown' });
     guardDraft(false);
   },
@@ -156,14 +161,14 @@ Page({
   onUnload() { this.onHide(); },
 
   onInput(event) {
-    if (this.data.saving || this.visible === false) return;
+    if (this.data.saving || this.data.photoBusy || this.visible === false) return;
     const value = event.detail.value;
     this.inputRevision = (this.inputRevision || 0) + 1;
     if (this.pendingSave && this.pendingSave.text !== value) this.pendingSave = null;
     const overBy = Math.max(0, value.length - LIMITS.textMaxLength);
     const canEdit = value.trim().length > 0 && overBy === 0;
     // 结果未知时输入框仍然可用：用户改了内容就回到普通编辑态，旧的未确认状态随之撤下
-    guardDraft(Boolean(value));
+    guardDraft(Boolean(value || this.data.tagsDraft));
     this.setData({
       draft: value,
       canSave: canEdit,
@@ -176,7 +181,7 @@ Page({
       draftRecoveryNotice: '',
       // 用户重新开始输入就清掉上一条成功卡与失败提示——它们还挂着只会让人以为说的是这次
       lastSavedId: '',
-      lastSavedExcerpt: ''
+      lastSavedExcerpt: '', photos: [], photoError: ''
     });
   },
 
@@ -187,8 +192,77 @@ Page({
 
   onBlur() { this.setData({ inputFocus: false }); },
 
+  onTagsInput(event) {
+    if (this.data.saving || this.data.photoBusy || this.visible === false) return;
+    if (event.detail.value === this.data.tagsDraft) return;
+    this.inputRevision = (this.inputRevision || 0) + 1;
+    this.pendingSave = null;
+    this.photoReadVersion = (this.photoReadVersion || 0) + 1;
+    this.setData({ tagsDraft: event.detail.value, status: '', errorText: '', lastSavedId: '', lastSavedExcerpt: '', photos: [], photoError: '', draftRecoveryNotice: '' });
+    guardDraft(Boolean(this.data.draft || this.data.tagsDraft));
+  },
+
+  onAddPhoto() {
+    if (this.visible === false || this.data.saving || this.data.photoBusy) return;
+    if (!this.data.draft.trim() && !this.data.lastSavedId) {
+      this.setData({ photoError: '先写下一点内容，再添加照片。' }); return;
+    }
+    const isCurrent = pageGuard(this), revision = this.inputRevision || 0;
+    wx.showActionSheet({ itemList: ['拍照', '从相册选择'], success: (result) => {
+      if (isCurrent() && revision === (this.inputRevision || 0) && [0, 1].includes(result.tapIndex)) {
+        this.addPhotos(result.tapIndex === 0 ? 'camera' : 'album');
+      }
+    } });
+  },
+
+  async addPhotos(source) {
+    if (this.visible === false || this.data.saving || this.data.photoBusy || !['camera', 'album'].includes(source)) return;
+    const version = this.viewVersion, revision = this.inputRevision || 0;
+    if (this.data.draft.trim()) await this.onSave();
+    if (this.visible === false || this.viewVersion !== version || revision !== (this.inputRevision || 0)) return;
+    const app = getApp(), store = app.globalData.store, service = app.globalData.photos;
+    const id = this.data.lastSavedId;
+    if (!id || this.data.status) return;
+    if (!store || !service || (this.scope && this.scope !== app.globalData.cacheScope)) {
+      this.setData({ photoError: '暂时无法添加照片，请稍后重试。' }); return;
+    }
+    const current = pageGuard(this);
+    this.setData({ photoBusy: true, photoError: '' });
+    let result;
+    try { result = await service.add(id, source); }
+    catch (_) { result = { ok: false, message: '尚未确认照片是否添加，请重新读取后查看。' }; }
+    if (!current() || app.globalData.photos !== service || this.data.lastSavedId !== id) return;
+    this.setData({ photoBusy: false, photoError: result && result.message || '' });
+    await this.loadCapturePhotos();
+  },
+
+  async loadCapturePhotos() {
+    const app = getApp(), store = app.globalData.store, id = this.data.lastSavedId;
+    const readVersion = this.photoReadVersion = (this.photoReadVersion || 0) + 1;
+    const pageCurrent = pageGuard(this);
+    const isCurrent = () => pageCurrent() && this.photoReadVersion === readVersion && this.data.lastSavedId === id;
+    if (!id || !store || !isCurrent()) return;
+    const item = store.getInspiration(id), originals = item && item.photos || [];
+    this.setData({ photos: originals.map(photo => ({ id: photo.id, src: '', failed: false })) });
+    const photos = await loadPrivatePhotos(originals, { cacheScope: app.globalData.cacheScope, isCurrent });
+    if (isCurrent()) this.setData({ photos });
+  },
+
+  onPreviewCapturePhoto(event) {
+    if (this.visible === false || this.data.photoBusy || !this.data.lastSavedId) return;
+    const id = event.currentTarget.dataset.id;
+    if (!this.data.photos.some(photo => photo.id === id && photo.src)) return;
+    wx.navigateTo({ url: '/pages/photo-viewer/index?id=' + encodeURIComponent(this.data.lastSavedId) + '&photo=' + encodeURIComponent(id) });
+  },
+
+  onCapturePhotoError(event) {
+    if (this.visible === false) return;
+    const { id, src } = event.currentTarget.dataset;
+    this.setData({ photos: this.data.photos.map(photo => photo.id === id && photo.src === src ? Object.assign({}, photo, { src: '', failed: true }) : photo) });
+  },
+
   onToggleTodo() {
-    if (this.data.saving || this.data.status === 'unknown' || this.visible === false) return;
+    if (this.data.saving || this.data.photoBusy || this.data.status === 'unknown' || this.visible === false) return;
     this.inputRevision = (this.inputRevision || 0) + 1;
     this.pendingSave = null;
     this.setData({ todoEnabled: !this.data.todoEnabled, todoDueDate: '', draftRecoveryNotice: '',
@@ -196,7 +270,7 @@ Page({
   },
 
   onTodoDate(event) {
-    if (!this.data.todoEnabled || this.data.saving || this.data.status === 'unknown' || this.visible === false) return;
+    if (!this.data.todoEnabled || this.data.saving || this.data.photoBusy || this.data.status === 'unknown' || this.visible === false) return;
     const kind = event.currentTarget.dataset.kind;
     if (!['none', 'today', 'tomorrow'].includes(kind)) return;
     this.inputRevision = (this.inputRevision || 0) + 1;
@@ -206,7 +280,7 @@ Page({
   },
 
   onTodoDateChange(event) {
-    if (!this.data.todoEnabled || this.data.saving || this.data.status === 'unknown' || this.visible === false) return;
+    if (!this.data.todoEnabled || this.data.saving || this.data.photoBusy || this.data.status === 'unknown' || this.visible === false) return;
     const value = event.detail.value;
     if (isValidDate(value)) {
       this.inputRevision = (this.inputRevision || 0) + 1;
@@ -215,11 +289,16 @@ Page({
   },
 
   async onSave() {
-    if (this.data.saving || this.visible === false) return;
+    if (this.data.saving || this.data.photoBusy || this.visible === false) return;
 
     const text = this.data.draft;
     if (text.trim().length === 0 || text.length > LIMITS.textMaxLength) return; // 按钮已 disabled，这里是兜底
 
+    const tagsText = this.data.tagsDraft || '';
+    const tags = [...new Set(tagsText.split(/[\s,，]+/).filter(Boolean))];
+    // 标签在读取账户和发送写入前校验，避免正文已保存而标签随后被拒绝。
+    try { organize({ tags: [], stage: 'seed' }, { tags, stage: 'seed', now: 0 }); }
+    catch (err) { this.setData({ status: 'rejected', errorText: err.message }); return; }
     const app = getApp();
     const version = this.viewVersion, preparationEpoch = app.globalData.sessionEpoch, preparationStore = app.globalData.store;
     const preparationScope = this.scope || app.globalData.cacheScope;
@@ -250,11 +329,11 @@ Page({
     let inspiration;
     try {
       const now = Date.now();
-      const previous = this.pendingSave && this.pendingSave.text === text && this.pendingSave.scope === app.globalData.cacheScope
+      const previous = this.pendingSave && this.pendingSave.text === text && (this.pendingSave.tagsText || '') === tagsText && this.pendingSave.scope === app.globalData.cacheScope
         ? this.pendingSave : null;
-      inspiration = previous ? previous.item : createInspiration({ text, id: createId('insp'), now,
-        todo: this.data.todoEnabled ? makeTodo(now, this.data.todoDueDate || null) : null });
-      this.pendingSave = previous || { text, scope: app.globalData.cacheScope, generation: owner && owner.generation,
+      inspiration = previous ? previous.item : organize(createInspiration({ text, id: createId('insp'), now,
+        todo: this.data.todoEnabled ? makeTodo(now, this.data.todoDueDate || null) : null }), { tags, stage: 'seed', now });
+      this.pendingSave = previous || { text, tagsText, scope: app.globalData.cacheScope, generation: owner && owner.generation,
         item: inspiration, revision: typeof store.getConfirmedRevision === 'function' ? store.getConfirmedRevision() : null,
         requestId: createRequestId(), attempted: false };
     } catch (err) {
@@ -283,7 +362,7 @@ Page({
       guardDraft(false);
       this.setData({
         draft: '', canSave: false, overBy: 0, nearLimit: false, inputFocus: false, status: '', errorText: '', copyNotice: '',
-        lastSavedId: inspiration.id, lastSavedExcerpt: text, todoEnabled: false, todoDueDate: ''
+        lastSavedId: inspiration.id, lastSavedExcerpt: text, tagsDraft: '', todoEnabled: false, todoDueDate: ''
       });
       return;
     }
@@ -333,7 +412,7 @@ Page({
   },
 
   onRecordAnother() {
-    if (this.data.saving || this.visible === false || !this.data.lastSavedId || this.data.draft || this.pendingSave) return;
-    this.setData({ lastSavedId: '', lastSavedExcerpt: '', draftRecoveryNotice: '', inputFocus: true });
+    if (this.data.saving || this.data.photoBusy || this.visible === false || !this.data.lastSavedId || this.data.draft || this.pendingSave) return;
+    this.setData({ lastSavedId: '', lastSavedExcerpt: '', tagsDraft: '', photos: [], photoError: '', draftRecoveryNotice: '', inputFocus: true });
   }
 });

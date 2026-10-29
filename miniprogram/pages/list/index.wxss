@@ -1,44 +1,74 @@
-.error-empty {
-  margin-top: 36rpx;
-}
+.ideas-page .page-heading { min-height: 44px; gap: 12px; }
+.error-empty { margin-top: 24px; }
 
-.todo-summary { margin-top: 10rpx; color: var(--brand); font-size: max(26rpx, 13px); line-height: 1.6; }
+.todo-summary { margin-top: 8px; color: var(--brand); font-size: max(24rpx, 12px); line-height: 1.6; }
 
-/* 列表右上入口：小屏也不缩成两行，热区保持 88rpx */
-.add-link {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  margin-left: 0;
-  margin-right: 0;
-  width: auto;
-}
+/* 标题右侧是记录入口，窄屏仍保留完整的点击区域。 */
+.ideas-page .add-link { flex: 0 0 auto; white-space: nowrap; margin: 0; width: auto; padding: 0; font-size: max(26rpx, 13px); }
 
-.search-box { display: flex; align-items: center; gap: 16rpx; background: var(--surface); border: 1px solid var(--field-line); border-radius: 20rpx; padding: 12rpx 24rpx; margin-top: 24rpx; }
-.search-box input { flex: 1; min-width: 0; height: 76rpx; font-size: 29rpx; font-size: max(29rpx, 16px); }
-.list-filters, .stage-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8rpx; }
-.list-filters { margin: 20rpx 0 12rpx; }
-.stage-filters { margin-bottom: 20rpx; }
-.filter-chip { margin: 0; border: 1rpx solid var(--line-strong); background: transparent; border-radius: 44rpx; padding: 0 22rpx; min-height: 88rpx; line-height: 88rpx; color: var(--ink-2); }
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--brand-soft); border-radius: 8px; padding: 0 12px; margin-top: 18px; min-height: 45px; }
+.search-box input { flex: 1; min-width: 0; height: 45px; font-size: max(28rpx, 14px); color: var(--ink); }
+.search-ph { color: var(--ink-3); }
+.search-box .btn-link { padding: 0; flex: 0 0 auto; font-size: max(24rpx, 12px); }
+
+/* 两行筛选直接可点；类型用下划线，阶段用浅底区分当前条件。 */
+.list-filters, .stage-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.list-filters { margin: 10px 0 0; }
+.stage-filters { padding: 0 0 9px; border-bottom: 1px solid var(--line); }
+.filter-chip { border: 0; background: transparent; border-radius: 6px; color: var(--ink-2); position: relative; }
 /* 两层选择器覆盖 button[size="mini"] 的默认字号、字重与内边距。 */
-.list-filters .filter-chip, .stage-filters .filter-chip { width: auto; flex: 1 1 auto; margin: 0; padding: 0 12rpx; box-sizing: border-box; white-space: nowrap; font-size: 24rpx; font-size: max(24rpx, 12px); font-weight: 400; min-height: max(88rpx, 44px); line-height: max(88rpx, 44px); }
-.stage-filters .filter-chip { background: var(--surface); }
-.filter-chip.selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand-line); }
-.stage-filters .filter-chip.selected { background: var(--brand-soft); }
-.list-filters .filter-chip.selected, .stage-filters .filter-chip.selected { font-weight: 500; }
+.list-filters .filter-chip, .stage-filters .filter-chip { display: inline-flex; align-items: center; justify-content: center; width: auto; flex: 1 1 0; margin: 0; padding: 0 8px; box-sizing: border-box; white-space: nowrap; font-size: 26rpx; font-size: max(26rpx, 13px); font-weight: 400; min-height: max(88rpx, 44px); line-height: 1.4; }
+.list-filters .filter-chip.selected, .stage-filters .filter-chip.selected { color: var(--brand); font-weight: 500; }
 .filter-chip::after { border: 0; }
-.filter-reset { display: flex; justify-content: flex-end; margin: -12rpx 0 4rpx; }
-.filter-reset .btn-link { margin: 0; }
+.list-filters .filter-chip.selected::after { content: ""; position: absolute; left: 12px; right: 12px; top: auto; bottom: 4px; width: auto; height: 2px; border-radius: 2px; background: var(--brand); transform: none; }
+.stage-filters .filter-chip { font-size: max(24rpx, 12px); }
+.stage-filters .filter-chip.selected { background: var(--brand-soft); }
+.filter-reset { display: flex; justify-content: flex-end; margin: 0; }
+.filter-reset .btn-link { margin: 0; padding-right: 0; font-size: max(24rpx, 12px); }
 
-.match-snippet { font-size: 25rpx; font-size: max(25rpx, 14px); line-height: 1.65; color: var(--ink-2); margin-top: 12rpx; word-break: break-all; }
+.match-snippet { font-size: 25rpx; font-size: max(25rpx, 14px); line-height: 1.65; color: var(--ink-2); margin-top: 8px; word-break: break-all; }
 .match-source { color: var(--ink-2); }
-.item-tags { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; color: var(--ink-2); font-size: 23rpx; font-size: max(23rpx, 13px); }
-.item-tags text { background: #edede7; border-radius: 8rpx; padding: 4rpx 12rpx; }
-/* 段落头：区名与数量在左，选材成稿入口在右 */
-.list-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8rpx 16rpx; margin: 32rpx 0 12rpx; }
-.list-head-title { display: flex; align-items: baseline; gap: 14rpx; min-width: 0; }
-.list-head-title .k { font-size: 27rpx; font-size: max(27rpx, 14px); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-2); }
-.list-head-title .v { font-size: 26rpx; font-size: max(26rpx, 13px); color: var(--ink-3); }
-.list-head-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8rpx; }
+.item-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; color: var(--ink-2); font-size: max(24rpx, 12px); line-height: 1.6; }
+.item-tags text { background: var(--brand-soft); border-radius: 4px; padding: 1px 6px; }
+
+/* 连续文字清单：范围标题与取用入口在同一行，记录使用细线分隔。 */
+.list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin: 12px 0 0; }
+.list-head-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.list-head-title .k { font-size: max(26rpx, 13px); font-weight: 500; color: var(--ink-2); }
+.list-head-title .v { font-size: max(24rpx, 12px); color: var(--ink-3); }
+.list-head-acts { display: flex; align-items: center; }
+.list-head-acts .btn-link { padding-right: 0; font-size: max(26rpx, 13px); }
+.ideas-page .row { min-height: 44px; }
+.ideas-page .row:last-child { border-bottom: 1px solid var(--line); }
+.ideas-page .row .meta { line-height: 1.6; }
+
 .refresh-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.6; }
 .refresh-status text { flex: 1; }
-.refresh-status .btn-link { flex: 0 0 auto; margin: 0; }
+.refresh-status .btn-link { flex: 0 0 auto; margin: 0; padding-right: 0; }
+
+@media (max-width: 350px) {
+  .list-filters .filter-chip, .stage-filters .filter-chip { padding-left: 5px; padding-right: 5px; }
+  .ideas-page .row .meta .sep { margin-left: 6px; margin-right: 6px; }
+}
+
+/* 原型的筛选按内容占宽，不能均分整行。 */
+.ideas-page .search-box { margin-top: 0; }
+.ideas-page .list-filters { gap: 0; margin-top: 10px; }
+.ideas-page .stage-filters { gap: 0; }
+.ideas-page .list-filters .filter-chip, .ideas-page .stage-filters .filter-chip { flex: none; min-width: 0; min-height: 44px; height: 44px; padding: 0 10px; font-size: 13px; }
+.ideas-page .list-filters .filter-chip:first-child, .ideas-page .stage-filters .filter-chip:first-child { margin-left: -10px; }
+.ideas-page .stage-filters .filter-chip { padding: 0 9px; font-size: 12px; }
+.ideas-page .list-filters .filter-chip.selected::after { left: 10px; right: 10px; }
+.ideas-page .list-head { margin-top: 8px; min-height: 44px; }
+.ideas-page .row { display: block; padding: 15px 0 16px; }
+.ideas-page .row .body { font-size: 16px; line-height: 1.78; }
+.ideas-page .item-tags { justify-content: space-between; margin-top: 11px; font-size: 12px; }
+.ideas-page .plain-tags { display: flex; gap: 10px; }
+.ideas-page .item-tags text { padding: 0; border-radius: 0; background: transparent; }
+.ideas-page .row .meta { margin-top: 9px; font-size: 12px; }
+.ideas-page .meta .todo-summary { margin: 0 0 0 auto; font-size: 12px; }
+@media (max-width: 350px) {
+  .ideas-page .list-filters .filter-chip { padding-left: 8px; padding-right: 8px; }
+  .ideas-page .stage-filters .filter-chip { padding-left: 7px; padding-right: 7px; }
+  .ideas-page .row .body { font-size: 15px; }
+}

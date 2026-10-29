@@ -41,7 +41,7 @@ test('界面整改：记录页只允许有实际内容时保存', () => {
   const page = read('miniprogram/pages/capture/index.wxml');
   // 空白与超限都不能提交；输入框放开长度限制、保留粘贴全文，超限在提交层拦住
   assert.match(logic, /canEdit = value\.trim\(\)\.length > 0 && overBy === 0/);
-  assert.match(page, /disabled="\{\{!canSave \|\| saving\}\}"/);
+  assert.match(page, /disabled="\{\{!canSave \|\| saving \|\| photoBusy\}\}"/);
   assert.match(page, /maxlength="-1"/);
   assert.match(page, /超出\{\{overBy\}\}字符，请缩短后保存。/);
 });

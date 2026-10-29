@@ -80,9 +80,18 @@ function createPhotoService(options) {
     try {
       picked = await chooseMedia(source, limit.maxCount - existingCount);
     } catch (err) {
-      return { ok: false, code: CODE.cancelled, accepted: [], rejected: [], limit };
+      const message = err && (err.errMsg || err.message) || '';
+      if (/\bcancel(?:led)?\b|用户取消/i.test(message)) {
+        return { ok: false, code: CODE.cancelled, accepted: [], rejected: [], limit };
+      }
+      const denied = /auth\s*deny|permission\s*(?:denied|deny)|authorize.*fail|privacy/i.test(message);
+      return { ok: false, code: denied ? CODE.permissionDenied : CODE.failed,
+        hint: denied ? PERMISSION_HINT[source] : '暂时无法选择照片，请稍后重新选择。', accepted: [], rejected: [], limit };
     }
-    if (!Array.isArray(picked) || picked.length === 0) {
+    if (!Array.isArray(picked)) {
+      return { ok: false, code: CODE.failed, hint: '未能读取所选照片，请重新选择。', accepted: [], rejected: [], limit };
+    }
+    if (picked.length === 0) {
       return { ok: false, code: CODE.cancelled, accepted: [], rejected: [], limit };
     }
 

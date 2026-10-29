@@ -1,6 +1,6 @@
 <view class="page material-page {{phase === 'select' ? 'material-select-page' : ''}}">
   <view class="page-title">{{phase === 'select' ? '选材成稿' : '整理成稿'}}</view>
-  <view class="page-sub">{{phase === 'select' ? '把相关的文字放到一起，整理成一份稿件。' : '编辑、复制，或把这份稿件分享给需要的人。'}}</view>
+  <view class="page-sub">{{phase === 'select' ? '把相关的文字放到一起，整理成一份稿件。' : '编辑稿件，复制文字或另存为新灵感。'}}</view>
   <view wx:if="{{draft && !(savedId && savedDraft === draft)}}" class="selection-note">稿件仅在本次使用中保留，关闭小程序前请复制或另存。</view>
   <view wx:if="{{draftRecoveryNotice}}" class="recovery-note" aria-live="polite">{{draftRecoveryNotice}}</view>
   <view wx:if="{{!ready}}" class="empty"><view class="ed">正在读取素材…</view></view>
@@ -10,7 +10,7 @@
   </view>
   <block wx:elif="{{phase === 'select'}}">
     <view class="selection-note">只整理选中的文字，不自动补写。数字表示内容进入稿件的顺序。</view>
-    <input class="material-search" value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索素材文字" aria-label="搜索素材文字" />
+    <input class="material-search" value="{{query}}" bindinput="onSearch" maxlength="100" placeholder="搜索素材文字" placeholder-class="material-placeholder" aria-label="搜索素材文字" />
     <view class="material-tools"><button class="btn-link" bindtap="onSelectedOnly">{{selectedOnly ? '显示全部' : '只看已选'}}</button><button class="btn-link" bindtap="onRefresh">刷新素材</button></view>
     <view wx:if="{{!options.length}}" class="empty-options"><view>{{total ? selectedOnly && !query ? '还没有选中素材，先从全部素材中选择。' : '没有找到匹配的素材，换个词或显示全部素材。' : '还没有可用素材，请先记录想法。'}}</view><button wx:if="{{total > 0}}" class="btn-link" bindtap="onClearSearch">{{query ? '清空搜索' : '显示全部素材'}}</button></view>
     <button wx:for="{{options}}" wx:key="key" class="option {{item.selected ? 'option-selected' : ''}}" data-key="{{item.key}}" bindtap="onToggle" disabled="{{busy || saveUnknown || sourceStale}}" aria-label="{{item.selected ? '取消选择' : '选择'}}{{item.kind}}">
