@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-23T03:33:40.477Z",
+  "command": "official DevTools CLI auto --project <本次禁云隔离工程> --auto-port 9441",
+  "synthetic": true,
+  "cloudEnabled": false,
+  "status": 0,
+  "stdout": "",
+  "stderr": "- initialize\n\n(node:9456) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n(Use `微信开发者工具 --trace-deprecation ...` to show where the warning was created)\n√ IDE server has started, listening on http://127.0.0.1:42633\n- preparing\n- Fetching AppID () permissions\n√ Using AppID: touristappid\n√ auto\n"
+}

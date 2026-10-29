@@ -1,6 +1,20 @@
-.welcome-page { min-height: 100vh; box-sizing: border-box; padding: 72rpx 40rpx calc(64rpx + env(safe-area-inset-bottom)); text-align: center; }
-.welcome-mark { display: block; width: 144rpx; height: 144rpx; border-radius: 36rpx; margin: 0 auto 38rpx; }
-.welcome-value { margin-top: 28rpx; font-size: max(48rpx, 24px); line-height: 1.4; color: var(--ink); font-weight: 600; }
-.welcome-copy { max-width: 580rpx; margin: 24rpx auto 48rpx; color: var(--ink-2); font-size: max(28rpx, 14px); line-height: 1.8; }
-.welcome-page .btn { margin-top: 18rpx; }
-.welcome-hint { margin-top: 28rpx; font-size: max(26rpx, 13px); color: var(--ink-3); line-height: 1.7; }
+.welcome-page { max-width: 960rpx; min-height: 100vh; box-sizing: border-box; margin: 0 auto; padding: 22px 22px calc(28px + env(safe-area-inset-bottom)); background: var(--surface); }
+.welcome-brand { display: flex; align-items: center; gap: 10px; color: var(--ink-2); font-size: max(28rpx, 14px); font-weight: 500; }
+.welcome-mark { display: block; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 9px; }
+.welcome-hero { margin-top: 26px; }
+.welcome-title { color: var(--ink); font-size: max(54rpx, 27px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.45; }
+.welcome-copy { margin: 13px 0 22px; color: var(--ink-2); font-size: max(30rpx, 15px); line-height: 1.9; }
+.welcome-page .btn { width: 100%; min-height: 48px; margin: 0; }
+.welcome-section { margin-top: 30px; }
+.welcome-section-title { margin-bottom: 13px; color: var(--ink); font-size: max(32rpx, 16px); font-weight: 600; line-height: 1.6; }
+.welcome-steps { border-top: 1px solid var(--line); }
+.welcome-step { display: flex; align-items: flex-start; gap: 13px; padding: 16px 0 17px; border-bottom: 1px solid var(--line); }
+.welcome-step-number { flex: 0 0 auto; width: 22px; height: 22px; margin-top: 3px; border-radius: 5px; color: var(--brand); background: var(--brand-soft); font-size: 12px; font-weight: 600; text-align: center; line-height: 22px; }
+.welcome-step-content { flex: 1; min-width: 0; }
+.welcome-step-title, .welcome-question-title { color: var(--ink); font-size: max(30rpx, 15px); font-weight: 500; line-height: 1.7; }
+.welcome-step-copy, .welcome-answer { margin-top: 5px; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.85; overflow-wrap: break-word; }
+.welcome-help { margin-top: 30px; }
+.welcome-question + .welcome-question { margin-top: 20px; }
+.welcome-footer { margin-top: 27px; padding-top: 22px; border-top: 1px solid var(--line); }
+.welcome-hint { margin-top: 10px; color: var(--ink-2); font-size: max(24rpx, 12px); line-height: 1.8; text-align: center; }
+@media (max-width: 350px) { .welcome-page { padding-right: 17px; padding-left: 17px; } .welcome-title { font-size: 26px; } }

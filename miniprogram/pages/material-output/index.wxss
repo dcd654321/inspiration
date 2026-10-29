@@ -1,27 +1,31 @@
 @import "../output/index.wxss";
 .material-select-page { padding-bottom: 0; }
-.material-page .option { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 72px; box-sizing: border-box; margin: 8px 0 0; padding: 16px; font-weight: normal; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; line-height: 1.6; }
-.material-page .option-selected { background: var(--brand-soft); border-color: var(--brand); }
+.material-page .option { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 72px; box-sizing: border-box; margin: 0; padding: 17px 0 18px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; color: var(--ink); background: var(--surface); text-align: left; font-weight: 400; line-height: 1.8; }
+.material-page .option-selected { background: var(--brand-soft); }
 .material-page .option::after { border: 0; }
+.material-page .option[disabled] { opacity: 0.5; }
 .option-body { flex: 1; min-width: 0; }
-.option-time { display: block; font-size: max(25rpx, 13px); color: var(--ink-3); line-height: 1.5; }
-.option-content { display: block; margin-top: 6px; font-size: max(30rpx, 16px); color: var(--ink); line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
-.material-page .option-check { flex: 0 0 22px; width: 22px; height: 22px; line-height: 22px; margin-top: 2px; font-size: 13px; border-color: var(--field-line); }
+.option-time { display: block; color: var(--ink-2); font-size: max(24rpx, 12px); line-height: 1.8; font-variant-numeric: tabular-nums; }
+.option-content { display: block; margin-top: 7px; color: var(--ink); font-size: max(32rpx, 16px); line-height: 1.8; white-space: pre-wrap; word-break: break-all; }
+.material-page .option-check { flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 0 0; font-size: 13px; line-height: 20px; border-color: var(--field-line); }
 .material-page .option-checked { border-color: var(--brand); }
-.material-page .back-select { display: flex; align-items: center; justify-content: flex-start; width: 100%; padding: 0; background: transparent; color: var(--brand); font-size: max(28rpx, 14px); line-height: 1; font-weight: normal; }
+.material-page .back-select { display: flex; align-items: center; justify-content: flex-start; width: 100%; min-height: 44px; padding: 0; color: var(--brand); background: transparent; font-size: max(28rpx, 14px); font-weight: 400; line-height: 1.6; }
 .back-select::after { border: 0; }
-.result-tools { display: flex; gap: 24px; margin: 8px 0; }
-.material-page .result-tools .back-select { width: auto; margin: 0; min-height: 44px; }
-.section-label { margin-top: 20px; font-size: max(28rpx, 14px); font-weight: 600; color: var(--ink-2); }
+.result-tools { display: flex; flex-wrap: wrap; gap: 24px; margin: 12px 0 0; border-bottom: 1px solid var(--line); }
+.material-page .result-tools .back-select { width: auto; margin: 0; }
+.section-label { margin-top: 21px; color: var(--ink); font-size: max(28rpx, 14px); font-weight: 600; }
 .template-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.template-options .template-option { flex: 0 0 auto; width: auto; margin: 0; padding: 0 12px; min-height: 44px; line-height: 44px; font-size: max(28rpx, 14px); color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; }
+.template-options .template-option { flex: 0 0 auto; width: auto; min-height: 44px; margin: 0; padding: 10px 13px; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 7px; font-size: max(28rpx, 14px); line-height: 1.6; }
 .template-options .template-selected { color: var(--brand); background: var(--brand-soft); border-color: var(--brand); }
-.empty-options { padding: 24px 0; font-size: max(26rpx, 13px); line-height: 1.6; color: var(--ink-3); }
-.material-search { margin-top: 24px; min-height: max(88rpx, 44px); padding: 0 12px; border: 1px solid var(--field-line); background: var(--surface); border-radius: 8px; font-size: max(28rpx, 16px); }
-.material-tools { display: flex; justify-content: space-between; }
-.material-tools .btn-link { width: auto; margin: 0; }
-.material-source { display: block; color: var(--ink-3); font-size: max(25rpx, 13px); margin-top: 6px; line-height: 1.5; word-break: break-all; }
-.material-footer { position: sticky; bottom: 0; z-index: 10; margin: 12px -40rpx 0; padding: 12px 40rpx; padding-bottom: calc(12px + env(safe-area-inset-bottom)); background: var(--paper); border-top: 1px solid var(--line); }
-.material-footer .selection-note { margin: 0 0 12rpx; }
-.material-footer .btn + .btn { margin-top: 12rpx; }
-.material-footer .notice { margin: 0 0 16rpx; }
+.empty-options { padding: 30px 0; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.8; }
+.material-search { min-height: 45px; box-sizing: border-box; margin-top: 22px; padding: 0 12px; border: 0; border-radius: 8px; color: var(--ink); background: var(--brand-soft); font-size: max(28rpx, 14px); }
+.material-placeholder { color: var(--ink-2); }
+.material-tools { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; border-bottom: 1px solid var(--line); }
+.material-tools .btn-link { width: auto; margin: 0; padding: 0; font-size: max(26rpx, 13px); }
+.material-source { display: block; margin-top: 5px; color: var(--ink-2); font-size: max(24rpx, 12px); line-height: 1.8; word-break: break-all; }
+/* Sticky 保留自身文档流高度，末项滚动到栏上方；安全区随栏一起留出。 */
+.material-footer { position: sticky; bottom: 0; z-index: 10; margin: 16px -22px 0; padding: 12px 22px calc(15px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); }
+.material-footer .selection-note { margin: 0 0 9px; }
+.material-footer .btn + .btn { margin-top: 10px; }
+.material-footer .notice { margin: 0 0 12px; }
+@media (max-width: 350px) { .material-footer { margin-right: -17px; margin-left: -17px; padding-right: 17px; padding-left: 17px; } }

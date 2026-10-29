@@ -1,9 +1,19 @@
 'use strict';
 // 云端是唯一持久来源；这里的视图只在当前小程序会话的内存中存在。
-const { byUpdatedAtDesc, isDeleted, isMerged } = require('../core/inspiration');
+const { byUpdatedAtDesc, isDeleted, isMerged, isArchived } = require('../core/inspiration');
 const { createRequestId } = require('./wx-transport');
+const { normalizeTodo } = require('../core/todo');
 
 const SCOPE = /^[a-f0-9]{32}$/;
+function normalizeRecord(item, existing) {
+  return Object.assign({}, item, { archivedAt: item.archivedAt !== undefined
+    ? item.archivedAt : existing && existing.archivedAt !== undefined ? existing.archivedAt : null,
+  todo: normalizeTodo(item.todo, existing && existing.todo),
+  supplements: (item.supplements || []).map((entry) => {
+    const previous = existing && (existing.supplements || []).find((old) => old.id === entry.id);
+    return Object.assign({}, entry, { todo: normalizeTodo(entry.todo, previous && previous.todo) });
+  }) });
+}
 function validSnapshot(value, scope) {
   return value && value.cacheScope === scope && Number.isSafeInteger(value.generation) && value.generation > 0 &&
     Number.isSafeInteger(value.version) && value.version >= 0 && Array.isArray(value.inspirations);
@@ -24,7 +34,7 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     throw Error('INVALID_CLOUD_SESSION');
   }
   let snapshot = { generation: remoteSnapshot.generation, version: remoteSnapshot.version,
-    syncedAt: now(), inspirations: remoteSnapshot.inspirations.slice() };
+    syncedAt: now(), inspirations: remoteSnapshot.inspirations.map((item) => normalizeRecord(item)) };
   let operation = Promise.resolve();
   const active = () => isCurrent() === true;
   function serial(work) {
@@ -32,8 +42,9 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     operation = next.catch(() => {});
     return next;
   }
-  function serialWrite(work) {
-    const version = snapshot.version, generation = snapshot.generation;
+  function serialWrite(work, expectedRevision) {
+    const version = expectedRevision ? expectedRevision.baseVersion : snapshot.version;
+    const generation = expectedRevision ? expectedRevision.generation : snapshot.generation;
     return serial(() => {
       if (!active()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
       if (snapshot.generation !== generation) return { ok: false, code: 'STALE_GENERATION' };
@@ -49,12 +60,12 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     if (!active()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
     if (!response || !response.ok || !validSnapshot(response.data, cacheScope)) return { ok: false, code: response && response.code || 'PULL_FAILED' };
     snapshot = { generation: response.data.generation, version: response.data.version,
-      syncedAt: now(), inspirations: response.data.inspirations.slice() };
+      syncedAt: now(), inspirations: response.data.inspirations.map((item) => normalizeRecord(item)) };
     return { ok: true, synced: true };
   }
-  async function send(action, payload, isConfirmed, applyConfirmed) {
+  async function send(action, payload, isConfirmed, applyConfirmed, options = {}) {
     if (!active()) return { ok: false, code: 'ACCOUNT_SESSION_CHANGED' };
-    const requestId = newRequestId();
+    const requestId = options.requestId || newRequestId(), generation = snapshot.generation;
     let response;
     try { response = await transport.send(action, Object.assign({}, payload, {
       generation: snapshot.generation, baseVersion: snapshot.version
@@ -66,7 +77,7 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
       // 超时或多次 CAS 的回执都需完整回读，不能只用新版本号升级旧内容。
       const code = response && response.code || 'NETWORK';
       const refreshed = await pull();
-      if (refreshed.ok && isConfirmed(snapshot.inspirations)) return { ok: true, synced: true };
+      if (refreshed.ok && snapshot.generation === generation && isConfirmed(snapshot.inspirations)) return { ok: true, synced: true };
       // message 原样透传服务端的可展示说明；页面在「确认被拒绝」时用它给已知原因，
       // 结果未知（NETWORK/INTERNAL）时不能拿它编造原因。
       return { ok: false, code, message: response && typeof response.message === 'string' ? response.message : '' };
@@ -75,11 +86,12 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
       syncedAt: now(), inspirations: applyConfirmed(snapshot.inspirations) };
     return { ok: true, synced: true };
   }
-  function saveInspirations(items) {
+  function saveInspirations(items, options = {}) {
     return serialWrite(async () => {
       if (!Array.isArray(items) || !items.length || items.length > 21 ||
           items.some((item) => !item || typeof item.id !== 'string' || item.deletedAt) ||
           new Set(items.map((item) => item.id)).size !== items.length) return { ok: false, code: 'INVALID_PAYLOAD' };
+      items = items.map((item) => normalizeRecord(item, snapshot.inspirations.find((row) => row.id === item.id)));
       return send('snapshot.push', { upserts: items }, (rows) => items.every((item) => {
         const actual = rows.find((row) => row.id === item.id);
         return actual && sameRecord(actual, item);
@@ -87,8 +99,8 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
         const byId = new Map(rows.map((item) => [item.id, item]));
         items.forEach((item) => byId.set(item.id, item));
         return Array.from(byId.values());
-      });
-    });
+      }, options);
+    }, options.expectedRevision);
   }
   function deleteInspiration(id) {
     return serialWrite(() => send('inspiration.delete', { inspirationId: id }, (rows) => !rows.some((item) => item.id === id),
@@ -105,9 +117,9 @@ function createCloudOnlyStore({ transport, remoteSnapshot, cacheScope, now = Dat
     readSnapshot: () => Object.assign({}, snapshot, { inspirations: snapshot.inspirations.slice() }),
     getConfirmedRevision: () => ({ baseVersion: snapshot.version, generation: snapshot.generation }),
     refresh: () => serial(pull),
-    saveInspiration: (item) => saveInspirations([item]), saveInspirations,
+    saveInspiration: (item, options) => saveInspirations([item], options), saveInspirations,
     deleteInspiration, deletePhoto,
-    listInspirations: () => snapshot.inspirations.filter((item) => !isDeleted(item) && !isMerged(item)).sort(byUpdatedAtDesc),
+    listInspirations: () => snapshot.inspirations.filter((item) => !isDeleted(item) && !isMerged(item) && !isArchived(item)).sort(byUpdatedAtDesc),
     getInspiration: (id) => snapshot.inspirations.find((item) => item.id === id) || null
   };
 }

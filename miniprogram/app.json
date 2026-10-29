@@ -3,7 +3,9 @@
     "pages/launch/index",
     "pages/capture/index",
     "pages/list/index",
+    "pages/todos/index",
     "pages/mine/index",
+    "pages/archived/index",
     "pages/detail/index",
     "pages/history/index",
     "pages/output/index",
@@ -16,11 +18,11 @@
     "navigationBarTitleText": "灵感拾光簿",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f7f6f2"
+    "backgroundColor": "#ffffff"
   },
   "tabBar": {
-    "color": "#6f6f7b",
-    "selectedColor": "#34377f",
+    "color": "#5e697f",
+    "selectedColor": "#2d438c",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
@@ -35,6 +37,12 @@
         "text": "灵感",
         "iconPath": "assets/tabbar/ideas-idle.png",
         "selectedIconPath": "assets/tabbar/ideas-active.png"
+      },
+      {
+        "pagePath": "pages/todos/index",
+        "text": "待办",
+        "iconPath": "assets/tabbar/todos-idle.png",
+        "selectedIconPath": "assets/tabbar/todos-active.png"
       },
       {
         "pagePath": "pages/mine/index",

@@ -1,10 +1,20 @@
-<view class="page mine-page">
+<view class="page mine-page a-screen">
+  <view class="a-brandline"><image src="/assets/brand-mark.png" mode="aspectFit" />灵感拾光簿</view>
+  <view class="a-heading"><view class="page-title">我的</view></view>
   <view class="profile-head">
     <image class="profile-mark" src="/assets/brand-mark.png" mode="aspectFit" />
     <view>
-      <view class="page-title">我的</view>
+      <view class="profile-name">灵感拾光簿</view>
       <view class="page-sub">记下、补充，再整理成可用稿。</view>
     </view>
+  </view>
+
+  <view class="settings-card">
+    <view class="group-label">灵感管理</view>
+    <button class="menu-row" bindtap="onOpenArchived" hover-class="menu-row-hover">
+      <text class="menu-label">已归档</text>
+      <image class="menu-arrow" src="/assets/icons/chevron-right.png" mode="aspectFit" aria-hidden="true" />
+    </button>
   </view>
 
   <view class="settings-card">

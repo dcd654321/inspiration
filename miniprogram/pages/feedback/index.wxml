@@ -7,12 +7,12 @@
   </view>
   <view class="field-label feedback-label">具体情况</view>
   <textarea class="feedback-editor" value="{{body}}" maxlength="1000" auto-height disabled="{{busy}}" cursor-spacing="24"
-    aria-label="具体情况" placeholder="请写下具体情况（至少 10 字）" bindinput="onInput" />
+    aria-label="具体情况" placeholder="请写下具体情况（至少 10 字）" placeholder-class="feedback-placeholder" bindinput="onInput" />
   <view class="feedback-count">{{trimmedLength >= 10 ? body.length + ' / 1000' : '还需 ' + (10 - trimmedLength) + ' 字'}}</view>
   <view class="feedback-note">请勿填写密码、身份证号等敏感信息。提交后可在下方查看处理状态。</view>
   <view wx:if="{{error}}" class="notice notice-err"><text>{{error}}</text></view>
-  <view wx:if="{{notice}}" class="notice"><text>{{notice}}</text></view>
-  <button class="btn btn-block" bindtap="onSubmit" disabled="{{busy || !canSubmit}}">{{busy ? '提交中…' : '提交反馈'}}</button>
+  <view wx:if="{{notice}}" class="notice notice-success"><text>{{notice}}</text></view>
+  <button class="btn btn-block feedback-submit" bindtap="onSubmit" disabled="{{busy || !canSubmit}}">{{busy ? '提交中…' : '提交反馈'}}</button>
 
   <view class="section-label">我的反馈</view>
   <view wx:if="{{loading}}" class="feedback-note">正在加载…</view>
@@ -24,5 +24,5 @@
     <view class="feedback-record-body">{{item.body}}</view>
     <view class="feedback-record-date">{{item.date}}</view>
   </view>
-  <button wx:if="{{nextBefore}}" class="btn btn-plain btn-block" bindtap="onMore" disabled="{{loading}}">加载更多</button>
+  <button wx:if="{{nextBefore}}" class="btn btn-plain btn-block feedback-more" bindtap="onMore" disabled="{{loading}}">加载更多</button>
 </view>

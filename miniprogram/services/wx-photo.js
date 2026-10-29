@@ -14,8 +14,15 @@ function createWxPhotos({ cacheScope, store, storagePrefix, isCurrent }) {
       return true;
     },
     async chooseMedia(source, count) {
-      const result = await call('chooseMedia', { count, mediaType: ['image'], sourceType: [source], sizeType: ['compressed'] });
-      return result.tempFiles;
+      if (typeof wx.chooseMedia === 'function') {
+        const result = await call('chooseMedia', { count, mediaType: ['image'], sourceType: [source], sizeType: ['compressed'] });
+        return result.tempFiles;
+      }
+      if (typeof wx.chooseImage === 'function') {
+        const result = await call('chooseImage', { count, sourceType: [source], sizeType: ['compressed'] });
+        return Array.isArray(result.tempFiles) ? result.tempFiles.map(file => ({ tempFilePath: file.path, size: file.size })) : null;
+      }
+      throw Error('PHOTO_PICKER_UNAVAILABLE');
     },
     async compressImage(src) {
       const result = await call('compressImage', { src, quality: 70 });

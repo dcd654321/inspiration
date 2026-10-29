@@ -18,6 +18,7 @@ function createPhotoLifecycle({ db, now, removeFiles, validatePhoto }) {
     }
     if (!task) {
       if (data.baseVersion !== doc.version) return fail('CONFLICT');
+      if (photoId && target.archivedAt != null) return fail('INSPIRATION_ARCHIVED');
       if ((doc.photoCleanup || []).some((x) => x.inspirationId === target.id)) return fail('PHOTO_CLEANUP_PENDING');
       const photos = photoId ? (target.photos || []).filter((x) => x.id === photoId) : target.photos || [];
       if (!photos.length && photoId) return { ok: true, data: { version: doc.version, alreadyAbsent: true } };

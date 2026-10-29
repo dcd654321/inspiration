@@ -18,6 +18,7 @@
   </block>
 
   <block wx:else>
+    <view class="page-title history-title">修改记录</view>
     <view wx:if="{{subjectLabel}}" class="history-subject">{{subjectLabel}}</view>
     <view class="hv-now">
       <view class="hv-now-k">{{currentLabel}}</view>

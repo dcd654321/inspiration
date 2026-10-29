@@ -1,4 +1,4 @@
-<view class="page" wx:if="{{ready}}">
+<view class="page detail-page a-screen" wx:if="{{ready}}">
   <!-- 读取失败与「确认不存在」分开：网络问题不能说成灵感已被删除 -->
   <block wx:if="{{loadError}}">
     <view class="empty">
@@ -18,16 +18,22 @@
   </block>
 
   <block wx:else>
+    <view class="a-brandline"><image src="/assets/brand-mark.png" mode="aspectFit" />灵感拾光簿</view>
+    <view class="a-heading"><view class="page-title">灵感详情</view><button class="detail-more" bindtap="onOpenMore" disabled="{{pending !== '' || editing || editingSupplementId}}" aria-label="更多操作">更多</button></view>
     <view class="detail-head">
       <view class="stamp">{{time}}</view>
-      <button class="detail-more" bindtap="onOpenMore" disabled="{{pending !== '' || editing || editingSupplementId}}" aria-label="更多操作">更多</button>
     </view>
+    <view wx:if="{{archived}}" class="archive-state"><text class="tag">已归档</text><text>取消归档后可继续整理。</text></view>
+    <view wx:if="{{archiveUnknown}}" class="notice notice-warn"><view class="notice-body"><text>尚未确认归档状态，请重试确认。</text><button class="btn-link" bindtap="onMoreArchive" disabled="{{pending !== ''}}">重试确认</button></view></view>
+    <view wx:if="{{todoError || todoUnknown}}" class="notice notice-warn"><view class="notice-body"><text>{{todoError || '尚未确认待办状态，请重试确认。'}}</text><button wx:if="{{todoUnknown}}" class="btn-link" bindtap="onRetryTodo" disabled="{{pending !== ''}}">重试确认</button></view></view>
+    <view wx:if="{{todoUndoVisible}}" class="todo-undo" aria-live="polite"><text>已完成</text><button class="btn-link" bindtap="onUndoTodo" disabled="{{pending !== ''}}">撤销</button></view>
+    <view wx:if="{{sourceNotice}}" class="hint-line">{{sourceNotice}}</view>
     <view wx:if="{{isAi}}" class="notice">AI 汇总内容，请核对后使用。</view>
-    <view wx:if="{{merged}}" class="notice">此条灵感已合并，内容仍完整保留。<button class="btn-link" bindtap="onRestoreInspiration" disabled="{{pending}}">恢复为独立灵感</button></view>
+    <view wx:if="{{merged && !archived}}" class="notice">此条灵感已合并，内容仍完整保留。<button class="btn-link" bindtap="onRestoreInspiration" disabled="{{pending || archiveUnknown}}">恢复为独立灵感</button></view>
 
     <!-- 原文：不放进卡片，字号最大——它是锚点。编辑入口在「更多」里 -->
     <view class="origin">
-      <block wx:if="{{editing}}">
+      <block wx:if="{{editing && !archived}}">
         <textarea
           class="origin-editor"
           value="{{editDraft}}"
@@ -54,32 +60,44 @@
       </block>
     </view>
 
+    <view wx:if="{{!editing && !editingSupplementId && (todo || (!archived && !merged))}}" class="todo-inline origin-todo">
+      <block wx:if="{{todo}}">
+        <button class="todo-check {{todoDone ? 'is-done' : ''}}" data-id="" bindtap="onTodoToggle" aria-pressed="{{todoDone}}" disabled="{{archived || merged || pending !== '' || archiveUnknown || todoUnknown}}"><text class="todo-box">{{todoDone ? '✓' : ''}}</text><text>{{todoDone ? '正文已办' : '正文待办'}}</text></button>
+        <text wx:if="{{archived || merged}}" class="todo-date">{{todoDateLabel}}</text>
+        <button wx:else class="btn-link todo-date" data-id="" bindtap="onTodoDate" disabled="{{pending !== '' || todoUnknown}}">{{todoDateLabel}}</button>
+        <button wx:if="{{!archived && !merged}}" class="btn-link todo-more" data-id="" bindtap="onTodoMore" disabled="{{pending !== '' || todoUnknown}}" aria-label="正文待办更多操作">更多</button>
+      </block>
+      <button wx:else class="todo-add-entry" data-id="" bindtap="onTodoAdd" disabled="{{pending !== '' || archiveUnknown || todoUnknown}}"><view class="todo-entry-icon" aria-hidden="true"><view class="todo-entry-line"></view><view class="todo-entry-line"></view></view><text>加入待办</text></button>
+    </view>
+
     <!-- 轻量动作：低频操作都收进了「更多」，这里只留两个主任务 -->
-    <view class="detail-actions">
-      <button class="btn btn-quiet btn-sm" bindtap="onOpenOutput" disabled="{{pending !== '' || editing || editingSupplementId}}">整理成稿</button>
-      <button wx:if="{{!merged}}" class="btn btn-plain btn-sm" bindtap="onLocateCompose" disabled="{{pending !== '' || editing || editingSupplementId}}">继续补充</button>
+    <view wx:if="{{!editing && !editingSupplementId}}" class="detail-actions a-action-footer">
+      <button wx:if="{{archived}}" class="btn btn-quiet btn-sm" bindtap="onOpenArchiveExport" disabled="{{pending !== ''}}">文字留档</button>
+      <button wx:else class="btn btn-quiet btn-sm" bindtap="onOpenOutput" disabled="{{pending !== '' || editing || editingSupplementId || archiveUnknown}}">整理成稿</button>
+      <button wx:if="{{!merged && !archived && !(composeFocus || composeRequestedFocus || supplementDraft || supplementUnknown)}}" class="btn a-supplement-action" hover-class="a-primary-pressed" bindtap="onLocateCompose" disabled="{{pending !== '' || archiveUnknown}}">继续补充</button>
+      <button wx:elif="{{!merged && !archived}}" class="btn a-supplement-action" hover-class="a-primary-pressed" bindtap="onSubmitSupplement" disabled="{{!canAddSupplement || pending !== '' || archiveUnknown}}">{{pending === 'supplement' ? '保存中…' : supplementUnknown ? '重试保存' : '保存补充'}}</button>
     </view>
 
     <!-- 已关联照片紧随正文，以单行缩略图展示，点击可查看大图 -->
     <view wx:if="{{photosEnabled || photos.length}}" class="photos-section">
       <view class="section-head">
         <text class="k">照片</text><text class="v">{{photos.length}} 张</text>
-        <button wx:if="{{photosEnabled && !merged}}" class="btn-link photo-add" bindtap="onAddPhoto" disabled="{{photoBusy || pending || photos.length >= photosMax}}" loading="{{photoBusy}}">{{photos.length >= photosMax ? '最多 ' + photosMax + ' 张' : '添加照片'}}</button>
+        <button wx:if="{{photosEnabled && !merged && !archived}}" class="btn-link photo-add" bindtap="onAddPhoto" disabled="{{photoBusy || pending || archiveUnknown || photos.length >= photosMax}}" loading="{{photoBusy}}">{{photos.length >= photosMax ? '最多 ' + photosMax + ' 张' : '添加照片'}}</button>
       </view>
       <scroll-view wx:if="{{photos.length}}" class="photo-strip" scroll-x>
         <view wx:for="{{photos}}" wx:key="id" class="photo-cell">
           <image wx:if="{{item.src}}" class="photo-preview" src="{{item.src}}" mode="aspectFill" show-menu-by-longpress="{{false}}" data-id="{{item.id}}" data-src="{{item.src}}" bindtap="onPreviewPhoto" binderror="onPhotoImageError" />
           <button wx:elif="{{item.failed}}" class="photo-preview photo-retry" bindtap="onReloadPhoto">照片未加载<text>点击重试</text></button>
           <view wx:else class="photo-preview photo-loading">照片加载中…</view>
-          <button wx:if="{{photosEnabled && !merged}}" class="btn-link photo-delete" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy || pending}}">删除照片</button>
+          <button wx:if="{{photosEnabled && !merged && !archived}}" class="btn-link photo-delete" data-id="{{item.id}}" bindtap="onDeletePhoto" disabled="{{photoBusy || pending || archiveUnknown}}">删除照片</button>
         </view>
       </scroll-view>
-      <view class="hint-line">{{photos.length ? '点击照片查看大图。' : '可添加照片，和这条灵感一起查看。'}}</view>
+      <view wx:if="{{photos.length || !archived}}" class="hint-line">{{photos.length ? '点击照片查看大图。' : '可添加照片，和这条灵感一起查看。'}}</view>
       <view wx:if="{{photoError}}" class="notice notice-err">{{photoError}}</view>
     </view>
 
     <!-- 补充是详情页的主动作：输入框紧随原文，已有补充在输入框下方 -->
-    <view wx:if="{{!editing && !editingSupplementId && !merged}}" class="detail-next">
+    <view wx:if="{{!editing && !editingSupplementId && !merged && !archived}}" hidden="{{!(composeFocus || composeRequestedFocus || supplementDraft || supplementUnknown)}}" class="detail-next">
       <view class="compose">
         <view class="field-label">继续补充</view>
         <textarea
@@ -90,18 +108,34 @@
           placeholder-class="compose-ph"
           bindinput="onSupplementInput"
           focus="{{composeRequestedFocus}}"
-          disabled="{{pending !== ''}}"
+          disabled="{{pending !== '' || archiveUnknown}}"
           bindfocus="onComposeFocus"
           bindblur="onComposeBlur"
           cursor-spacing="24"
         />
+        <view class="todo-setting {{supplementTodoEnabled ? 'is-active' : ''}}">
+          <button class="todo-setting-toggle" aria-pressed="{{supplementTodoEnabled}}" bindtap="onSupplementTodoToggle" disabled="{{pending !== '' || supplementUnknown || todoUnknown || archiveUnknown}}">
+            <view class="todo-entry-icon" aria-hidden="true"><view class="todo-entry-line"></view><view class="todo-entry-line"></view></view>
+            <view class="todo-setting-copy"><text class="todo-setting-title">加入待办</text><text class="todo-setting-hint">{{supplementTodoEnabled ? '保存后会出现在「待办」页' : '把这条内容作为接下来要做的事'}}</text></view>
+            <view class="todo-setting-switch" aria-hidden="true"><view class="todo-setting-knob"></view></view>
+          </button>
+          <view wx:if="{{supplementTodoEnabled}}" class="todo-setting-dates">
+            <view class="todo-date-label">计划完成日 · 可选</view>
+            <view class="todo-date-actions">
+              <button class="todo-date-chip {{!supplementTodoDate ? 'chosen' : ''}}" aria-pressed="{{!supplementTodoDate}}" data-choice="none" bindtap="onSupplementTodoChoice" disabled="{{pending !== '' || supplementUnknown}}">不设日期</button>
+              <button class="todo-date-chip {{supplementTodoDate === todayDate ? 'chosen' : ''}}" aria-pressed="{{supplementTodoDate === todayDate}}" data-choice="today" bindtap="onSupplementTodoChoice" disabled="{{pending !== '' || supplementUnknown}}">今天</button>
+              <button class="todo-date-chip {{supplementTodoDate === tomorrowDate ? 'chosen' : ''}}" aria-pressed="{{supplementTodoDate === tomorrowDate}}" data-choice="tomorrow" bindtap="onSupplementTodoChoice" disabled="{{pending !== '' || supplementUnknown}}">明天</button>
+              <picker class="todo-date-picker" mode="date" value="{{supplementTodoDate || todayDate}}" bindchange="onSupplementTodoDate" disabled="{{pending !== '' || supplementUnknown}}" aria-label="选择计划完成日"><view class="todo-date-chip {{supplementTodoDate && supplementTodoDate !== todayDate && supplementTodoDate !== tomorrowDate ? 'chosen' : ''}}">{{supplementTodoDate && supplementTodoDate !== todayDate && supplementTodoDate !== tomorrowDate ? supplementTodoDate : '选择日期'}}</view></picker>
+            </view>
+          </view>
+        </view>
         <view class="compose-foot">
           <text class="count {{supplementDraft.length > supplementMax ? 'count-over' : ''}}">{{supplementDraft.length}} / {{supplementMax}}</text>
           <button
             class="btn btn-sm"
             bindtap="onSubmitSupplement"
-            disabled="{{!canAddSupplement || pending !== ''}}"
-          >{{pending === 'supplement' ? '添加中…' : supplementUnknown ? '重试保存' : '添加补充'}}</button>
+            disabled="{{!canAddSupplement || pending !== '' || archiveUnknown}}"
+          >{{pending === 'supplement' ? '添加中…' : supplementUnknown ? '重试保存' : supplementTodoEnabled ? '添加待办' : '添加补充'}}</button>
         </view>
         <view wx:if="{{supplementDraft.length > supplementMax}}" class="hint-over">超出{{supplementDraft.length - supplementMax}}字符，请缩短后保存。</view>
         <view wx:elif="{{supplementDraft}}" class="draft-hint">{{pending === 'supplement' ? '正在保存，请稍候。' : supplementUnknown ? '退出前请重试确认或复制内容。' : '尚未保存，退出后可能丢失。'}}</view>
@@ -118,12 +152,13 @@
       <text class="v">{{supplements.length}} 条</text>
     </view>
 
-    <view wx:if="{{supplements.length === 0 && hidden.length === 0 && !merged}}" class="hint-line">还没有补充，可以从上方写下一句。</view>
+    <view wx:if="{{supplements.length === 0 && hidden.length === 0 && !merged}}" class="hint-line">{{archived ? '还没有补充。' : '还没有补充，可以从上方写下一句。'}}</view>
 
     <view wx:else class="timeline">
       <block wx:for="{{supplements}}" wx:key="id">
         <view
-          class="tl-item {{item.isAi ? 'tl-ai' : ''}}"
+          id="supplement-{{item.id}}"
+          class="tl-item {{item.isAi ? 'tl-ai' : ''}} {{highlightSupplementId === item.id ? 'todo-highlight' : ''}}"
           data-id="{{item.id}}"
           bindlongpress="onSupplementLongPress"
         >
@@ -136,7 +171,7 @@
           </view>
 
           <!-- 行内修改：旧内容会留在历史里 -->
-          <block wx:if="{{editingSupplementId === item.id}}">
+          <block wx:if="{{editingSupplementId === item.id && !archived}}">
             <textarea
               class="tl-editor"
               value="{{supplementEditDraft}}"
@@ -159,6 +194,14 @@
           </block>
 
           <view wx:else class="tl-what">{{item.content}}</view>
+          <view wx:if="{{!editingSupplementId && (item.todo || (!archived && !merged))}}" class="todo-inline">
+            <block wx:if="{{item.todo}}">
+              <button class="todo-check {{item.todoDone ? 'is-done' : ''}}" data-id="{{item.id}}" catchtap="onTodoToggle" aria-pressed="{{item.todoDone}}" disabled="{{archived || merged || pending !== '' || archiveUnknown || todoUnknown}}"><text class="todo-box">{{item.todoDone ? '✓' : ''}}</text><text>{{item.todoDone ? '已办' : '待办'}}</text></button>
+              <text wx:if="{{archived || merged}}" class="todo-date">{{item.todoDateLabel}}</text>
+              <button wx:else class="btn-link todo-date" data-id="{{item.id}}" catchtap="onTodoDate" disabled="{{pending !== '' || todoUnknown}}">{{item.todoDateLabel}}</button>
+            </block>
+            <button wx:else class="todo-add-entry" data-id="{{item.id}}" catchtap="onTodoAdd" disabled="{{pending !== '' || archiveUnknown || todoUnknown}}"><view class="todo-entry-icon" aria-hidden="true"><view class="todo-entry-line"></view><view class="todo-entry-line"></view></view><text>加入待办</text></button>
+          </view>
           <button wx:if="{{item.sources.length}}" class="btn-link" data-id="{{item.id}}" bindtap="onToggleSupplementSources">查看汇总来源（{{item.sources.length}}）</button>
           <view wx:if="{{provenanceSupplementId === item.id}}" class="source-trace"><view wx:for="{{item.sources}}" wx:for-item="source" wx:key="id">{{source.content}}</view></view>
         </view>
@@ -177,7 +220,8 @@
           <view
             wx:for="{{hidden}}"
             wx:key="id"
-            class="tl-item tl-hidden"
+            id="supplement-{{item.id}}"
+            class="tl-item tl-hidden {{highlightSupplementId === item.id ? 'todo-highlight' : ''}}"
             data-id="{{item.id}}"
             bindlongpress="onSupplementLongPress"
           >
@@ -189,14 +233,23 @@
               <button class="tl-more" data-id="{{item.id}}" aria-label="打开已收起补充操作" catchtap="onSupplementAction">操作</button>
             </view>
             <view class="tl-what">{{item.content}}</view>
-            <view class="tl-hint">可恢复为普通补充，或永久删除</view>
+            <view wx:if="{{item.todo || (!archived && !merged)}}" class="todo-inline">
+              <block wx:if="{{item.todo}}">
+                <button class="todo-check {{item.todoDone ? 'is-done' : ''}}" data-id="{{item.id}}" catchtap="onTodoToggle" aria-pressed="{{item.todoDone}}" disabled="{{archived || merged || pending !== '' || archiveUnknown || todoUnknown}}"><text class="todo-box">{{item.todoDone ? '✓' : ''}}</text><text>{{item.todoDone ? '已办' : '待办'}}</text></button>
+                <text wx:if="{{archived || merged}}" class="todo-date">{{item.todoDateLabel}}</text>
+                <button wx:else class="btn-link todo-date" data-id="{{item.id}}" catchtap="onTodoDate" disabled="{{pending !== '' || todoUnknown}}">{{item.todoDateLabel}}</button>
+              </block>
+              <button wx:else class="todo-add-entry" data-id="{{item.id}}" catchtap="onTodoAdd" disabled="{{pending !== '' || archiveUnknown || todoUnknown}}"><view class="todo-entry-icon" aria-hidden="true"><view class="todo-entry-line"></view><view class="todo-entry-line"></view></view><text>加入待办</text></button>
+            </view>
+            <view wx:if="{{!archived}}" class="tl-hint">可恢复为普通补充，或永久删除</view>
           </view>
         </block>
       </view>
     </view>
 
     <!-- 标签与阶段：一行摘要，点开才是表单；取消恢复进入前的值 -->
-    <view wx:if="{{!merged && !editing && !editingSupplementId}}" class="organization">
+    <view wx:if="{{archived}}" class="organization"><view class="field-label">标签与阶段</view><view class="archive-organization">{{orgSummary}}</view></view>
+    <view wx:elif="{{!merged && !editing && !editingSupplementId}}" class="organization">
       <view class="field-label">标签与阶段</view>
       <view class="org-summary" bindtap="onToggleOrganization">
         <text class="org-value">{{orgSummary}}</text>
@@ -222,15 +275,16 @@
   </block>
 
   <!-- 长正文滚离原文后出现的定位入口；键盘打开时隐藏 -->
-  <button wx:if="{{floatVisible}}" class="float-supplement" bindtap="onLocateCompose" aria-label="继续补充">继续补充</button>
 
   <!-- 页内「更多」：修改正文、复制灵感、修改记录、删除灵感 -->
   <view wx:if="{{moreVisible}}" class="mask" bindtap="onCloseMore">
     <view class="sheet" catchtap="noop">
       <view class="sheet-title">这条灵感</view>
-      <button wx:if="{{!merged}}" class="sheet-item" bindtap="onMoreEditText" disabled="{{pending !== ''}}">修改正文<text class="sub">旧内容会保留在修改记录中</text></button>
+      <button wx:if="{{!merged && !archived}}" class="sheet-item" bindtap="onMoreEditText" disabled="{{pending !== '' || archiveUnknown}}">修改正文<text class="sub">旧内容会保留在修改记录中</text></button>
       <button class="sheet-item" bindtap="onMoreCopy" disabled="{{pending !== ''}}">复制灵感<text class="sub">可选仅复制正文，或正文与当前补充</text></button>
       <button wx:if="{{historyCount > 0}}" class="sheet-item" bindtap="onMoreHistory" disabled="{{pending !== ''}}">修改记录（{{historyCount}}）</button>
+      <button wx:if="{{archived}}" class="sheet-item" bindtap="onOpenArchiveExport" disabled="{{pending !== ''}}">文字留档<text class="sub">预览、复制或生成 TXT 文件</text></button>
+      <button wx:if="{{!merged || archived || archiveUnknown}}" class="sheet-item" bindtap="onMoreArchive" disabled="{{pending !== ''}}">{{archiveUnknown ? '重试确认归档状态' : archived ? '取消归档' : '归档灵感'}}<text class="sub">{{archived ? '恢复后可继续整理' : '归档后可在「我的 → 已归档」查看'}}</text></button>
       <button class="sheet-item sheet-danger" bindtap="onMoreDelete" disabled="{{pending !== ''}}">删除灵感<text class="sub">正文、补充和照片会一并删除，无法撤销</text></button>
       <button class="sheet-cancel" bindtap="onCloseMore" disabled="{{pending !== ''}}">取消</button>
     </view>
@@ -243,17 +297,39 @@
 
       <button class="sheet-item" bindtap="onSheetCopy" disabled="{{pending !== ''}}" aria-label="复制这条补充">复制补充</button>
       <button wx:if="{{sheetHistoryCount > 0}}" class="sheet-item" bindtap="onSheetHistory" disabled="{{pending !== ''}}">修改记录（{{sheetHistoryCount}}）</button>
+      <block wx:if="{{sheetHasTodo && !archived && !merged && !archiveUnknown && !todoUnknown}}">
+        <button class="sheet-item" bindtap="onSheetTodoDate" disabled="{{pending !== ''}}">修改计划完成日</button>
+        <button class="sheet-item" bindtap="onSheetTodoRemove" disabled="{{pending !== ''}}">移除待办<text class="sub">保留补充文字</text></button>
+      </block>
 
-      <block wx:if="{{sheetIsHidden}}">
+      <block wx:if="{{sheetIsHidden && !archived && !archiveUnknown}}">
         <button class="sheet-item" bindtap="onSheetRestore" disabled="{{pending !== ''}}" aria-label="恢复为补充">恢复为补充<text class="sub">回到时间线继续使用</text></button>
       </block>
-      <block wx:else>
+      <block wx:elif="{{!sheetIsHidden && !archived && !archiveUnknown}}">
         <button class="sheet-item" bindtap="onSheetEdit" disabled="{{pending !== ''}}" aria-label="修改这条补充">修改补充<text class="sub">旧内容会保留在修改记录中</text></button>
         <button class="sheet-item" bindtap="onSheetFold" disabled="{{pending !== ''}}" aria-label="并入正文">并入正文<text class="sub">把这条补充追加到正文末尾</text></button>
       </block>
 
-      <button class="sheet-item sheet-danger" bindtap="onSheetDelete" disabled="{{pending !== ''}}" aria-label="删除补充">删除补充<text class="sub">此操作无法撤销</text></button>
+      <button wx:if="{{!archived && !archiveUnknown}}" class="sheet-item sheet-danger" bindtap="onSheetDelete" disabled="{{pending !== ''}}" aria-label="删除补充">删除补充<text class="sub">此操作无法撤销</text></button>
       <button class="sheet-cancel" bindtap="onSheetDismiss" disabled="{{pending !== ''}}">取消</button>
+    </view>
+  </view>
+
+  <view wx:if="{{todoDateVisible}}" class="mask" bindtap="onCloseTodoDate">
+    <view class="sheet todo-date-sheet" catchtap="noop">
+      <view class="sheet-title">{{todoDateAction === 'add' ? '加入待办' : '计划完成日'}}</view>
+      <view class="todo-date-panel">
+        <view wx:if="{{todoDateAction === 'add'}}" class="todo-source-quote">{{todoDateSourceText}}</view>
+        <view class="todo-date-label">计划完成日 · 可选</view>
+        <view class="todo-date-actions">
+          <button class="todo-date-chip {{!todoDateDraft ? 'chosen' : ''}}" aria-pressed="{{!todoDateDraft}}" data-choice="none" bindtap="onTodoDateChoice" disabled="{{pending !== ''}}">不设日期</button>
+          <button class="todo-date-chip {{todoDateDraft === todayDate ? 'chosen' : ''}}" aria-pressed="{{todoDateDraft === todayDate}}" data-choice="today" bindtap="onTodoDateChoice" disabled="{{pending !== ''}}">今天</button>
+          <button class="todo-date-chip {{todoDateDraft === tomorrowDate ? 'chosen' : ''}}" aria-pressed="{{todoDateDraft === tomorrowDate}}" data-choice="tomorrow" bindtap="onTodoDateChoice" disabled="{{pending !== ''}}">明天</button>
+          <picker class="todo-date-picker" mode="date" value="{{todoPickerDate}}" bindchange="onTodoDatePick" disabled="{{pending !== ''}}" aria-label="选择计划完成日"><view class="todo-date-chip {{todoDateDraft && todoDateDraft !== todayDate && todoDateDraft !== tomorrowDate ? 'chosen' : ''}}">{{todoDateDraft && todoDateDraft !== todayDate && todoDateDraft !== tomorrowDate ? todoDateDraft : '选择日期'}}</view></picker>
+        </view>
+      </view>
+      <button class="btn btn-block" bindtap="onApplyTodoDate" disabled="{{pending !== ''}}">{{todoDateAction === 'add' ? '加入待办' : '保存日期'}}</button>
+      <button class="sheet-cancel" bindtap="onCloseTodoDate">取消</button>
     </view>
   </view>
 

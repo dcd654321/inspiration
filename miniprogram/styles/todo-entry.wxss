@@ -1,0 +1,25 @@
+/* 加入待办使用清单和开关；已保存事项使用独立完成勾选。 */
+.todo-entry-icon { display: inline-flex; flex-direction: column; justify-content: center; gap: 8rpx; flex: 0 0 40rpx; width: 40rpx; height: 40rpx; color: var(--brand); }
+.todo-entry-line { display: flex; align-items: center; gap: 6rpx; }
+.todo-entry-line::before { content: ""; width: 7rpx; height: 7rpx; border: 1px solid currentColor; border-radius: 2rpx; }
+.todo-entry-line::after { content: ""; flex: 1; height: 2rpx; background: currentColor; border-radius: 2rpx; }
+.todo-setting { margin-top: 20rpx; overflow: hidden; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface); }
+.todo-setting.is-active { border-color: var(--brand-line); }
+.page .todo-setting-toggle { display: flex; align-items: center; gap: 18rpx; box-sizing: border-box; width: 100%; min-height: max(112rpx, 56px); padding: 18rpx 0; border: 0; border-radius: 0; background: transparent; text-align: left; line-height: 1.4; }
+.todo-setting-toggle::after, .todo-add-entry::after, .todo-date-chip::after { border: 0; }
+.todo-setting-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4rpx; }
+.todo-setting-title { color: var(--ink); font-size: max(30rpx, 15px); font-weight: 500; }
+.todo-setting-hint { color: var(--ink-2); font-size: max(24rpx, 12px); font-weight: 400; line-height: 1.6; white-space: normal; }
+.todo-setting-switch { display: flex; align-items: center; box-sizing: border-box; flex: 0 0 max(84rpx, 42px); width: max(84rpx, 42px); height: max(50rpx, 25px); padding: 6rpx; border-radius: 28rpx; background: var(--ink-3); }
+.todo-setting-knob { width: max(38rpx, 19px); height: max(38rpx, 19px); border-radius: 50%; background: var(--surface); }
+.is-active .todo-setting-switch { justify-content: flex-end; background: var(--brand); }
+.todo-setting-toggle[disabled] { opacity: 0.5; }
+.todo-setting-dates { padding: 16rpx 0 20rpx; border-top: 1px solid var(--line); }
+.todo-date-label { color: var(--ink-2); font-size: max(24rpx, 12px); line-height: 1.6; }
+.todo-date-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8rpx; margin-top: 12rpx; }
+.page .todo-date-chip { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: max(88rpx, 44px); min-width: max(88rpx, 44px); margin: 0; padding: 0 16rpx; border: 1px solid var(--line); border-radius: 12rpx; background: var(--surface); color: var(--ink-2); font-size: max(26rpx, 13px); font-weight: 400; line-height: 1.4; white-space: nowrap; word-break: keep-all; }
+.page .todo-date-chip.chosen { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 500; }
+.page .todo-date-chip[disabled], .todo-date-picker[disabled] { opacity: 0.5; }
+.page .todo-add-entry { display: inline-flex; align-items: center; justify-content: center; gap: 12rpx; min-height: max(88rpx, 44px); margin: 0; padding: 0 18rpx; border: 0; border-radius: 14rpx; background: var(--brand-soft); color: var(--brand); font-size: max(26rpx, 13px); font-weight: 500; line-height: 1.4; white-space: nowrap; }
+.todo-add-entry .todo-entry-icon { flex-basis: 32rpx; width: 32rpx; height: 32rpx; gap: 6rpx; }
+.todo-add-entry[disabled] { opacity: 0.5; }

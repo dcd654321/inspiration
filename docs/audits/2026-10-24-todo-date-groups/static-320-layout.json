@@ -1,0 +1,49 @@
+{
+  "at": "2026-10-24T03:00:57.291Z",
+  "kind": "static-analysis-only",
+  "targetWidth": 320,
+  "actualSimulatorWidthVerified": false,
+  "screenshotAvailable": false,
+  "basis": "390px真实控件尺寸作为不随窄屏增大的宽度上界；rpx缩小，文字和按钮均保留px下限；把390px观测的全部水平留白原样扣除，得到保守的320px可用宽度",
+  "sourcePolicies": {
+    "row": "display:flex; flex-wrap:wrap; align-items:center",
+    "control": "flex:0 0 auto; min-height:max(88rpx,44px)",
+    "date": "white-space:nowrap; word-break:keep-all",
+    "globalButton": "min-width:max(88rpx,44px); min-height:max(88rpx,44px)"
+  },
+  "rows": [
+    {
+      "row": "正文",
+      "dateLabel": "2027年1月6日 周三",
+      "availableConservative": 280,
+      "requiredUpperBound": 272.59375,
+      "fitsByStaticUpperBound": true
+    },
+    {
+      "row": "补充1",
+      "dateLabel": "今天 · 10月24日",
+      "availableConservative": 260,
+      "requiredUpperBound": 168.328125,
+      "fitsByStaticUpperBound": true
+    },
+    {
+      "row": "补充2",
+      "dateLabel": "2027年1月6日 周三",
+      "availableConservative": 260,
+      "requiredUpperBound": 189.59375,
+      "fitsByStaticUpperBound": true
+    },
+    {
+      "row": "补充3",
+      "dateLabel": "2027年1月6日 周三",
+      "availableConservative": 260,
+      "requiredUpperBound": 189.59375,
+      "fitsByStaticUpperBound": true
+    }
+  ],
+  "limits": [
+    "未切换320px真实模拟器，不构成320px渲染或操作验收",
+    "未实测320px换行和平台字体差异",
+    "当前390px数据未触发行整体换行；宽度不足时由flex-wrap与nowrap共同保证日期作为整颗控件换行"
+  ]
+}

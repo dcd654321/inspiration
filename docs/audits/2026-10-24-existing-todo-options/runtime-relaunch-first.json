@@ -1,0 +1,384 @@
+{
+  "at": "2026-10-24T02:14:17.746Z",
+  "synthetic": true,
+  "cloudEnabled": false,
+  "productionWrite": false,
+  "deviceAcceptance": false,
+  "customDateMethod": "向真实 picker 组件派发 change 事件；未操作平台日期滚轮",
+  "steps": [
+    {
+      "name": "01-plain-options",
+      "screenshot": "01-plain-options.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": true,
+        "action": "add",
+        "targetId": "demo_option_plain",
+        "dueDateDraft": "",
+        "pushes": 0,
+        "bodyTodo": null,
+        "plainTodo": null,
+        "hiddenTodo": null
+      },
+      "controls": [
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 14,
+            "top": 544
+          }
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 88,
+            "top": 544
+          }
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 137,
+            "top": 544
+          }
+        },
+        {
+          "label": "加入待办",
+          "size": {
+            "width": 361,
+            "height": 49
+          },
+          "offset": {
+            "left": 14,
+            "top": 603
+          }
+        },
+        {
+          "label": "取消",
+          "size": {
+            "width": 361,
+            "height": 45
+          },
+          "offset": {
+            "left": 14,
+            "top": 662
+          }
+        },
+        {
+          "label": "选择日期 picker",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 186,
+            "top": 544
+          }
+        }
+      ]
+    },
+    {
+      "name": "02-plain-tomorrow-before-confirm",
+      "screenshot": "02-plain-tomorrow-before-confirm.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": true,
+        "action": "add",
+        "targetId": "demo_option_plain",
+        "dueDateDraft": "2026-10-25",
+        "pushes": 0,
+        "bodyTodo": null,
+        "plainTodo": null,
+        "hiddenTodo": null
+      }
+    },
+    {
+      "name": "03-plain-confirmed",
+      "screenshot": "03-plain-confirmed.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": false,
+        "action": "add",
+        "targetId": "demo_option_plain",
+        "dueDateDraft": "2026-10-25",
+        "pushes": 1,
+        "bodyTodo": null,
+        "plainTodo": {
+          "createdAt": 1792808067238,
+          "completedAt": null,
+          "dueDate": "2026-10-25"
+        },
+        "hiddenTodo": null
+      }
+    },
+    {
+      "name": "04-body-options",
+      "screenshot": "04-body-options.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": true,
+        "action": "add",
+        "targetId": "",
+        "dueDateDraft": "",
+        "pushes": 1,
+        "bodyTodo": null,
+        "plainTodo": {
+          "createdAt": 1792808067238,
+          "completedAt": null,
+          "dueDate": "2026-10-25"
+        },
+        "hiddenTodo": null
+      }
+    },
+    {
+      "name": "05-body-custom-before-confirm",
+      "screenshot": "05-body-custom-before-confirm.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": true,
+        "action": "add",
+        "targetId": "",
+        "dueDateDraft": "2026-11-05",
+        "pushes": 1,
+        "bodyTodo": null,
+        "plainTodo": {
+          "createdAt": 1792808067238,
+          "completedAt": null,
+          "dueDate": "2026-10-25"
+        },
+        "hiddenTodo": null
+      }
+    },
+    {
+      "name": "06-body-confirmed",
+      "screenshot": "06-body-confirmed.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": false,
+        "action": "add",
+        "targetId": "",
+        "dueDateDraft": "2026-11-05",
+        "pushes": 2,
+        "bodyTodo": {
+          "createdAt": 1792808071775,
+          "completedAt": null,
+          "dueDate": "2026-11-05"
+        },
+        "plainTodo": {
+          "createdAt": 1792808067238,
+          "completedAt": null,
+          "dueDate": "2026-10-25"
+        },
+        "hiddenTodo": null
+      }
+    },
+    {
+      "name": "07-hidden-options",
+      "screenshot": "07-hidden-options.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": true,
+        "action": "add",
+        "targetId": "demo_option_hidden",
+        "dueDateDraft": "",
+        "pushes": 2,
+        "bodyTodo": {
+          "createdAt": 1792808071775,
+          "completedAt": null,
+          "dueDate": "2026-11-05"
+        },
+        "plainTodo": {
+          "createdAt": 1792808067238,
+          "completedAt": null,
+          "dueDate": "2026-10-25"
+        },
+        "hiddenTodo": null
+      },
+      "controls": [
+        {
+          "label": "不设日期",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 14,
+            "top": 544
+          }
+        },
+        {
+          "label": "今天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 88,
+            "top": 544
+          }
+        },
+        {
+          "label": "明天",
+          "size": {
+            "width": 45,
+            "height": 45
+          },
+          "offset": {
+            "left": 137,
+            "top": 544
+          }
+        },
+        {
+          "label": "加入待办",
+          "size": {
+            "width": 361,
+            "height": 49
+          },
+          "offset": {
+            "left": 14,
+            "top": 603
+          }
+        },
+        {
+          "label": "取消",
+          "size": {
+            "width": 361,
+            "height": 45
+          },
+          "offset": {
+            "left": 14,
+            "top": 662
+          }
+        },
+        {
+          "label": "选择日期 picker",
+          "size": {
+            "width": 70,
+            "height": 45
+          },
+          "offset": {
+            "left": 186,
+            "top": 544
+          }
+        }
+      ]
+    },
+    {
+      "name": "08-hidden-confirmed",
+      "screenshot": "08-hidden-confirmed.png",
+      "route": "pages/detail/index",
+      "state": {
+        "visible": false,
+        "action": "add",
+        "targetId": "demo_option_hidden",
+        "dueDateDraft": "2026-10-25",
+        "pushes": 3,
+        "bodyTodo": {
+          "createdAt": 1792808071775,
+          "completedAt": null,
+          "dueDate": "2026-11-05"
+        },
+        "plainTodo": {
+          "createdAt": 1792808067238,
+          "completedAt": null,
+          "dueDate": "2026-10-25"
+        },
+        "hiddenTodo": {
+          "createdAt": 1792808076182,
+          "completedAt": null,
+          "dueDate": "2026-10-25"
+        }
+      }
+    }
+  ],
+  "assertions": [
+    "普通补充：打开选项无写入",
+    "普通补充：选择明天未确认时无写入",
+    "普通补充：取消无写入",
+    "普通补充：确认后仅一次写入且明天日期正确",
+    "正文：打开选项无写入",
+    "正文：自选日期未确认时无写入",
+    "正文：确认后仅一次写入且自选日期正确",
+    "隐藏补充：打开选项无写入",
+    "隐藏补充：取消无写入",
+    "隐藏补充：选择日期未确认时无写入",
+    "隐藏补充：确认后仅一次写入且明天日期正确"
+  ],
+  "exceptions": [],
+  "stage": "running-flow",
+  "navigationMethod": "miniprogram-automator reLaunch",
+  "final": {
+    "item": {
+      "id": "demo_options",
+      "text": "为这条灵感安排接下来要做的事。\n列出需要提前确认的时间安排。",
+      "textHistory": [
+        {
+          "id": "demo_option_history",
+          "text": "为这条灵感安排接下来要做的事。",
+          "replacedAt": 1792807955075
+        }
+      ],
+      "createdAt": 1792807925075,
+      "updatedAt": 1792807955075,
+      "supplements": [
+        {
+          "id": "demo_option_plain",
+          "content": "核对明天出发前要带的东西。",
+          "contentHistory": [],
+          "createdAt": 1792807935075,
+          "source": "user",
+          "sourceIds": [],
+          "mergedInto": null,
+          "foldedAt": null,
+          "todo": {
+            "createdAt": 1792808067238,
+            "completedAt": null,
+            "dueDate": "2026-10-25"
+          }
+        },
+        {
+          "id": "demo_option_hidden",
+          "content": "列出需要提前确认的时间安排。",
+          "contentHistory": [],
+          "createdAt": 1792807945075,
+          "source": "user",
+          "sourceIds": [],
+          "mergedInto": null,
+          "foldedAt": 1792807955075,
+          "todo": {
+            "createdAt": 1792808076182,
+            "completedAt": null,
+            "dueDate": "2026-10-25"
+          }
+        }
+      ],
+      "photos": [],
+      "tags": [],
+      "stage": "seed",
+      "source": "user",
+      "summarySources": [],
+      "mergedInto": null,
+      "archivedAt": null,
+      "todo": {
+        "createdAt": 1792808071775,
+        "completedAt": null,
+        "dueDate": "2026-11-05"
+      },
+      "deletedAt": null
+    },
+    "pushes": 3
+  },
+  "ok": true
+}

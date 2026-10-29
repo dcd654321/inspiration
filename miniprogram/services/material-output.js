@@ -1,11 +1,12 @@
 'use strict';
 const { currentSupplements, buildTemplateText } = require('./content-output');
+const { isArchived } = require('../core/inspiration');
 const MATERIAL_LIMITS = Object.freeze({ parts: 40, sources: 20, chars: 12000 });
 
 function listMaterials(items) {
   const result = [];
   for (const item of Array.isArray(items) ? items : []) {
-    if (!item || item.deletedAt || item.mergedInto || typeof item.text !== 'string' || !item.text.trim()) continue;
+    if (!item || item.deletedAt || item.mergedInto || isArchived(item) || typeof item.text !== 'string' || !item.text.trim()) continue;
     const source = { inspirationId: item.id, sourceText: item.text.slice(0, 45) };
     result.push(Object.assign({}, source, { key: item.id + ':text', kind: '正文', content: item.text, createdAt: item.createdAt }));
     for (const entry of currentSupplements(item)) {

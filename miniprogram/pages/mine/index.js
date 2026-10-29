@@ -1,3 +1,5 @@
+const { createAppShare, createTimelineShare } = require('../../services/product-presentation');
+
 Page({
   data: {
     expandedInfo: '',
@@ -7,9 +9,12 @@ Page({
     helpNotes: [
       '在「记录」写下一句话，保存后可到「灵感」查看。',
       '打开一条灵感，继续补充文字或附上照片。',
-      '在「灵感」选择素材，手动整理成稿，再复制或导出。'
+      '在「灵感」选择素材，手动整理成稿，再复制或导出。',
+      '暂时不再整理的灵感可在详情的「更多」中归档，到「已归档」查看或取消归档。'
     ]
   },
+
+  onOpenArchived() { wx.navigateTo({ url: '/pages/archived/index' }); },
 
   onToggleInfo(event) {
     const section = event && event.currentTarget && event.currentTarget.dataset.section;
@@ -17,15 +22,9 @@ Page({
     this.setData({ expandedInfo: this.data.expandedInfo === section ? '' : section });
   },
 
-  onShareAppMessage() {
-    return { title: '灵感拾光簿｜让想法慢慢成形', path: '/pages/welcome/index',
-      imageUrl: '/assets/brand-mark.png' };
-  },
+  onShareAppMessage() { return createAppShare(); },
 
-  onShareTimeline() {
-    return { title: '灵感拾光簿｜让想法慢慢成形', query: '',
-      imageUrl: '/assets/brand-mark.png' };
-  },
+  onShareTimeline() { return createTimelineShare(); },
 
   /**
    * 自建反馈页的入口目前在 WXML 里隐藏（云环境未联通，提交无法落库与查阅）；

@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-23T03:26:14.424Z",
+  "phase": "before",
+  "synthetic": true,
+  "cloudEnabled": false,
+  "productionWrite": false,
+  "deviceAcceptance": false,
+  "steps": [],
+  "exceptions": [],
+  "initial": {
+    "fixture": "todos-20261021",
+    "routes": [],
+    "ids": [
+      "demo_walk",
+      "demo_overdue",
+      "demo_future",
+      "demo_undated",
+      "demo_archived",
+      "demo_long"
+    ]
+  },
+  "ok": false,
+  "blocked": "AssertionError [ERR_ASSERTION]: The input did not match the regular expression /:ok$/. Input:\n\n\"switchTab:fail Cannot read properties of undefined (reading 'pageNotFound')\"\n\n    at navigate (D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\todo-ui-20261023\\capture.cjs:27:14)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\todo-ui-20261023\\capture.cjs:36:16"
+}

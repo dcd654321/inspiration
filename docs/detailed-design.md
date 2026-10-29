@@ -1,12 +1,24 @@
 # 详细设计
 
 > 状态（2026-10-08）：§1—11 保留 MVP 基础设计；§12 起记录后续变更。§17 的云确认方案覆盖 §2、§3、§5、§13 的设备持久快照、离线队列与照片暂存约定；§27 的 `remove-ai-integration` 覆盖 AI 生成、草案、工作台与模型部署要求。
-> 当前小程序包含 11 个页面、2 个云函数（`linggan_api` / `linggan_maintenance`）与 6 个服务端 action；旧设备持久化、离线队列和照片落盘实现已移到包外 `qa/legacy/`，仅供历史规范测试。自动化测试最新结果以 `docs/VERIFICATION.md` 为准。
+> 当前小程序包含 13 个页面、2 个云函数（`linggan_api` / `linggan_maintenance`）与 6 个服务端 action；旧设备持久化、离线队列和照片落盘实现已移到包外 `qa/legacy/`，仅供历史规范测试。自动化测试最新结果以 `docs/VERIFICATION.md` 为准。
 > 本文档描述**接口、状态及错误**；凡某节写的是当时的目标方案而实现已改，该节会显式标注「由 §X 覆盖」，未标注的不代表已实现。
 > 各能力的平台启用、云端部署与真机验收**均未完成**，本地代码完成不等于能力可用。
 > **热度提炼已暂缓**（见 `proposal.md` 非目标），本文档不含热度实现细节，仅在 §10 保留占位说明。
 
 ## 0. 文档地图
+
+2026-10-28 清晰轻页：用户已选 A，变更见 `openspec/changes/apply-clear-page-ui/`，界面约定见 `ui-design.md` §21，确认与原型见 `design-demos/2026-10-28/`。本次保持已有数据、保存、独立待办与归档约束，照片链路的实际修复与验证将在对应章节和 `VERIFICATION.md` 分别记录。
+
+2026-10-28 首页入口补齐：`capture.onTagsInput(event)` 接受空格/中英文逗号分隔的标签，保存前去重并通过现有 `organize(item,{tags,stage,now})` 校验；标签与正文和待办一次保存，pendingSave同时绑定tagsText。`onAddPhoto()` 选择来源后调用 `addPhotos(source)`，先由onSave确认当前记录，再调用现有照片服务。`loadCapturePhotos()` 只读取当前已保存记录的私有照片，`onPreviewCapturePhoto(event)` 打开原查看页，`onCapturePhotoError(event)` 校验ID/src。上传与读取分别守卫页面版本、账户、store及目标ID；新输入清空上一条照片视图，退出只保留标签文字，不将照片地址或选择路径写入sessionDrafts。没有照片草稿或云协议变更。
+
+2026-10-21 灵感待办：`openspec/changes/add-inspiration-todos/` 定义正文与补充独立待办、可选日期、统一看板及归档只读联动。接口见 §34，字段见 database-design.md §19，页面见 ui-design.md §20。用户已确认方案，云部署与真机另验。
+
+2026-10-19 搜索承接：`openspec/changes/optimize-search-discovery/` 定义公开欢迎页、固定产品转发及账户按需准备。接口与生命周期见 §33，界面见 `ui-design.md` §19；平台配置、收录与真机单独验收。
+
+2026-10-16 灵感归档：`openspec/changes/add-inspiration-archive/` 定义整条归档与取消归档。我的提供独立归档页，默认列表和选材排除归档；详情只读并保留文字留档。数据 archivedAt 与服务端冻结规则见 §32，字段见 database-design.md §3.2，界面见 ui-design.md §18。云部署与真机另验。
+
+2026-10-16 移除旧想法回顾：`openspec/changes/remove-idea-review/` 覆盖 `complete-product-workflows` 的「每日回顾」要求。列表删除「回看一个想法」及推荐/跳过逻辑，`services/discovery.js` 只保留搜索；正文与补充的修改记录、历史留档及详情内继续补充保持原有流程。接口与状态见 §31，界面见 `ui-design.md` §17，旧偏好说明见 `database-design.md` §12。
 
 2026-10-12 文字内容分享移除：`openspec/changes/remove-text-sharing/` 定义当前发布范围。§14 的内容分享与举报、§15.1 的分享配额、§25 的公开读取与分享用途承接、§26 的结果分享，以及 §12 的 TXT 直接发送均为历史要求，由 §30 覆盖；保留意见反馈、普通欢迎页转发、复制与文件导出。数据库兼容与历史清理见 `database-design.md` §17，页面变化见 `ui-design.md` §16。
 
@@ -47,7 +59,7 @@
 | 当前产品与本地发布范围 | `openspec/changes/remove-ai-integration/`、`openspec/changes/remove-text-sharing/`、本文 §27、§30 | 远端删除、部署或重新审核通过的证明 |
 | product 部署范围与发布验收 | `openspec/changes/deploy-product-release/`、`deployment/product/`（AI 要求由 `remove-ai-integration` 覆盖） | 真实清理或 Git 合并授权 |
 | 意见反馈与普通转发 | 本文 §30；`openspec/changes/add-sharing-feedback/` 保留历史内容分享场景 | 当前实现证据 |
-| 搜索、回顾、用途模板与生产可靠性 | `openspec/changes/complete-product-workflows/`、本文 §15 | 云端部署已完成的证明 |
+| 搜索、用途模板与生产可靠性 | `openspec/changes/complete-product-workflows/`、本文 §15；旧回顾由 `remove-idea-review`、§31 覆盖 | 云端部署已完成的证明 |
 | 跨灵感手动选材 | `openspec/changes/add-material-output/`、本文 §16 | AI 汇总、批量留档或云端部署 |
 | **卡在用户那边的凭据、决策、素材** | `docs/PENDING-INPUT.md` | —— |
 | 还没立项的想法 | `docs/BACKLOG.md` | —— |
@@ -589,6 +601,9 @@ appendPhoto(inspiration, { id, fileId, now })         → Inspiration
 markMerged(inspiration, { targetId, now })            → Inspiration   // 标记本灵感已合并进 targetId
 unmerge(inspiration)                                  → Inspiration   // 清空 mergedInto，恢复为独立灵感
 markDeleted(inspiration, { now })                     → Inspiration
+markArchived(inspiration, { now })                    → Inspiration
+unarchive(inspiration)                               → Inspiration
+isArchived(inspiration)                              → boolean
 validateInspiration(input)                            → { ok, errors: [{ field, code }] }
 
 // 查询与判定
@@ -826,6 +841,14 @@ prepare({ source, existingCount }) → Promise<PrepareResult>
 
 无论成败都返回 `limit`（`{ maxBytes, maxCount }`）——界面要能说出「上限是多少」，不能只说「超了」。
 
+2026-10-28：`prepare` 只有选择器明确取消才返回 `CANCELLED`；权限拒绝返回 `PERMISSION_DENIED` 与对应指引，其他原生错误或残缺选择结果返回 `FAILED` 与重新选择说明，不向用户转交原始错误。准备阶段可分别返回合格和被拒图片；整批无合格图片由云确认照片编排明确报告未添加。
+
+`createWxPhotos` 优先使用可用的 `wx.chooseMedia`，缺失时使用 `wx.chooseImage`；旧接口的 `tempFiles[].path` 转为统一的 `tempFilePath`，保留 `size`、选择顺序、剩余数量和原生权限边界。两个接口均不可用时返回明确失败，不静默视为取消，不连接默认云实例。
+
+照片编排在选择返回、每次上传前后和关联回执之后重新核对会话与来源：归档、合并、删除或已达九张时不继续追加；上传期间变为只读且已确认尚未关联的文件只在原会话有效时清理。会话失效后不再发起上传或清理；关联未知时先核对，不盲删可能已关联文件。
+
+私有读取除环境、账户与路径字符校验外，还要求记录照片 ID 与文件尾段一致；无有效候选不初始化云连接。下载错误码或空临时路径保持单张失败占位。查看页图片错误绑定照片 ID 与当次 src，只使匹配图片失效，旧页面/账户/旧路径事件不覆盖新结果；重试保留当前照片位置。
+
 ### 7.11 `services/upload.js`
 
 照片上传与云存储清理。
@@ -843,6 +866,8 @@ removePhotos(fileIds) → Promise<{ ok, removed, failed }>
 ```
 
 **幂等靠对象名，不靠去重逻辑。** 对象名固定为 `linggan/{accountKey}/{inspirationId}/{photoId}`，重传覆盖同一对象——这就是规范「同一次上传被重复提交，云端只保留一个对象」的实现方式，不需要「先查再传」。
+
+上传失败返回 `code: UPLOAD_FAILED`，可附带脱敏 `errorCode`（有限数字或固定大写错误标识）；残缺回执使用 `INVALID_UPLOAD_RESPONSE`。照片编排区分 `UPLOAD_FAILED`、`PHOTO_FILE_ID_MISMATCH` 和 `PHOTO_ASSOCIATION_FAILED`，后者可保留已知保存错误码；本地关联异常仅转为 `PHOTO_VALIDATION_FAILED`、`PHOTO_LOCAL_TYPE_ERROR` 或 `PHOTO_LOCAL_ERROR`，继续先回读再判断清理，不返回原始错误、用户文件路径或凭证。
 
 **路径拼接的每一段都重新校验字符集**（`SAFE_SEGMENT`），**故意不再 import `core/inspiration.js` 的 `ID_PATTERN`**：这条校验守的是跨系统边界，不该因为上游哪天放宽了字符集就跟着放宽。
 
@@ -1099,9 +1124,9 @@ send(action, payload, meta) → Promise<Result>
 
 ### 15.2 找回与使用
 
-`services/discovery.js` 导出 `searchInspirations(items,{query,filter,stage,now})` 与 `createReviewService({storage,cacheScope,now})`。搜索大小写不敏感、匹配正文、有效补充及标签，最长输入 100 字；返回 `item/matchText/matchSource`，不查询历史/图片，不记录关键词。筛选 `all/supplemented/recent/merged`，最近为 7 天，已合并单独展示；阶段为 `all/seed/growing/ready`。排序沿用更新时间倒序，匹配片段保留命中词，不作为全文摘要。
+`services/discovery.js` 仅导出 `searchInspirations(items,{query,filter,recent,stage,now})`。搜索大小写不敏感、匹配正文、有效补充及标签，最长输入 100 字；返回 `item/matchText/matchSource`，不查询历史/图片，不记录关键词。筛选 `all/supplemented/recent/merged`，`recent:true` 可叠加最近 7 天条件，已合并单独展示；阶段为不筛选或 `seed/growing/ready`。排序沿用更新时间倒序，匹配片段保留命中词，不作为全文摘要。
 
-回顾只选择两天前未更新的有效记录；每天固定一个 ID，跳过或该记录不存在时不换另一条；无候选不强推。只保存 ID 和开关，页面每次从当前 store 读取正文。关闭/跳过的存储失败时保留可重试提示，绝不影响记录本身。设置属于当前设备的当前账户，不承诺跨设备同步或消息提醒。
+2026-10-16 `remove-idea-review` 移除旧想法回顾。当前列表不选取推荐记录，不插入推荐区块，不创建回顾开关、推荐 ID 或跳过状态。旧每日选择规则及偏好仅作为历史要求保留在原提案中；正文与补充的修改记录不属于此功能。
 
 `services/content-output.js` 增加 `USE_TEMPLATES`、`buildTemplateText(item,selectedIds,templateId)`。五种为自由稿、社交内容、短视频脚本、工作提纲、行动清单；模板只给内容加用途结构和待编辑空项，所有原始文字原样保留。页面 `templateId/draftEdited` 仅会话态；重新生成覆盖编辑前确认，取消不改稿，可直接返回编辑。
 
@@ -1151,7 +1176,7 @@ Store 增加可选 `isCurrent()` 会话守卫：每次发送前及响应返回�
 
 本节覆盖 §2.1、§3、§5、§13、§15.5 中关于设备持久快照、离线队列、自动重试、冲突恢复副本和照片持久暂存的旧约定。服务端协议、可信身份、版本 CAS 与照片云清理机制不变；客户端不再调用 `wx.setStorageSync` 或 `wx.saveFile` 保存业务内容。
 
-`app.refreshAccount` 先拉取可信账户快照，再构造 `createCloudOnlyStore({transport,remoteSnapshot,cacheScope,now,isCurrent})`。正文、照片引用和版本只在当前会话内存里。回到前台先清空旧账户视图；云拉取失败时保持不可读，不从设备缓存回退。回顾设置与自愿使用统计改用会话内存适配器，进程重开会恢复默认设置，不会在设备留下统计。旧开发缓存不再扫描、读取或回放。
+`app.refreshAccount` 先拉取可信账户快照，再构造 `createCloudOnlyStore({transport,remoteSnapshot,cacheScope,now,isCurrent})`。正文、照片引用和版本只在当前会话内存里。回到前台先清空旧账户视图；云拉取失败时保持不可读，不从设备缓存回退。自愿使用统计使用会话内存适配器，进程重开会恢复默认设置，不会在设备留下统计；回顾服务已由 §31 移除。旧开发缓存不再扫描、读取或回放。
 
 `saveInspiration/saveInspirations/deleteInspiration/deletePhoto` 串行发送带 `generation/baseVersion/requestId` 的请求。只在服务端有效成功响应后更新内存视图，返回 `{ok:true,synced:true}`；失败不改视图、不建立队列，页面保留输入。超时可能发生在服务端已写入之后，客户端先 `snapshot.pull` 核对目标内容；确认一致才报告成功，否则报告未确认，保留当前输入。会话内重试记录复用同一 ID；进程退出后未确认操作不会恢复，因此真实弱网下仍有不确定窗口，不能称跨进程恰好一次。用户可刷新列表核对，正式发布前需真机验证。
 
@@ -1274,7 +1299,7 @@ AI 来源标签本轮不新增。现有正文并入 AI 补充和手动另存没�
 
 首页连续记录修复对应 `repair-capture-continuity`：composer 不再受 lastSavedId 控制挂载。当前保存确认后清空正文并设置 inputFocus=false；lastSavedId 非空时主按钮显示「再记一条」，下方为上一条摘录与补充/整理入口。`onRecordAnother()` 仅在当前页可见、非 saving、有 lastSavedId、无 draft 与 pendingSave 时清除旧成功反馈和 draftRecoveryNotice，并设置 inputFocus=true。直接输入下一条复用 onInput 的清除逻辑；onSave 继续创建新 ID，未知重试仍复用待确认 ID。保存确认、页面/账户/代际守卫和会话恢复协议均保留。
 
-列表回顾行「继续补充」携带 `focus=supplement`，由详情既有定位和聚焦行为承接。
+历史列表回顾行曾通过 `focus=supplement` 定位详情补充输入；该列表入口已由 §31 移除。详情内既有补充定位与聚焦行为继续保留。
 
 反馈页 `historyError` 与提交 `error` 分别呈现。只有读取成功且无条目时显示「还没有反馈记录」；失败保留已有条目和输入，在「我的反馈」下提供重试。`onRetryHistory()` 重试失败的首次读取或同一分页，不清空输入，也不重复提交反馈。账户和页面守卫继续约束所有回执。
 
@@ -1286,7 +1311,9 @@ AI 来源标签本轮不新增。现有正文并入 AI 补充和手动另存没�
 
 ## 29. 运营看板接口（2026-10-11）
 
-`services/operations-monitor.js` 导出 `createOperationsMonitor(options)` 和 `monitorSafely(monitor,method,...args)`；实例提供 `start()`、`bindAccount(scope,accountGeneration,isCurrent)`、`end()`、`event(type,payload,eventId?)`、`requestFinished(functionName,durationMs,code?)`、`error(code,type?)`。默认通过当前共享客户端调用 `monitorApi`；请求信封见 `add-operations-monitor/design.md`，两类请求均携带可信快照的 accountGeneration。可信账户绑定后发送 start，累计从 start 确认开始；心跳与 end 等待 start 并按会话串行，心跳 60 秒，最多一次即时内存重试。新会话、账户和代际失效取消旧回执；onHide 最后发送累计 end 后停止心跳。payload 白名单只接收 route/functionName/code/durationMs/sessionId/envVersion，错误文字和业务内容不采集。绑定前最多 8 条白名单事件仅留本次会话内存，离开丢弃。monitorSafely 处理同步抛错和异步拒绝，账户读取、后台清理及成功复制/TXT 状态不受影响。
+单条成稿页 `copyText(text,kind)` 在调用时接收复制对象：`onCopyDraft()` 传入 `kind='draft'`，`onCopyArchive()` 传入 `kind='archive'`。剪贴板成功后先校验页面版本、账户会话与 store；只有本次复制对象为稿件时记录 `output_copied`。复制期间允许继续编辑，回调不以届时的 `data.draft` 内容判断复制对象；留档文字即使与稿件相同也不计为成品复制。
+
+`services/operations-monitor.js` 导出 `createOperationsMonitor(options)` 和 `monitorSafely(monitor,method,...args)`；实例提供 `start()`、`bindAccount(scope,accountGeneration,isCurrent)`、`end()`、`event(type,payload,eventId?)`、`requestFinished(functionName,durationMs,code?)`、`error(code,type?)`。默认通过当前共享客户端调用 `monitorApi`；请求信封见 `add-operations-monitor/design.md`，两类请求均携带可信快照的 accountGeneration。可信账户绑定后发送 start，成功响应的 data 新增 startedAtMs、observedAtMs、elapsedMs；首次确认的本地累计起点=成功尝试实际发起时刻-(observedAtMs-startedAtMs)，旧服务端缺字段时使用成功尝试实际发起时刻。心跳与 end 等待 start 并按会话串行；首次两次尝试失败后，后续心跳/end 在同代际下重新确认同一 sessionId，重复 start 保留原起点与访问。账户确认后采集等待计入前台时间，初次账户加载不计；心跳与 end 在排队前固定采样时刻，后台 ACK 不延长累计。心跳 60 秒，每个请求最多一次即时内存重试。monitorApi 在成功 start 事务中创建相同 sessionId:start 启动事件，客户端兼容启动事件仅重复接收；业务保存不等待采集。新会话、账户和代际失效取消旧回执；onHide 最后发送累计 end 后停止心跳。payload 白名单只接收 route/functionName/code/durationMs/sessionId/envVersion，错误文字和业务内容不采集。绑定前最多 8 条白名单事件仅留本次会话内存，离开丢弃。monitorSafely 处理同步抛错和异步拒绝，账户读取、后台清理及成功复制/TXT 状态不受影响。服务端新增与客户端输出事件仍为尽力采集，故障期间可能永久漏报。
 
 `repository.push(accountKey,payload,context?)` 新增可选受信上下文 `{sourceUserId}`；`createRepository` 接受可选 `onCommitted({accountKey,sourceUserId,before,after})` 和 `onMonitorFailure(code)`。hook 仅在实际 CAS 写入成功后执行，最多等待 500 毫秒；异常或超时只报告固定码，迟到拒绝被处理，仍返回已提交保存确认。`server/operations-monitor.js` 提供 `createCommittedMonitor({db,now,onFailure})`，比较新增记录、补充和新记录的自有 templateId，以确定性 id create-once 写入事件。客户端函数耗时通过 wx-transport 的可选 `onRequestFinished` 回调报告，monitorApi 自身不经此 transport。
 
@@ -1335,3 +1362,65 @@ remove(accountKey, data, photoId) → Promise<Result>
 ### 30.3 文件输出
 
 详情与两种成稿保留复制；单条成稿的文字留档由明确点击生成会话内 TXT 临时文件并按会话清理。删除“发送 TXT 文件”按钮及 `wx.shareFileMessage`，不自动发送或发布内容。普通欢迎页转发与这些文件操作独立。
+
+## 31. 移除旧想法回顾（2026-10-16）
+
+对应 `remove-idea-review`。列表删除「回看一个想法」、推荐摘录、「本次先不看」及推荐区块中的「继续补充」。列表数据不再包含 `reviewItem/reviewExpanded/reviewError`，不再调用推荐选择或跳过操作；普通列表记录继续按搜索筛选结果和更新时间排序，点击仅携带记录 ID 打开详情。
+
+`services/discovery.js` 保留 §15.2 的搜索导出，删除 `createReviewService`。应用不再初始化或清空 `globalData.review`；自愿统计白名单移除 `review_opened`，其他统计和账户守卫保持原有约束。不增加替代推荐、订阅消息、数据库字段或云端操作。
+
+正文与补充修改记录继续使用 `pages/history` 及既有保存协议；历史留档、详情内「继续补充」、普通记录导航、选材、搜索筛选和账户变化清空逻辑保持可用。删除推荐入口不删除任何灵感、补充、照片或历史版本。回退范围为本次本地客户端与文档差异，不需要数据恢复。
+
+## 32. 灵感归档（add-inspiration-archive）
+
+archivedAt 缺失或 null 表示未归档，安全非负整数表示归档。markArchived(item,{now}) 保留所有内容及 updatedAt，已归档返回原对象；unarchive(item) 仅置 null。已合并来源先恢复独立。
+
+snapshot.push 的有效记录在客户端和服务端均按「省略 archivedAt 继承 existing，否则 null」构造；发送、成功落内存、丢回执回读比较一致，旧缺失与 null 语义相同。归档或恢复时其余字段须完整相同；已归档内容不可编辑、不能改写归档时间，返回 INSPIRATION_ARCHIVED；非法时间、归档与合并叠加或新建即归档返回 INVALID_PAYLOAD。先确认版本和代际，再应用冻结规则，不重放冲突旧内容。photo.delete 在登记新任务前阻挡归档，既有任务仍可收敛，整条删除保留原安全协议。
+
+store.listInspirations() 排除归档，readSnapshot/getInspiration 保留所有记录；searchInspirations(items,{archived:true}) 只搜索归档并按 archivedAt 倒序，默认及 merged 范围排除归档。归档不新增服务端 action、集合或索引，不改变新增记录与成稿统计。
+
+详情保存归档目标对象供未知结果重试；pending、photoBusy、输入草稿与未知保存阻止新归档。确认成功后页面显示归档状态，恢复不修改原内容时间。output 按当前归档状态强制 exportOnly，只读模式不读写删除普通 output 会话草稿；普通成稿和选材来源失效保留稿件供复制，禁止继续生成/另存。归档页沿用页面版本、账户 epoch/store 守卫与失败重试，不持久化搜索或数据。
+
+pendingArchive 同时保存首次 baseVersion/generation；同代际已达到目标状态时只读取当前记录，不再发送旧对象。目标未达成且版本或代际变化时停止重放并提示冲突。取消归档保留会话中已有的补充输入，允许先恢复再保存。
+
+output.readAccount(refresh=false,replaceDraft=false) 先确定当前记录及 exportOnly，再决定是否接续或替换普通成稿草稿；只读导出不触碰 output:<id>。onReady 重设动态页面标题，避免首次导航默认标题覆盖。未知另存的 confirmPendingSave() 先在完整快照核对整个目标记录；来源失效后的 recheckPendingSave() 仅回读，不发送新写入，迟到回读仍核对页面、账户与代际。选材页恢复现稿时，即使有效素材总数为零，也保留全文、复制与未知保存核对入口。
+
+## 33. 公开介绍与搜索承接（optimize-search-discovery）
+
+欢迎页 pages/welcome/index 只显示固定原生内容：品牌、灵感记录与手动整理用途、三步说明、常见问题、开始记录及普通转发。不依赖 query、全局账户、个人记录或云连接。标题为「灵感拾光簿｜灵感记录与整理」。sitemap 保留该页 allow 和默认 disallow，其他已注册与未知页面拒绝索引；索引配置不替代业务鉴权。
+
+`services/product-presentation.js` 导出 `createAppShare()` 与 `createTimelineShare()`，无输入、无副作用，每次返回新对象。两者固定 title 为「灵感拾光簿｜随手记录灵感，手动整理成稿」、imageUrl 为 `/assets/product-share.png`；聊天 path 为 `/pages/welcome/index`，朋友圈 query 为空。产品封面只包含固定品牌和用途，不包含账户数据。开始记录继续调用 startCapture()，不绕过既有输入保护。
+
+记录页 onShow() 在 ensureReady() 前核对入口意图所属 sessionEpoch，调用 ensureReady() 后记录实际读取 epoch，异步返回须同时满足页面版本和实际读取 epoch 仍有效。账户按需准备引起的本次 epoch 增加不会使已核对的开始记录意图失效；明确入口只清已确认成功卡，不清未提交文字或未知保存对象，后台前的过期意图与迟到读取不能清当前输入。
+
+App.onLaunch()/onShow() 不主动调用 refreshAccount()。globalData.accountRequested 为当前会话内布尔值，初值 false；ensureReady()/refreshAccount() 置 true 后才按原共享初始化、snapshot.pull、epoch/store 与 generation 守卫准备可信账户。同一 readyPromise 合并并发请求；失败后仍可重试。onHide() 将 accountRequested 重置 false、增加 sessionEpoch 并清可见账户数据，原请求迟到不能绑定账户。
+
+网络恢复监听仅在前台且 accountRequested 为 true 时刷新现有 store 或重试账户读取。仅阅读欢迎页或我的固定说明不会触发账户预取；业务页继续显式调用 ensureReady()/readPageAccount()。运营会话沿用既有 start/end 和可信 bindAccount 门槛，不为公开访问新增匿名上报；已开始的业务会话结束仍按原协议处理。
+
+不新增数据库字段、云协议、持久缓存、搜索查询采集或云资源；平台名称、简介、搜索配置及收录效果另验。代码回退范围限本次 App、公开页、分享模块与固定资源。
+
+## 34. 灵感待办与看板（add-inspiration-todos）
+
+core/todo.js 提供 makeTodo(now,dueDate=null)、updateTodo(item,{supplementId,action,dueDate,now,todo})、todoCounts(item)、collectTodos(inspirations)、boardView(inspirations,{scope,query,today})、localDate(timestamp)、dateAfter(days,timestamp)、formatTodoDate(dueDate,today=localDate())、isValidDate(value)、isValidTodo(value)、normalizeTodo(value,existing)。action 使用 add/complete/reopen/date/remove/replace，updateTodo 不修改文字更新时间或历史，归档与已合并灵感先恢复。
+
+collectTodos 汇总所有未删除来源及全部补充，包括归档、收起、旧合并来源，key 为来源ID组合；每项含 inspirationId、supplementId、text、parentText、todo、archived、merged、archivedAt、hidden。boardView 返回 counts:{all,pending,done}、groups:[{id,label,items}]、matchCount；scope=all/pending/done。未完成事项依次按 overdue（已逾期）、today（今天）、tomorrow（明天）、date:YYYY-MM-DD（后天及之后逐日）、undated（未安排）、archived（已归档的待办）分组，只返回非空组。动态日期组按日期升序，同日按待办 createdAt、key 稳定排序；逾期仍按计划日期升序。已完成事项优先进入 done（已办），按 completedAt 倒序；归档未办独立只读，不进入逾期组。搜索仅筛当前清单不改变总数。所有阈值及动态组标题使用传入 today 推导，不替换为实际设备日期。
+
+formatTodoDate 对空日期返回「未安排日期」，当天与次日分别返回「今天 · M月D日」「明天 · M月D日」，跨年次日保留年份如「明天 · 2027年1月1日」；其他同年日期返回「M月D日 周X」，不同年返回「YYYY年M月D日 周X」。日期只用于展示，保存与编辑仍使用 YYYY-MM-DD；日历运算不按经过24小时分桶。看板每次 load() 固定一个 today，同时传给 boardView 与 decorate(row,expanded,today)。详情 todoView(todo,today) 和 decorateSupplement(supplement,all,today) 复用格式函数，保留原始 todoDate 并增加 todoDateLabel。
+
+详情 scheduleTodoMidnight() 安排下一个本地午夜刷新，refreshTodoDateLabels() 只更新正文、可见/收起补充的派生标签及 todayDate/tomorrowDate，不调用 load、不读取云、不写入或替换输入与日期草稿。计时器绑定页面版本、账户 epoch/store 与当前来源；隐藏时清理。看板复用既有午夜 load，跨日保持筛选、数量及未知操作状态。
+
+services/todos.js 提供 prepareTodoOperation(store,{inspirationId,supplementId,action,dueDate,todo,now}) 和 runTodoOperation(operation)。操作固定 store、revision、target、beforeTodo、targetTodo、requestId，并支持 action=unarchive 仅恢复整条归档。saveInspiration(item,{expectedRevision,requestId}) 与 saveInspirations(items,options) 保持原单参数兼容，首次和重试都不得用更新版本重放旧整条记录；未知回执重试先完整回读，目标元信息已达到则确认，同代际版本未变才能重发；不同目标的版本变化返回冲突。页面按账户和页面代次丢弃迟到结果，未确认操作只放会话内存。新记录与新增补充也固定首次完整目标、版本及请求ID，跨设备已修改或删除的来源不被旧请求覆盖或复活。
+
+记录/补充构造时允许可选 todo；省略默认 null。保存构造的文字与待办一同提交。startCapture({todo:true}) 通过既有账户绑定短期 intent 传递模式；进入前无输入时立即预选，同账户既有草稿保留原设置并提示先处理输入，迟到账户读取不覆盖进入后修改。sourceVersion(value,{ignoreTodo=false}) 保持默认完整比较；单条成稿仅以 ignoreTodo=true 比较素材，待办变化不使文字稿件失效，未知保存仍用完整记录核对。
+
+详情路由支持 supplementId，完成渲染后展开收起区并定位高亮对应补充。归档包含待办时提示但可继续；看板只读归档项提供整条取消归档。完成撤销持续5秒，撤销也是需云确认的独立写入，失败不伪报恢复。默认启动页不变，不新增业务 action 或持久队列。
+
+记录页在消费有效入口意图时立即预选待办模式，账户准备期间的文字、模式及日期修改均推进同一表单修订号；迟到的账户读取不得重置新输入或日期。进入前已有输入或同账户旧草稿优先保留原模式，不能把进入后新输入误判为旧草稿。
+
+详情与看板的完成/恢复点击以当前渲染状态绑定操作语义，执行前逐字段核对最新 todo；不一致只刷新提示，不反转点击含义。行动面板固定打开时的选项与 todo，日期面板绑定原 todo；来源移除重建或状态日期变化后停止旧面板写入。取消归档确认绑定原 archivedAt，新的归档周期需重新确认。
+
+包含未办事项的归档确认绑定打开时的 store、账户 epoch、灵感 ID、原归档状态与完整版本；确认期间任一绑定变化即停止旧确认并提示核对，不重新推导或执行相反的归档动作。
+
+详情勾选以已渲染的事项状态确定完成或恢复意图，操作前须与当前来源待办匹配；日期面板绑定打开时的账户、来源及待办快照。事项被完成、移除重建或改日期后，旧勾选和旧面板确认均停止并提示核对，不反转动作或修改新事项。
+
+2026-10-24 已有内容加入待办：详情 `onTodoAdd(event)` 仅调用 `openTodoDate(id, action='date')` 的 add 模式打开配置，不发送写入。面板展示字段 `todoDateAction` 为 add/date，`todoDateSourceText` 为来源文字摘录；两者仅在页面内使用。`todoDateOrigin` 绑定原账户、代际、来源与待办状态，并固定 action；add 额外绑定来源完整版本，正文或补充变化、删除重建或出现新待办后停止旧确认。`onApplyTodoDate()` 按原 action 将选定日期随 add/date 一次提交。取消、隐藏与关闭后的迟到确认不写入；日期选择只修改面板草稿，未知保存继续固定既有操作目标及请求 ID。

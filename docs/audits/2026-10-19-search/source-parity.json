@@ -1,0 +1,80 @@
+{
+  "at": "2026-10-19T13:46:57.717Z",
+  "sourceRoot": "D:\\codex\\coding\\inspiration-miniprogram\\miniprogram",
+  "fixtureRoot": "D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\search-discovery-20261019\\project\\miniprogram",
+  "files": [
+    {
+      "file": "app.js",
+      "sourceSha256": "3770b91cf78ffa653fb8476f0fbfc3051454f76de7337f4cd9d19b4476fdd1af",
+      "fixtureSha256": "3770b91cf78ffa653fb8476f0fbfc3051454f76de7337f4cd9d19b4476fdd1af",
+      "equal": true
+    },
+    {
+      "file": "config/cloud.js",
+      "sourceSha256": "5b400afcc1f9ae1a463544ee49631a4ced93f80b9bbe034f2e457bf06390638b",
+      "fixtureSha256": "5b400afcc1f9ae1a463544ee49631a4ced93f80b9bbe034f2e457bf06390638b",
+      "equal": true
+    },
+    {
+      "file": "pages/capture/index.js",
+      "sourceSha256": "a9241e8666b6386761d38bfe1dfdbcd8851c1cc08a52e7340c8d76646d4fdc91",
+      "fixtureSha256": "a9241e8666b6386761d38bfe1dfdbcd8851c1cc08a52e7340c8d76646d4fdc91",
+      "equal": true
+    },
+    {
+      "file": "pages/capture/index.wxml",
+      "sourceSha256": "f0303a7f5068bfb07d0b7e0cb7edc1aea4ffaa42518f9d18bcf5a8c5a5258a52",
+      "fixtureSha256": "f0303a7f5068bfb07d0b7e0cb7edc1aea4ffaa42518f9d18bcf5a8c5a5258a52",
+      "equal": true
+    },
+    {
+      "file": "pages/capture/index.wxss",
+      "sourceSha256": "99434e157ea8f2132a2fd03072f1fb347e59838ad3b471e5c06c13f14881c5dc",
+      "fixtureSha256": "99434e157ea8f2132a2fd03072f1fb347e59838ad3b471e5c06c13f14881c5dc",
+      "equal": true
+    },
+    {
+      "file": "pages/capture/index.json",
+      "sourceSha256": "572d1a5d7e502ff69abdf94c25a5f8e1f3a489c2569c29963bec2b7f84518a06",
+      "fixtureSha256": "572d1a5d7e502ff69abdf94c25a5f8e1f3a489c2569c29963bec2b7f84518a06",
+      "equal": true
+    },
+    {
+      "file": "pages/welcome/index.js",
+      "sourceSha256": "b2910872606c1e3ff1acbf74257cc07ac76853d96a530153bcd057ff1ca64639",
+      "fixtureSha256": "b2910872606c1e3ff1acbf74257cc07ac76853d96a530153bcd057ff1ca64639",
+      "equal": true
+    },
+    {
+      "file": "pages/welcome/index.wxml",
+      "sourceSha256": "71189a252c966cb904b3b5cfda43d61e9dcdccc2d311c9d67f0a7bbfb92574b6",
+      "fixtureSha256": "71189a252c966cb904b3b5cfda43d61e9dcdccc2d311c9d67f0a7bbfb92574b6",
+      "equal": true
+    },
+    {
+      "file": "pages/welcome/index.wxss",
+      "sourceSha256": "513cb49e10af6fbdc5d2ae1e8a1349e427808c438113756dc43bd8cbcdf90bd7",
+      "fixtureSha256": "513cb49e10af6fbdc5d2ae1e8a1349e427808c438113756dc43bd8cbcdf90bd7",
+      "equal": true
+    },
+    {
+      "file": "pages/welcome/index.json",
+      "sourceSha256": "4f682699e959c4148d875860fd7496c275a592f9a9015350b9dd50fc31997093",
+      "fixtureSha256": "4f682699e959c4148d875860fd7496c275a592f9a9015350b9dd50fc31997093",
+      "equal": true
+    },
+    {
+      "file": "services/product-presentation.js",
+      "sourceSha256": "7dbbd06f89d2c5749b42b0437284c2384ccbfb306ff3eb424e40265ff72fdcd5",
+      "fixtureSha256": "7dbbd06f89d2c5749b42b0437284c2384ccbfb306ff3eb424e40265ff72fdcd5",
+      "equal": true
+    },
+    {
+      "file": "assets/product-share.png",
+      "sourceSha256": "71fe3fbf64ffe9792f6ebea32d17c548bc2f9469dc4be28049d781907fe23dd2",
+      "fixtureSha256": "71fe3fbf64ffe9792f6ebea32d17c548bc2f9469dc4be28049d781907fe23dd2",
+      "equal": true
+    }
+  ],
+  "allEqual": true
+}

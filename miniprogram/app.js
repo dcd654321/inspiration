@@ -3,7 +3,6 @@ const { createCloudOnlyStore } = require('./services/cloud-only-store');
 const { createCaptureDrafts } = require('./services/capture-drafts');
 const { createMemoryStorage } = require('./services/memory-storage');
 const { createWxTransport } = require('./services/wx-transport');
-const { createReviewService } = require('./services/discovery');
 const { createWxPhotos } = require('./services/wx-photo');
 const { createUsageMetrics } = require('./services/usage-metrics');
 const { getCloudClient } = require('./services/cloud-client');
@@ -17,7 +16,6 @@ App({
     // 全应用只持有当前会话的内存视图；持久记录以云端确认结果为准。
     // 草稿只在内存里，进程结束即消失——规范没有承诺它跨会话存在（detailed-design §7.6）。
     store: null,
-    review: null,
     photos: null,
     cacheScope: '',
     metrics: null,
@@ -25,6 +23,7 @@ App({
     sessionDrafts: createSessionDrafts(),
     readyPromise: null,
     accountError: '',
+    accountRequested: false,
     sessionEpoch: 0,
     foreground: false
   },
@@ -41,20 +40,18 @@ App({
     }
     if (typeof wx.onNetworkStatusChange === 'function') {
       wx.onNetworkStatusChange((status) => {
-        if (!status.isConnected || !this.globalData.foreground) return;
+        if (!status.isConnected || !this.globalData.foreground || !this.globalData.accountRequested) return;
         const store = this.globalData.store;
         if (store) store.refresh().catch(() => {});
         else this.refreshAccount().catch(() => {});
       });
     }
-    this.refreshAccount();
   },
 
   onShow() {
     this.globalData.foreground = true;
     this.setupOperationsMonitor();
     monitorSafely(this.operationsMonitor, 'start');
-    if (cloudConfig.enabled && wx.cloud) this.refreshAccount();
   },
 
   onHide() {
@@ -62,15 +59,16 @@ App({
     this.globalData.foreground = false;
     this.globalData.sessionEpoch += 1;
     this.globalData.store = null;
-    this.globalData.review = null;
     this.globalData.photos = null;
     this.globalData.cacheScope = '';
     this.globalData.metrics = null;
     this.globalData.drafts = createCaptureDrafts();
     this.globalData.readyPromise = null;
+    this.globalData.accountRequested = false;
   },
 
   ensureReady() {
+    this.globalData.accountRequested = true;
     if (this.globalData.readyPromise) return this.globalData.readyPromise;
     if (this.globalData.store) return Promise.resolve(this.globalData.store);
     if (!cloudConfig.enabled || !wx.cloud) return Promise.resolve(null);
@@ -94,11 +92,11 @@ App({
   },
 
   refreshAccount() {
+    this.globalData.accountRequested = true;
     if (this.globalData.readyPromise) return this.globalData.readyPromise;
     if (!cloudConfig.enabled || !wx.cloud) return Promise.resolve(null);
     // 身份尚未重新确认时绝不展示上一个账户的缓存。
     this.globalData.store = null;
-    this.globalData.review = null;
     this.globalData.photos = null;
     this.globalData.cacheScope = '';
     this.globalData.metrics = null;
@@ -133,7 +131,6 @@ App({
         this.globalData.drafts = this.accountDrafts;
         this.globalData.sessionDrafts.bind(context);
         this.globalData.metrics = createUsageMetrics({ storage, cacheScope: response.data.cacheScope });
-        this.globalData.review = createReviewService({ storage, cacheScope: response.data.cacheScope });
         try { this.globalData.photos = response.data.photosEnabled === true ? createWxPhotos({ cacheScope: response.data.cacheScope, store, storagePrefix: response.data.storagePrefix, isCurrent: () => epoch === this.globalData.sessionEpoch }) : null; }
         catch (err) { this.globalData.photos = null; /* 照片配置异常不阻断文字功能。 */ }
         this.globalData.accountError = '';

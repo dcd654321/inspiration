@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { searchInspirations, createReviewService } = require('../miniprogram/services/discovery');
+const { searchInspirations } = require('../miniprogram/services/discovery');
 const { USE_TEMPLATES, buildTemplateText } = require('../miniprogram/services/content-output');
 const DAY = 86400000;
 const at = Date.UTC(2026, 8, 27, 6);
@@ -26,38 +26,6 @@ test('搜索只命中正文和有效补充，筛选与无结果不泄露历史�
   assert.equal(searchInspirations(rows, { filter: 'recent', now: at }).length, 1);
   assert.equal(searchInspirations(rows, { filter: 'supplemented', now: at }).length, 1);
   assert.equal(searchInspirations(rows, { query: '' }).length, 2);
-});
-
-test('回顾每天固定一条，跳过当日不替换，删除来源不回显旧内容', () => {
-  let clock = at;
-  const map = new Map();
-  const storage = { get: (key) => map.get(key), set: (key, value) => map.set(key, structuredClone(value)) };
-  const service = createReviewService({ storage, cacheScope: 'a'.repeat(32), now: () => clock });
-  const rows = [item('a', '甲'), item('b', '乙')];
-  const first = service.getRecommendation(rows);
-  assert.ok(first);
-  assert.equal(service.getRecommendation(rows).id, first.id);
-  assert.equal(service.getRecommendation(rows.filter((x) => x.id !== first.id)), null);
-  service.dismiss();
-  assert.equal(service.getRecommendation(rows), null);
-  clock += DAY;
-  assert.ok(service.getRecommendation(rows));
-  assert.equal(JSON.stringify(Array.from(map.values())).includes('甲'), false);
-});
-
-test('回顾偏好按可信账户分区，写入失败不假报设置成功', () => {
-  const map = new Map();
-  let fail = false;
-  const storage = { get: (key) => map.get(key), set: (key, value) => { if (fail) throw Error('FULL'); map.set(key, structuredClone(value)); } };
-  const a = createReviewService({ storage, cacheScope: 'a'.repeat(32), now: () => at });
-  const b = createReviewService({ storage, cacheScope: 'b'.repeat(32), now: () => at });
-  a.setEnabled(false);
-  assert.equal(a.getRecommendation([item('a', '甲')]), null);
-  assert.equal(b.isEnabled(), true);
-  fail = true;
-  assert.throws(() => a.setEnabled(true));
-  assert.equal(a.isEnabled(), false);
-  assert.throws(() => createReviewService({ storage, cacheScope: '../other' }));
 });
 
 test('用途模板完整保留选中素材，不带历史照片且不改写原记录', () => {

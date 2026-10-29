@@ -63,6 +63,8 @@
 | `summarySources` | string[] | 是 | 最多 20 个来源 id | 汇总追溯，不复制正文；来源删除后显示已删除 |
 | `templateId` | string | 否 | `free` / `social` / `video` / `work` / `action` | 另存成稿时保留用户实际选择的用途；基础 `createInspiration` 不写入，旧记录缺省无用途；服务端拒绝其他值 |
 | `mergedInto` | string \| null | 是 | 灵感的 `id`，不得指向自身 | 历史合并目标，保留读取与恢复兼容 |
+| `archivedAt` | number \| null | 是 | null 或安全非负整数 | 归档时间；旧缺失按 null，归档与恢复不改 updatedAt；与 mergedInto 互斥 |
+| `todo` | object \| null | 是 | 见 §19 | 正文自己的待办；旧缺失按未设置，完成不级联补充 |
 | `deletedAt` | number \| null | 是 | | 软删标记，云端确认后才物理移除 |
 | `heat` | object | 否 | **本变更不写入** | 热度已暂缓，字段名保留以避免后续迁移 |
 
@@ -88,6 +90,7 @@
 | `sourceIds` | string[] | 汇总来源补充 id，普通补充为空；旧记录缺省为空 |
 | `mergedInto` | string \| null | 被 AI 汇总时指向汇总结果的 `id` |
 | `foldedAt` | number \| null | 被**并入正文**的时刻（界面动作名「并入正文」，收起行显示「已并入灵感」） |
+| `todo` | object \| null | 本条补充自己的待办，结构见 §19，和正文独立 |
 
 `mergedInto` 与 `foldedAt` 是两种不同的「收起」：前者并进汇总结果，后者并进原文。**两者可以同时为 null，但不应同时非 null。**
 
@@ -285,9 +288,11 @@
 
 清理索引：`linggan_shares.(payloadPurgedAt,expiresAt,_id)`、`(payloadPurgedAt,revokedAt,_id)`；`linggan_feedback.(status,closedAt,_id)`、`(status,createdAt,_id)`。清理候选分过期/撤销/关闭/未关闭扫描，最多每类 100 条，避免全表读取。提交清理时再按 `_id` 和期限/状态匹配；分享只置空 `snapshot/tokenCiphertext` 并写 `payloadPurgedAt`，反馈条件删除。失败记录保留下轮重试。
 
-## 12. 本机回顾偏好
+## 12. 本机回顾偏好（历史，2026-10-16 撤下）
 
-键 `linggan:v2:<cacheScope>:review`，只有取得可信快照后才创建服务。字段 `enabled:boolean`（默认 true）、`dayKey:string`（UTC+8 日期）、`selectedId:string|null`、`dismissed:boolean`。不含正文、照片、搜索词或账户原始标识；不进入云端灵感快照。损坏时仅重置偏好，不改用户记录。设置写入失败向页面返回异常，不把失败写入算作关闭成功。
+`remove-idea-review` 移除回顾服务与应用接线。当前入口不创建、读取、回放或迁移该偏好，不清理旧设备存储；不增删云端字段、集合、索引或记录。正文与补充历史仍按 §3 的记录结构保存与读取。
+
+历史键为 `linggan:v2:<cacheScope>:review`，字段 `enabled:boolean`（默认 true）、`dayKey:string`（UTC+8 日期）、`selectedId:string|null`、`dismissed:boolean`，不含正文、照片、搜索词或账户原始标识，不进入云端灵感快照。`cloud-confirmed-saves` 已先将运行入口的偏好改为会话内存；此处仅保留旧结构说明。
 
 ## 13. AI 配额与请求凭证
 
@@ -311,7 +316,7 @@ Store 队列新增 `kind:'batch'`、`inspirations:Inspiration[]`；快照和整�
 
 跨灵感手动选材（`add-material-output`）不新增集合、持久字段或本机键。素材选择和未保存稿件仅在页面内存；另存生成标准 user 来源记录，`summarySources` 保持空数组，不将手动组合冒充 AI 汇总。复制不会写入数据库。
 
-键 `linggan:v2:<scope>:usage`，字段 `enabled:boolean` 默认 false、`days:Record<YYYY-MM-DD,Record<event,count>>`；仅当前设备近三十个 UTC+8 自然日。事件白名单 `record_saved/supplement_saved/output_copied/output_saved/search_opened/review_opened/save_failed/backup_pending`。事件无附带属性，不存内容/id/时间点/搜索词/标签名/模型结果，不自动上传、不跨设备合计。每计数上限 100000；关闭以一次写入清空。导出只含日期和聚合计数，不含存储键/账户哈希。此数据不等于真实发表、全量留存率或全账户统计。
+键 `linggan:v2:<scope>:usage`，字段 `enabled:boolean` 默认 false、`days:Record<YYYY-MM-DD,Record<event,count>>`；运行入口仅在会话内存中保留近三十个 UTC+8 自然日。当前事件白名单 `record_saved/supplement_saved/output_copied/output_saved/search_opened/save_failed/backup_pending`。`review_opened` 已由 `remove-idea-review` 撤下，当前不记录或读取该旧事件，不迁移或清理旧设备统计。事件无附带属性，不存内容/id/时间点/搜索词/标签名/模型结果，不自动上传、不跨设备合计。每计数上限 100000；关闭以一次写入清空。导出只含日期和聚合计数，不含存储键/账户哈希。此数据不等于真实发表、全量留存率或全账户统计。
 
 ## 16. 共享运营事件
 
@@ -336,3 +341,17 @@ Store 队列新增 `kind:'batch'`、`inspirations:Inspiration[]`；快照和整�
 ### 17.3 当前资源输入
 
 当前新建资源不含 `linggan_shares` 与分享专用索引；反馈、账户、反馈配额和限流保留。准确集合与索引清单以 `deployment/product/manifest.json` 为准。保留维护对历史分享集合的清理兼容，不代表该集合或旧数据已在远端删除。已部署旧代码仍可能提供内容接口，停止旧内容读取须配套部署后另行核验。
+
+## 18. 灵感归档字段与兼容（2026-10-16）
+
+archivedAt 为 null 或安全非负整数，旧缺失按 null；0 同样表示归档。归档与取消归档只改变该字段，正文、补充、照片、历史、标签、阶段、来源及 updatedAt 均保留；已归档与 mergedInto 不同时存在。归档记录不从账户快照移除，归档页在会话内筛选排序，不新增集合、索引、清理期限或持久缓存。
+
+snapshot.push 在客户端与服务端均把省略 archivedAt 解释为继承已有值；新记录缺省 null。明确 null 才取消归档；新建即归档、非法时间与归档合并叠加拒绝。归档/恢复不能夹带其他字段修改，非空时间不得被另一个非空值替换；当前版本空操作幂等。服务端冻结并保留既有历史、照片路径和安全删除检查。整条删除按既有照片清理协议执行，单张删除归档照片不登记新任务，既有任务仍可收敛。
+
+归档不影响已保存内容的存量统计；归档/恢复没有新灵感或补充 ID，因此不产生新增记录、补充或成稿事件。上线先部署兼容服务端，再发布客户端；旧版列表可能显示归档记录，正式数据不能因省略字段而取消归档。回滚客户端保留 archivedAt，不迁移或清理已有账户数据。
+
+## 19. 灵感待办字段（2026-10-21）
+
+正文和 supplements[] 各有独立 todo 字段，默认 null，旧缺失表示普通记录。非空对象只含 createdAt（安全非负毫秒整数）、completedAt（null 或安全非负毫秒整数）和 dueDate（null 或 YYYY-MM-DD 真实公历日期）。createdAt 为加入待办时间；completedAt=null 为待办，否则为已办；不级联父子，不更改内容 updatedAt 或文字历史。
+
+客户端和服务端保存按灵感ID及补充ID继承省略的 todo；todo 对象省略 dueDate 时继承原日期，显式 null 才清除。读取展示可使用默认空值，不能因此把省略误写成清除。归档和恢复仍只改变 archivedAt；归档后的 todo 全部冻结。新记录与新补充可原子携带 todo；复制与另存不继承。删除来源移除内嵌待办，移除待办保留来源。无新增集合、索引或迁移。

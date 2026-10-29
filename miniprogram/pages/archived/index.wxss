@@ -1,0 +1,9 @@
+@import "../list/index.wxss";
+
+.archive-page .page-sub { margin-top: 16rpx; font-size: max(26rpx, 13px); }
+.archive-page .search-box { margin-top: 28rpx; }
+.archive-page .list-head { margin-top: 34rpx; }
+.archive-page .row { border-bottom: 1px solid var(--line); }
+.archive-page .meta { flex-wrap: wrap; row-gap: 8rpx; }
+.archive-page .meta text { white-space: nowrap; }
+.archive-page .refresh-status { padding: 12rpx 0; }

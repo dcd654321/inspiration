@@ -1,0 +1,11 @@
+'use strict';
+const fs = require('node:fs'), path = require('node:path');
+const root = path.resolve(__dirname, '..'), target = path.join(root, 'qa/local/todos-20261021');
+fs.mkdirSync(target, { recursive: true });
+fs.cpSync(path.join(root, 'miniprogram'), path.join(target, 'miniprogram'), { recursive: true });
+fs.copyFileSync(path.join(root, 'tests/fixtures/todo-devtools-app.js'), path.join(target, 'miniprogram/app.js'));
+fs.writeFileSync(path.join(target, 'miniprogram/config/cloud.js'), "module.exports = { enabled: false, envId: '', apiFunction: 'DISABLED_QA' };\n");
+const project = JSON.parse(fs.readFileSync(path.join(root, 'project.config.json'), 'utf8'));
+project.projectname = '灵感拾光簿-待办合成验证-20261021'; project.libVersion = '3.16.3'; delete project.cloudfunctionRoot;
+fs.writeFileSync(path.join(target, 'project.config.json'), JSON.stringify(project, null, 2) + '\n');
+console.log(target);

@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-24T02:55:15.020Z",
+  "expectedWidth": 390,
+  "synthetic": true,
+  "cloudEnabled": false,
+  "productionWrite": false,
+  "deviceAcceptance": false,
+  "navigationMethod": "先 automator 原生 reLaunch，再核验合成 App 标记；系统信息不做 mock",
+  "steps": [],
+  "assertions": [],
+  "exceptions": [],
+  "stage": "checking-fixture-and-viewport",
+  "ok": false,
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'todo-options-20261024'\n- 'todo-dates-20261024'\n        ^\n\n    at D:\\codex\\coding\\inspiration-miniprogram\\qa\\local\\todo-dates-20261024\\verify.cjs:20:12\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+}

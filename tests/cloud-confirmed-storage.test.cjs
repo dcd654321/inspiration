@@ -192,6 +192,7 @@ test('照片直接用临时路径上传，关联失败后清理已确认未关�
   const result = await photos.add('ins_1', 'album');
   assert.equal(result.ok, false);
   assert.deepEqual(removed, ['cloud://x/photo']);
+  assert.equal(result.code, 'PHOTO_ASSOCIATION_FAILED');
   assert.match(result.message, /重新选择未添加/);
   assert.deepEqual(Object.keys(photos), ['add']);
 });

@@ -41,7 +41,7 @@ test('界面整改：记录页只允许有实际内容时保存', () => {
   const page = read('miniprogram/pages/capture/index.wxml');
   // 空白与超限都不能提交；输入框放开长度限制、保留粘贴全文，超限在提交层拦住
   assert.match(logic, /canEdit = value\.trim\(\)\.length > 0 && overBy === 0/);
-  assert.match(page, /disabled="\{\{!canSave \|\| saving\}\}"/);
+  assert.match(page, /disabled="\{\{!canSave \|\| saving \|\| photoBusy\}\}"/);
   assert.match(page, /maxlength="-1"/);
   assert.match(page, /超出\{\{overBy\}\}字符，请缩短后保存。/);
 });
@@ -63,9 +63,9 @@ test('界面整改：品牌图已进入小程序包', () => {
   assert.ok(fs.statSync(asset).size > 0, '品牌图为空文件');
 });
 
-test('公众首用：三个 Tab 均配置轻量的普通态和选中态图标', () => {
+test('公众首用：四个 Tab 均配置轻量的普通态和选中态图标', () => {
   const app = JSON.parse(read('miniprogram/app.json'));
-  assert.strictEqual(app.tabBar.list.length, 3);
+  assert.strictEqual(app.tabBar.list.length, 4);
   for (const tab of app.tabBar.list) {
     for (const key of ['iconPath', 'selectedIconPath']) {
       assert.ok(tab[key], `${tab.text} 缺少 ${key}`);

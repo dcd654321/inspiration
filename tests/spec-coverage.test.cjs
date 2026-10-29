@@ -36,7 +36,12 @@ const IN_SCOPE = [
   ['repair-capture-continuity', 'capture-continuity'],
   ['repair-detail-photo-tags', 'detail-photo-tags'],
   ['repair-change-history', 'change-history'],
-  ['add-operations-monitor', 'operations-monitor']
+  ['add-operations-monitor', 'operations-monitor'],
+  ['remove-idea-review', 'find-and-use'],
+  ['add-inspiration-archive', 'inspiration-archive'],
+  ['optimize-search-discovery', 'search-discovery'],
+  ['add-inspiration-todos', 'inspiration-todos'],
+  ['apply-clear-page-ui', 'clear-page-ui']
 ];
 
 /** 只有这两种状态需要指向真实测试。 */

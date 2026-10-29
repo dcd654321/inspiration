@@ -1,8 +1,9 @@
 const { formatAbsolute, summarize, countLabel } = require('../../core/format');
-const { activeSupplements, isDeleted, isMerged } = require('../../core/inspiration');
+const { activeSupplements, isDeleted, isMerged, isArchived } = require('../../core/inspiration');
 const { searchInspirations } = require('../../services/discovery');
 const { STAGES } = require('../../services/organization');
 const { startCapture } = require('../../services/capture-entry');
+const { todoCounts } = require('../../core/todo');
 
 /** 把一条灵感转成列表项要显示的样子。转换集中在这里，WXML 里就只做渲染。 */
 function decorate(inspiration) {
@@ -10,12 +11,14 @@ function decorate(inspiration) {
   const merged = Boolean(inspiration.mergedInto);
   const stage = STAGES.find((x) => x.id === inspiration.stage) || STAGES[0];
   const tags = inspiration.tags || [];
+  const todos = todoCounts(inspiration);
   return {
     id: inspiration.id,
     excerpt: summarize(inspiration.text, 60),
     time: formatAbsolute(inspiration.updatedAt),
     supplements: countLabel(activeCount, '条补充'),
     photos: (inspiration.photos || []).length,
+    todoSummary: todos.total ? '待办 ' + todos.pending + ' · 已办 ' + todos.done : '',
     // 默认阶段「想法」不单独占行——它没有区分度，占一行只是噪音
     stageLabel: merged ? '已合并' : (stage.id === STAGES[0].id ? '' : stage.label),
     tags: tags.slice(0, 2),
@@ -31,8 +34,8 @@ function syncAccount(page, app) {
   if (changed || !store) {
     page.savedScrollTop = 0;
     page.anchorId = '';
-    page.setData({ items: [], activeCount: 0, mergedCount: 0, reviewItem: null, reviewExpanded: false,
-      reviewError: '', error: '', query: '', filter: 'all', recentOn: false, mergedOn: false,
+    page.setData({ items: [], activeCount: 0, mergedCount: 0, archivedCount: 0,
+      error: '', query: '', filter: 'all', recentOn: false, mergedOn: false,
       stage: '', stageIndex: 0 });
   }
   page.listStore = store;
@@ -55,9 +58,7 @@ Page({
     stageIndex: 0,
     activeCount: 0,
     mergedCount: 0,
-    reviewItem: null,
-    reviewExpanded: false,
-    reviewError: ''
+    archivedCount: 0
   },
 
   // 用 onShow 而不是 onLoad：从详情页返回时列表要跟着更新（改了原文、加了补充）
@@ -103,30 +104,19 @@ Page({
 
     const store = app.globalData.store;
     if (!store) {
-      this.setData({ loading: false, error: app.globalData.accountError || '请稍后重试。', items: [], activeCount: 0, mergedCount: 0 });
+      this.setData({ loading: false, error: app.globalData.accountError || '请稍后重试。', items: [], activeCount: 0, mergedCount: 0, archivedCount: 0 });
       return;
     }
 
     try {
       const now = Date.now();
       const snapshot = store.readSnapshot();
-      const active = store.listInspirations();
+      const active = store.listInspirations().filter((item) => !isArchived(item));
       // 真空态只在「有效记录与已合并记录都为 0、且读取成功」时成立；
       // 有条目但都被合并时，筛选入口必须保留
-      const mergedCount = snapshot.inspirations.filter((item) => !isDeleted(item) && isMerged(item)).length;
+      const mergedCount = snapshot.inspirations.filter((item) => !isDeleted(item) && isMerged(item) && !isArchived(item)).length;
+      const archivedCount = snapshot.inspirations.filter((item) => !isDeleted(item) && !isMerged(item) && isArchived(item)).length;
       const source = this.data.mergedOn ? snapshot.inspirations : active;
-      const plainView = !this.data.query && !this.data.recentOn && !this.data.stage && !this.data.mergedOn && this.data.filter === 'all';
-      let reviewItem = null;
-      let reviewError = '';
-      try {
-        const review = app.globalData.review;
-        // 回顾行串在第一条记录之后；列表不足两条时不占位，不留空容器
-        if (review && plainView && active.length >= 2) {
-          const item = review.getRecommendation(active);
-          reviewItem = item ? decorate(item) : null;
-        }
-      } catch (err) { reviewError = '回顾设置暂时无法保存，请稍后重试。'; }
-
       this.setData({
         items: searchInspirations(source, {
           query: this.data.query,
@@ -137,7 +127,7 @@ Page({
         }).map((result) => Object.assign(decorate(result.item), { matchText: result.matchText, matchSource: result.matchSource })),
         activeCount: active.length,
         mergedCount,
-        reviewItem, reviewError,
+        archivedCount,
         loading: false,
         error: ''
       }, () => { if (opts.restoreScroll) this.restoreScroll(); });
@@ -206,11 +196,7 @@ Page({
   },
   onShowMerged() { this.setData({ mergedOn: true, filter: 'all' }); this.load(); },
 
-  onToggleReview() { this.setData({ reviewExpanded: !this.data.reviewExpanded }); },
-  onDismissReview() {
-    try { getApp().globalData.review.dismiss(); this.setData({ reviewItem: null, reviewExpanded: false, reviewError: '' }); }
-    catch (err) { this.setData({ reviewError: '暂时无法跳过，请稍后重试。' }); }
-  },
+  onShowArchived() { wx.navigateTo({ url: '/pages/archived/index' }); },
 
   onMaterialOutput() { wx.navigateTo({ url: '/pages/material-output/index' }); },
 
@@ -219,8 +205,6 @@ Page({
     this.anchorId = id;
     const metrics = getApp().globalData.metrics;
     if (metrics && this.data.query) metrics.track('search_opened');
-    if (metrics && event.currentTarget.dataset.review) metrics.track('review_opened');
-    wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(id) +
-      (event.currentTarget.dataset.review ? '&focus=supplement' : '') });
+    wx.navigateTo({ url: '/pages/detail/index?id=' + encodeURIComponent(id) });
   }
 });

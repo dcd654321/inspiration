@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-24T02:12:11.001Z",
+  "synthetic": true,
+  "cloudEnabled": false,
+  "productionWrite": false,
+  "deviceAcceptance": false,
+  "customDateMethod": "向真实 picker 组件派发 change 事件；未操作平台日期滚轮",
+  "steps": [],
+  "assertions": [],
+  "exceptions": [],
+  "stage": "checking-fixture",
+  "ok": false,
+  "error": "Error: timeout waiting for automator response\n    at Connection.onMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\miniprogram-automator\\out\\Connection.js:1:985)\n    at Transport.emit (node:events:514:28)\n    at WebSocket.<anonymous> (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\miniprogram-automator\\out\\Transport.js:1:220)\n    at WebSocket.onMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\event-target.js:120:16)\n    at WebSocket.emit (node:events:514:28)\n    at Receiver.receiverOnMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\websocket.js:807:20)\n    at Receiver.emit (node:events:514:28)\n    at Receiver.dataMessage (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\receiver.js:448:14)\n    at Receiver.getData (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\receiver.js:377:17)\n    at Receiver.startLoop (D:\\codex\\tmp\\jiancheng-design-audit-runtime\\node_modules\\ws\\lib\\receiver.js:158:22)"
+}

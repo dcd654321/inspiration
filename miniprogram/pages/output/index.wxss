@@ -1,131 +1,38 @@
-/* 整理成稿：进入即有可编辑稿件，工具行与结果区都保持安静 */
-
-.output-summary {
-  margin-top: 14rpx;
-  font-size: 27rpx;
-  font-size: max(27rpx, 14px);
-  color: var(--ink-2);
-  line-height: 1.65;
-}
-
-.output-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8rpx;
-  margin: 20rpx 0 4rpx;
-}
-
-.output-tools .btn-link {
-  width: auto;
-  margin: 0;
-  padding: 0 14rpx;
-  display: inline-flex;
-  align-items: center;
-}
-
-.selection-note {
-  margin-top: 10rpx;
-  font-size: 25rpx;
-  font-size: max(25rpx, 13px);
-  line-height: 1.65;
-  color: var(--ink-3);
-}
-
-.main-action { margin-top: 28rpx; }
-.secondary-action { margin-top: 16rpx; }
-
-.draft-editor {
-  width: 100%;
-  height: 560rpx;
-  height: max(560rpx, 280px);
-  margin-top: 12rpx;
-  padding: 30rpx;
-  box-sizing: border-box;
-  background: var(--surface);
-  border: 2rpx solid var(--field-line);
-  border-radius: 18rpx;
-  color: var(--ink);
-  font-size: 29rpx;
-  font-size: max(30rpx, 16px);
-  font-weight: 400;
-  line-height: 1.75;
-}
-.draft-label { margin-top: 20rpx; }
-.draft-editor.draft-pending { height: 208px; }
-.draft-count { margin-top: 10rpx; color: var(--ink-3); font-size: max(24rpx, 13px); text-align: right; }
+/* 编辑、工具与保存动作按任务顺序排列，不另包一层卡片。 */
+.output-summary { margin-top: 9px; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.8; }
+.output-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 13px 0 2px; border-bottom: 1px solid var(--line); }
+.output-tools .btn-link { display: inline-flex; align-items: center; width: auto; margin: 0; padding: 0 3px; font-size: max(28rpx, 14px); }
+.output-tools .btn-link:last-child { margin-left: auto; }
+.selection-note { margin-top: 8px; color: var(--ink-2); font-size: max(24rpx, 12px); line-height: 1.8; }
+.draft-label { margin-top: 21px; color: var(--ink); font-size: max(26rpx, 13px); font-weight: 500; }
+.draft-editor { display: block; width: 100%; height: 560rpx; height: max(560rpx, 280px); box-sizing: border-box; margin-top: 9px; padding: 13px 14px; background: var(--surface); border: 1px solid var(--field-line); border-radius: 8px; color: var(--ink); font-size: max(34rpx, 17px); font-weight: 400; line-height: 1.9; }
+.draft-editor.draft-pending { height: 208px; background: var(--brand-soft); }
+.draft-count { margin-top: 8px; color: var(--ink-2); font-size: max(24rpx, 12px); line-height: 1.8; text-align: right; }
 .count-over { color: var(--danger); }
-.saved-link { margin-top: 16rpx; }
-.saved-link .btn-link { width: auto; margin: 0; }
-
-/* 面板里的说明与滚动区 */
-.sheet-hint {
-  padding: 20rpx 40rpx 0;
-  font-size: 25rpx;
-  font-size: max(25rpx, 13px);
-  line-height: 1.65;
-  color: var(--ink-3);
-}
-
-.sheet-scroll {
-  max-height: 56vh;
-  flex: 0 1 auto;
-  min-height: 0;
-  margin-top: 16rpx;
-}
-
-/* 内容选择项：与补充操作面板同一样式，左侧多一个勾选框 */
-.sheet .option-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 20rpx;
-}
-
-.option-check {
-  flex: 0 0 34rpx;
-  height: 34rpx;
-  margin-top: 6rpx;
-  border: 1px solid var(--field-line);
-  border-radius: 8rpx;
-  color: #fff;
-  font-size: 26rpx;
-  line-height: 34rpx;
-  text-align: center;
-}
-
+.main-action { margin-top: 22px; }
+.secondary-action { margin-top: 10px; }
+.saved-link { margin-top: 10px; }
+.saved-link .btn-link { width: auto; margin: 0; padding-left: 0; }
+.sheet-hint { padding: 12px 22px 0; color: var(--ink-2); font-size: max(26rpx, 13px); line-height: 1.8; }
+.sheet-scroll { max-height: 56vh; flex: 0 1 auto; min-height: 0; margin-top: 10px; }
+.sheet .option-item { display: flex; align-items: flex-start; gap: 12px; padding: 15px 22px 16px; }
+.option-check { flex: 0 0 22px; width: 22px; height: 22px; box-sizing: border-box; margin-top: 4px; border: 1px solid var(--field-line); border-radius: 5px; color: #ffffff; font-size: 14px; line-height: 20px; text-align: center; }
 .option-checked { background: var(--brand); border-color: var(--brand); }
-
-.option-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 29rpx;
-  font-size: max(30rpx, 16px);
-  font-weight: 400;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-/* 格式选择 */
-.format-options { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 24rpx 40rpx 0; }
-.format-options .template-option { width: auto; flex: 0 0 auto; margin: 0; padding: 0 22rpx; min-height: max(88rpx, 44px); line-height: max(88rpx, 44px); font-size: max(28rpx, 14px); background: var(--surface); color: var(--ink-2); border: 1rpx solid var(--line); border-radius: 18rpx; }
+.option-text { flex: 1; min-width: 0; color: var(--ink); font-size: max(32rpx, 16px); font-weight: 400; line-height: 1.8; white-space: pre-wrap; word-break: break-all; }
+.format-options { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 22px 0; }
+.format-options .template-option { flex: 0 0 auto; width: auto; min-height: 44px; margin: 0; padding: 10px 13px; border: 1px solid var(--line-strong); border-radius: 7px; color: var(--ink-2); background: var(--surface); font-size: max(28rpx, 14px); line-height: 1.6; }
 .template-option::after { border: 0; }
-.format-options .template-selected { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
-
-/* 留档 */
-.archive-preview {
-  padding: 30rpx;
-  background: var(--surface);
-  border: 2rpx solid var(--line);
-  border-radius: 18rpx;
-  color: var(--ink-2);
-  font-size: 25rpx;
-  font-size: max(30rpx, 16px);
-  line-height: 1.7;
-  white-space: pre-wrap;
-  word-break: break-all;
+.format-options .template-selected { color: var(--brand); background: var(--brand-soft); border-color: var(--brand); }
+.archive-preview { padding: 12px 0 18px; color: var(--ink); font-size: max(32rpx, 16px); line-height: 1.9; white-space: pre-wrap; word-break: break-all; }
+.sheet-scroll .archive-preview { padding-right: 22px; padding-left: 22px; }
+.archive-acts { padding: 0 22px; border-top: 1px solid var(--line); }
+.archive-acts .btn-block { margin-top: 10px; }
+.archive-acts .main-action { margin-top: 15px; }
+.export-scroll { height: 42vh; min-height: 200px; margin-top: 21px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.export-preview { min-height: 100%; box-sizing: border-box; }
+@media (max-width: 350px) {
+  .draft-editor { font-size: 16px; padding: 12px; }
+  .sheet-hint, .format-options, .archive-acts { padding-right: 17px; padding-left: 17px; }
+  .sheet-scroll .archive-preview { padding-right: 17px; padding-left: 17px; }
+  .sheet .option-item { padding-right: 17px; padding-left: 17px; }
 }
-
-.archive-acts { padding: 0 40rpx; }
-.archive-acts .btn-block { margin-top: 16rpx; }
-.archive-acts .main-action { margin-top: 24rpx; }
